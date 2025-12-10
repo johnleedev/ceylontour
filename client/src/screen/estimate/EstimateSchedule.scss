@@ -1,0 +1,483 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+.schedule-estimate-cover {
+  width: 100%;
+  height: auto;
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 70px 100px;
+  font-size: 14px;
+  margin-top: 50px;
+  
+  .schedule {
+    width: 100%;
+    margin-bottom: 20px;
+
+    .top-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      background-color: #ebebeb;
+      padding: 5px 0;
+
+      .daytitle {
+        width: 80px;
+        padding-left: 10px;
+
+        h1 {
+          font-size: 25px;
+          font-weight: 600;
+        }
+      
+      }
+      .daymeal {
+        flex: 1;
+        display: flex;
+        align-items: center;
+
+        p {
+          margin-right: 5px;
+        }
+        
+      }
+    }
+
+    .bottom-content {
+
+      .input-area {
+        width: 100%;
+        padding: 10px;
+  
+        .cover {
+          position: relative;
+
+          .rowbox {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+
+            .icon-box {
+              width: 30px;
+              @include middle();
+
+              .dot__icon {
+                width: clamp(8px, 0.52vw, 10px);
+                height: clamp(8px, 0.52vw, 10px);
+                background-color: rgba(52, 52, 52, 1);
+                border-radius: 50%;
+              }
+            }
+
+            .inputdefault {
+              font-size: 14px;
+              font-weight: normal;
+              height: 35px;
+              text-align: left;
+              border: 1px solid #E9E9E9;
+              box-sizing: border-box;
+              border-radius: 5px;
+              padding-left: 3px;
+            }
+
+            .textarea {
+              margin:10px 5px;
+              font-size: 14px;
+              font-weight: normal;
+              flex: 1;
+              min-height: 50px;
+              text-align: start;
+              border: 1px solid #E9E9E9;
+              border-radius: 5px;
+              padding: 10px;
+              outline: none;
+            }
+            .scheduletextbox {
+              width: 100%;
+              min-height: 200px;
+              border: 1px solid #ccc;
+              display: flex;
+             
+              .scheduletextbox-imagebox {
+                width: 30%;
+                border-right: 1px solid #ccc;
+                @include middle();
+                flex-direction: column;
+
+                .scheduletextbox-lastImageInputCover {
+                  width: 100%;
+                  display: flex;
+                  padding: 20px;
+                  @include middle();
+              
+                  .lastImage-box,
+                  .lastImage-box-column {
+                    position: relative;
+                    height: 200px;
+                    display: flex;
+                    align-items: center;
+                    border: 1px solid #EAEAEA;
+              
+                    .lastImage-delete {
+                      height: 200px;
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      display: none;
+                    }
+                    .lastImage-box-column-delete {
+                      width: 5%;
+                      @include middle();
+                    }
+                  }
+                  .lastImage-box:hover {
+                    cursor: pointer;
+                    border: 1px solid #FF0000;
+                    .lastImage-delete {
+                      display: block;
+                    }
+                  }
+                  .lastImage-box-column:hover {
+                    cursor: pointer;
+                  }
+                }
+                .scheduletextbox-imageCover {
+    
+                  .imageDropzoneCover {
+                    width: 100%;  
+                    padding-left: 10px;
+                    @include middle();
+                    
+                    .imageDropzoneStyle {
+                      width: 150px;
+                      height: 30px;
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: center;
+                      align-items: center;
+                      border-radius: 4px;
+                      border: 2px dashed #BDBDBD;
+                      cursor: pointer;
+                
+                      div.imageplus {
+                        font-size: 14px;
+                        color: #333;
+                      }
+                    };
+                  }
+              
+                }
+                .imagebox {
+                  display: flex;
+                  align-items: center;
+                  font-size: 16px;
+            
+                  img {
+                    max-height: 200px;
+                  }
+                  p {
+                    margin: 0 10px;
+                  }
+                  div {
+                    @include middle();
+                  }
+                }
+              }
+              .scheduletextbox-textbox {
+                width: 70%;
+                padding: 10px;
+
+                .inputdefault { 
+                  width: 100%;
+                  font-size: 14px;
+                  font-weight: normal;
+                  height: 35px;
+                  text-align: left;
+                  border: 1px solid #E9E9E9;
+                  box-sizing: border-box;
+                  border-radius: 5px;
+                  padding-left: 3px;
+                }
+    
+                .textarea {
+                  width: 100%;
+                  font-size: 14px;
+                  font-weight: normal;
+                  flex: 1;
+                  min-height: 50px;
+                  text-align: start;
+                  border: 1px solid #E9E9E9;
+                  border-radius: 5px;
+                  line-height: 20px;
+                  outline: none;
+                }
+              }
+            }
+            .selectScheduleBox-autoComplete {
+              position: absolute;
+              width: 100%;
+              left: 30px;
+              top: 50px;
+              background-color: #FFF;
+              border: 1px solid #8C8C8C;
+              z-index: 9;
+              padding: 10px;
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+  
+              
+              
+            }
+
+            .schedule-dayBox {
+              display: flex;
+              padding: 0 5px;
+              justify-content: space-between;
+      
+              .schedule-dayBtn {
+                @include middle();
+                border: 1px solid #e0e0e0;
+                border-radius: 3px;
+      
+                > p {
+                  @include middle();
+                  font-size: 14px;
+                  margin: 0;
+                  padding: 5px 8px;
+                }
+              }
+              .schedule-dayBtn:hover {
+                border: 1px solid #c8c8c8;
+                cursor: pointer;
+              }
+            }
+          }
+
+        }
+        .btnrow {
+          display: flex;
+          justify-content: end;
+          
+          .btn {
+            padding: 3px 20px;
+            border: 1px solid #EAEAEA;
+            border-radius: 5px;
+            margin-left: 10px;
+            p {
+              font-size: 14px;
+            }
+          }
+          .btn:hover {
+            cursor: pointer;
+            border: 1px solid #9f9f9f;
+          }
+        }
+        .image-row  {
+          display: flex;
+          img {
+            width: 100px;
+          }
+        }
+        
+      }
+      .selectScheduleboxList {
+        .cover {
+          position: relative;
+          .selectBtn-box {
+            position: absolute;
+            right: 50px;
+            top: 0px;
+            width: 100px;
+            height: 50px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            @include middle();
+          }
+        }
+      }
+      .selectScheduleboxList:hover {
+        cursor: pointer;
+        border: 1px solid #8a8a8a;
+        .selectBtn-box {
+          background-color: #333;
+          color: #fff;
+        }
+      }
+      
+      
+    }
+  
+    .inputdefault {
+      padding-right: 5px;
+      margin: 0 3px;
+      text-align: left;
+      padding-left: 5px;
+    }
+  }
+
+  .daybtnrow {
+    display: flex;
+    justify-content: space-between;
+
+    .daybtn {
+      padding: 5px;
+      border: 1px solid #EAEAEA;
+      border-radius: 5px;
+      @include middle();
+
+      p {
+        margin-left: 5px;
+      }
+    }
+    .daybtn:hover {
+      cursor: pointer;
+      border: 1px solid #9f9f9f;
+    }
+  }
+  
+  .btn-box {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+
+    .btn {
+      padding: 5px 25px;
+      border: 1px solid #b1b1b1;
+      margin: 0 5px;
+      border-radius: 5px;
+      background-color: #fff;
+
+      p {
+        color: #fff;
+      }
+    }  
+    .btn:hover {
+      cursor: pointer;
+      border: 1px solid #333;
+    }
+  }
+  .selectInputBtnBox {
+    width: 100%;
+    height: 50px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+
+    .selectInputBtn {
+      width: 120px;
+      height: 30px;
+      @include middle();
+      border-radius: 5px;
+      margin-right: 10px;
+      border: 1px solid #b1b1b1;
+    }
+    .selectInputBtn:hover {
+      cursor: pointer;
+    }
+  }
+
+  .selectExmapleBox {
+    
+    .selectExmapleRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      border: 1px solid #BDBDBD;
+      border-radius: 10px;
+      margin-bottom: 10px;
+
+      .selectExmapleRow-text {
+        width: 30%;
+        @include middle()
+      }
+      .selectExmapleRow-img {
+        width: 50%;
+      }
+      .selectExmapleRow-btn {
+        width: 20%;
+        @include middle();
+        p {
+          width: 100px;
+          height: 40px;
+          border: 1px solid #BDBDBD;
+          border-radius: 10px;
+          @include middle()
+        }
+      }
+    }
+    .selectExmapleRow:hover {
+      cursor: pointer;
+      border: 2px solid #BDBDBD;
+    }
+  }
+
+  .saleCost-Select-Cover {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+
+    .saleCost-Select-leftBox {
+      width: 90%;
+      display: flex;
+      align-items: center;
+
+      .saleCost-Select-Btn {
+        width: 100px;
+        height: 40px;
+        border-radius: 5px;
+        margin-right: 10px;
+        gap: 10px;
+        @include middle();
+      }    
+      .saleCost-Select-Btn:hover {
+        cursor: pointer;
+        border: 1px solid #333;
+      }
+      .saleCost-Select-vet_bar {
+        width: 1px;
+        height: 40px;
+        margin: 0 20px;
+        background-color: #d8d8d8;
+      }
+    }
+    .saleCost-Select-rightBox {
+      width: 10%;
+      display: flex;
+      align-items: center;
+      
+      .checkInput {
+        width: 30px;
+        height: 30px; 
+        display: flex;
+        align-items: center; 
+        justify-content: center;
+        margin-right: 5px;
+
+        .input {
+          width: 20px;
+          height: 20px;
+        }
+      }
+      p {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width : 600px) { 
+  
+  
+}
+
+  
+
+  

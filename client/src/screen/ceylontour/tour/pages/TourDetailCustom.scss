@@ -1,0 +1,568 @@
+
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+@mixin width-main {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+};
+
+
+.custom-layout-container {
+  @include width-main();
+  display: flex;
+  gap: 20px;
+
+  .custom-layout-left {
+    width: 80%;
+
+    // 일정표 ----------------------------------------------------------------
+  
+    .custom-resort_detail_mx__section {
+      width: 100%;
+  
+      .custom-resort_detail_schedule_header__wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        .custom-header__main {
+          font-weight: 500;
+          font-size: 18px;
+        }
+        .custom-sidebar__wrapper {
+          display: flex;
+          justify-content: flex-end;
+          color: rgba(51, 51, 51, 1);
+          span {
+            line-height: 1;
+            border-right: 1px solid rgba(148, 148, 148, 1);
+            padding: 0 1vw;
+            @media (max-width: 800px) {
+              padding: 1px 15px;
+            }
+            &.custom-selected__sidebar {
+              font-weight: 700;
+              color: rgba(11, 11, 11, 1);
+            }
+            &:last-child {
+              padding-right: 0px;
+              border-right: none;
+            }
+          }
+        }
+        .custom-sidebar__wrapper:hover {
+          cursor: pointer;
+        }
+      }
+    }
+  
+    
+    .custom-schedule__tables__wrapper {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 100px;
+  
+      .custom-schedule__table__wrapper {
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid rgba(0, 0, 0, 1);
+        color: rgba(0, 0, 0, 1);
+        white-space: pre-line;
+        line-height: 25px;
+  
+        
+        .custom-schedule__header {
+          display: flex;
+          align-items: center;
+          gap: 1.5vw;
+          padding: 1vw 3.5vw;
+          background-color: rgba(248, 248, 248, 1);
+          border-bottom: 1px solid rgba(224, 224, 224, 1);
+          
+  
+          @media (max-width: 800px) {
+            padding: 13px 20px 10px 20px;
+            gap: 20px;
+          }
+          .custom-main__text {
+            font-weight: 700;
+            line-height: 1;
+            font-size: 25px;
+          }
+          .custom-sub__text {
+            line-height: 1;
+            font-size: 21px;
+          }
+        }
+  
+  
+        .custom-schedule__main__wrapper {
+          padding: 0 30px;
+          border-bottom: 1px solid rgba(224, 224, 224, 1);
+          
+          .custom-schedule__element__wrapper {
+            position: relative;
+            margin-left: 30px;
+            padding-top: 30px;
+            padding-bottom: 20px;
+            border-left: 1px dotted rgba(180, 180, 180, 1);
+    
+            .custom-flight__schedule__board__wrapper {
+              @media (min-width: 800px) {
+                display: flex;
+                width: 100%;
+                flex-direction: column;
+                align-items: center;
+                padding: 1.5vw 0;
+              }
+              .custom-flight__schedule__board {
+                display: flex;
+                flex-direction: column;
+                width: 40%;
+                .custom-flight__info__wrapper {
+                  display: flex;
+                  width: 100%;
+                  justify-content: center;
+                  align-items: center;
+                  flex-direction: column;
+                  padding-bottom: 20px;
+                  border-bottom: 1px solid rgba(0, 0, 0, 1);
+                  img {
+                    max-width: 100px;
+                    max-height: 30px;
+                  }
+                  span {
+                    font-size: 16px;
+                    color: #333;
+                  }
+                }
+                .custom-flight__time__wrapper {
+                  display: flex;
+                  justify-content: center;
+                  margin-top: 0.5vw;
+                  position: relative;
+                  .custom-flight__time {
+                    color: #686868;
+                    font-size: 14px;
+                  }
+                  & > div {
+                    position: absolute;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    .custom-time__text {
+                      font-size: 25px;
+                      font-weight: 700;
+                    }
+                    .custom-airport__text {
+                      font-size: 15px;
+                    }
+                    div {
+                      width: 0.625vw;
+                      height: 0.625vw;
+                      border: 1px solid rgba(0, 0, 0, 1);
+                      border-radius: 50%;
+                      background-color: rgba(255, 255, 255, 1);
+                      margin-bottom: 0.4vw;
+                    }
+                  }
+                  .custom-depart__info {
+                    left: 0;
+                    transform: translate(-50%, -0.85vw);
+                  }
+                  .custom-arrive__info {
+                    right: 0;
+                    transform: translate(50%, -0.85vw);
+                  }
+                }
+              }
+            }
+  
+            .custom-schedule__element__header__wrapper {
+              border-left: 1px dotted rgba(180, 180, 180, 1);
+              font-size: 16px;
+              display: flex;
+              flex-direction: column;
+              @media (max-width: 800px) {
+                padding-top: 20px;
+              }
+              .custom-schedule__location__wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+                
+                .custom-location__absolute__wrapper {
+                  position: absolute;
+                  transform: translate(-50%, 0);
+                }
+                .custom-location__text {
+                  padding-left: clamp(27px, 2.5vw, 57px);
+                  font-size: 20px;
+                  line-height: 1.3;
+                }
+              }
+            }
+            .custom-schedule__sub_element__wrapper {
+  
+              .custom-schedule__element__subTitle__wrapper {
+                
+    
+                .custom-schedule__element__subTitle {
+                  display: flex;
+                  align-items: center;
+                  height: 40px;
+                  @media (max-width: 800px) {
+                    padding-top: 10px;
+                  }
+                  .custom-absolute__wrapper {
+                    position: absolute;
+                    transform: translate(-50%, 0);
+                    z-index: 3;
+    
+                    .custom-dot__icon {
+                      width: clamp(8px, 0.52vw, 10px);
+                      height: clamp(8px, 0.52vw, 10px);
+                      background-color: rgba(52, 52, 52, 1);
+                      border-radius: 50%;
+                    }
+            
+                  }
+                  .custom-schedule__text__wrapper {
+                    position: absolute;
+                    display: flex;
+                    margin-left: 30px;
+                    font-size: 18px;
+    
+                    @media (max-width: 800px) {
+                      padding-left: clamp(27px, 2.5vw, 57px);
+                      flex-direction: column;
+                      gap: 0px;
+                      .custom-time__text {
+                        font-size: 20px;
+                        font-weight: 700;
+                      }
+                    }
+                  }
+                }
+              }
+              .custom-schedule__element__main__wrapper {
+                width: 100%;
+                min-height: 200px;
+                margin: 20px 0 20px 30px;
+                border: 1px solid #ccc;
+                display: flex;
+                
+                .custom-image__wrapper {
+                  width: 30%;
+                  @include middle;
+    
+                  .custom-imagebox {
+                
+                    img {
+                      
+                    }
+                  }
+                }
+    
+                .custom-table__wrapper {
+                  width: 70%;
+                  padding: 20px;
+    
+                  .custom-table__header {
+                    font-size: 18px;
+                    color: rgba(0, 0, 0, 1);
+                    margin-bottom: 10px;
+                  }
+                  .custom-table__main {
+                    display: flex;
+                    flex-direction: column;
+                    
+                    .custom-detailbox {
+                      
+                      .custom-detailbox-name {
+                        margin-bottom: 5px;
+                      }
+                      .custom-detailbox-notice {
+                        margin-bottom: 10px;
+                        margin-left: 10px;
+                        color: #969696;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            
+  
+  
+            
+          }
+        }
+  
+        .custom-additional__schedule__wrapper {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          border-bottom: 1px solid rgba(224, 224, 224, 1);
+          margin: 10px 0;
+
+          &:last-child {
+            border: none;
+          }
+
+          .custom-index__wrapper {
+            width: 25%;
+            @include middle;
+            padding: 10px 0;
+            @media (max-width: 800px) {
+              padding: 8px 0;
+              gap: 10px;
+            }
+            img {
+              max-width: 50px;
+              margin-right: 20px;
+            }
+          }
+
+          .custom-additional__schedule__wrapper__textbox {
+            width: 75%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          
+            .custom-meal__info__wrapper,
+            .custom-additional__info__wrapper {
+              width: 80%;
+              flex: 1;
+              display: flex;
+              align-items: center;
+              padding: 0 20px;
+              color: rgba(51, 51, 51, 1);
+              min-width: 0;
+              word-break: keep-all;
+              flex-wrap: wrap;
+            }
+            .custom-meal__info__wrapper {
+              justify-content: space-between;
+            }
+            .custom-additional__info__wrapper {
+
+            }
+
+            .custom-additional__btn__wrapper {
+              width: 20%;
+              margin-left: auto;
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+              flex-shrink: 0;
+            }
+          }
+
+          
+
+          
+
+          @media (max-width: 800px) {
+            flex-direction: column;
+            align-items: stretch;
+            .custom-additional__schedule__wrapper__textbox {
+              flex-direction: column;
+              align-items: stretch;
+              gap: 4px;
+            }
+            .custom-additional__btn__wrapper {
+              margin-left: 0;
+              margin-top: 8px;
+              justify-content: flex-end;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 오른쪽 패널 ----------------------------------------------------------------
+  .custom-layout-right {
+    width: 20%;
+    padding: 20px;
+    border-radius: 8px;
+    height: fit-content;
+    border: 1px solid #7ebaff;
+
+    // 커스텀 옵션 패널 스타일
+    .custom-header {
+      margin-bottom: 20px;
+
+      .custom-header-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        .custom-header-icon {
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          
+          .custom-header-icon-pencil {
+            font-size: 14px;
+            color: #005EC9;
+            border-bottom: 1px solid #005EC9;  
+          }
+        }
+
+        .custom-header-text {
+          font-size: 16px;
+          font-weight: 600;
+          margin: 0;
+        }
+      }
+
+      .custom-header-description {
+        color: #8B8B8B;
+        font-size: 12px;
+        line-height: 1.4;
+        margin: 0;
+      }
+    }
+
+    .custom-search-bar {
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #e0e0e0;
+
+      .custom-search-icon {
+        @include middle;
+      }
+
+      .custom-search-input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 14px;
+      }
+    }
+
+    .custom-accordion-section {
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e0e0e0;
+
+      .custom-accordion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+
+
+      }
+
+      .custom-accordion-content {
+        padding: 0 12px 12px 12px;
+
+        .custom-checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          cursor: pointer;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .custom-checkbox {
+            accent-color: #0066ff;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+          }
+
+          .custom-checkbox-text {
+            font-size: 13px;
+            cursor: pointer;
+          }
+        }
+      }
+    }
+  }
+
+  
+
+  
+}
+
+.custom-schedule__text__wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+ 
+}
+.custom-schedule__btns {
+  display: flex;
+  gap: 8px;
+  margin-left: 12px;
+
+  .custom-schedule__btn {
+    background: transparent;
+    border: 1.5px solid #888;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border 0.2s, color 0.2s;
+    &:hover {
+      border-color: #222;
+      color: #222;
+    }
+    &--delete {
+      // 필요시 삭제 버튼만의 스타일
+    }
+    &--edit {
+      // 필요시 변경 버튼만의 스타일
+    }
+  }
+}
+
+.custom-rating__board__wrapper {
+  width: 100%;
+  display: flex;
+
+  .custom-rating__icon {
+    @include middle();
+    
+    .custom-empty__star .custom-filled__star {
+      width: 100%;
+      height: 100%;
+    }
+    .custom-empty__star {
+      fill: rgba(119, 119, 119, 1);
+    }
+    .custom-filled__star {
+      fill: rgba(252, 196, 0, 1);
+      z-index: 2;
+    }
+  }
+}

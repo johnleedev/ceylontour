@@ -1,0 +1,462 @@
+
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+.estimate-customer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #e6e6e6;
+  padding-bottom: 100px;
+
+  .menucover {
+    width: 100%;
+    height: 100px;
+    background-color: #333;
+  }
+
+  .inner {
+
+    .estimate-customer-cover {
+      width: 100%;
+      background-color: #fff;
+      border-radius: 20px;
+      padding: 70px 100px;
+      font-size: 14px;
+      margin-top: 50px;
+      @media (max-width: 800px) {
+        padding: 20px;
+      }
+
+      section {
+        margin-bottom: 50px;
+      }
+      
+      .estimate-customer-header {
+        display: flex;
+        align-items: end;
+        margin-bottom: 10px;
+
+        h1 {
+          font-size: 30px;
+          font-weight: bold;
+          margin-right: 10px;
+        }
+        h3 {
+          font-size: 25px;
+        }
+      }
+      .bottombar {
+        width: 100%;
+        height: 2px;
+        background-color: #333;
+      }
+
+      .estimate-customer-toptextrow {
+        width: 100%;
+        display: flex;
+        font-size: 18px;
+        margin-bottom: 20px;
+        align-items: center;
+
+        .left-maintext {
+          width: 200px;
+          height: 100%;
+          display: flex;
+          align-items: center;
+        }
+        .right-contenttext {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .mobile-right-contenttext {
+          @media (max-width: 800px) {
+            flex-direction: column;
+            align-items: start;
+          }
+        }
+        .mobile-left-maintext {
+          @media (max-width: 800px) {
+           display: none;
+          }
+        }
+      }
+
+      .numBtnBox {
+        width: 35px;
+        height: 35px;
+        border: 1px solid #ccc;
+        @include middle();
+        border-radius: 5px;
+      }
+      .numBtnBox:hover {
+        cursor: pointer;
+        border: 1px solid #a8a8a8;
+      }
+
+      .estimate-customer-checkInputCover {
+        display: flex;
+        align-items: center;
+
+        .checkInputBox {
+          width: 30px;
+          height: 30px;
+          @include middle();
+          position: relative;
+      
+          .checkinput {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            appearance: none;
+            outline: none;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            cursor: pointer;
+          }
+
+          .checkinput:checked {
+            background-color: #007BFF;
+            border-color: #007BFF;
+          }
+          .estimate-customer-checkIcon {
+            position: absolute;
+            font-size: 12px;
+            color: #fff;
+          }
+        }
+      
+        p {
+          margin: 0 30px 0 5px;
+        }
+      }
+
+      .hotelImage-cover {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+
+        img {
+          width: 100%;
+          margin-bottom: 15px;
+          @media (max-width: 800px) {
+            width: 100px;
+            margin-right: 10px;
+          }
+        }
+        .hotelImage-box {
+          @media (max-width: 800px) {
+            display: flex;
+          }
+        }
+      }
+      .mobile-hotelImage-cover {
+        @media (max-width: 800px) {
+          grid-template-columns: 1fr;
+        }
+      }
+      .middletext-cover {
+        width: 100%;
+        padding: 20px;
+        background-color: #9fa6ae;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #fff;
+
+        h3 {
+          font-weight: bold;
+        }
+        h5 {
+          font-size: 16px;
+        }
+        h5:hover {
+          cursor: pointer;
+        }
+        
+      }
+
+      .hotel-detail-cover {
+        width: 100%;
+
+        .hotel-detail-row {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 2px solid #ccc;
+          padding-bottom: 10px;
+          margin-bottom: 10px;
+
+          img {
+            width: 25%;
+            object-fit: contain;
+          }
+          .hotel-detail-textbox {
+            width: 35%;
+            padding: 10px 20px;
+
+            .hotel-detail-textbox-title {
+              display: flex;
+              font-weight: bold;
+              span {
+                
+                margin-left: 10px;
+              }
+            }
+            .hotel-detail-textbox-notice {
+              padding: 10px;
+              p {
+                margin: 5px 0;
+                color: #a8a8a8;
+                font-size: 14px;
+              }
+            }
+          }
+          .hotel-detail-costbox {
+            width: 25%;
+            @include middle();
+            flex-direction: column;
+            h3 {
+              font-size: 14px;
+              color: #7f7f7f;
+              margin-bottom: 5px;
+            }
+            h1 {
+              font-size: 22px;
+              margin-bottom: 5px;
+              span {
+                font-size: 16px;
+                color: #7f7f7f;
+              }
+            }
+            p {
+              font-size: 16px;
+              color: #7f7f7f;
+            }
+          }
+          .hotel-detail-checkbox {
+            width: 10%;
+            @include middle();
+          }
+        }
+      }
+      .bottomtext-cover {
+        width: 100%;
+        padding: 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: right;
+        font-size: 16px;
+
+        h3 {
+          margin-right: 10px;
+        }
+        h5 {
+        color: #007BFF;;
+        }
+        
+      }
+
+      .custom-detail-cover {
+        width: 100%;
+
+        .custom-detail-row {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 2px solid #ccc;
+          padding-bottom: 10px;
+          margin-bottom: 10px;
+
+          img {
+            width: 25%;
+            object-fit: contain;
+          }
+          .custom-detail-textbox {
+            width: 75%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+
+            .custom-detail-textbox-title {
+              height: 20%;
+              display: flex;
+              font-weight: bold;
+            }
+            .custom-detail-textbox-notice {
+              height: 60%;
+              p {
+                margin: 5px 0;
+                color: #a8a8a8;
+                font-size: 16px;
+              }
+            }
+            .custom-detail-textbox-cost {
+              height: 20%;
+              display: flex;
+              justify-content: end;
+              h3 {
+                font-size: 18px;
+                span {
+                  font-size: 14px;
+                  color: #7f7f7f;
+                }
+              }
+            }
+          }
+        }
+      }
+      .estimate-customer-notice-cover {
+        background-color: #fafbfe;
+        padding: 50px 70px;
+        @media (max-width: 800px) {
+          padding: 20px;
+          background-color: #fff;
+        }
+
+        .estimate-customer-notice-row {
+          display: flex;
+          align-items: start;
+          border-bottom: 1px dashed #ccc;
+          padding-bottom: 10px;
+          margin-bottom: 20px;
+          @media (max-width: 800px) {
+           flex-direction: column;
+          }
+
+          .estimate-customer-notice-left-textbox {
+            width: 20%;
+            display: flex;
+            align-items: center;
+            @media (max-width: 800px) {
+              width: 100%;
+              margin-bottom: 10px;
+            } 
+
+            .estimate-customer-notice-icon {
+              margin-right: 10px;
+            }
+            p {
+              font-size: 16px;
+            }
+          }
+          .estimate-customer-notice-right-textbox {
+            width: 80%;
+            @media (max-width: 800px) {
+              width: 100%;
+              background-color: #e7ecf3;
+              padding: 10px;
+            } 
+            p {
+              margin-bottom: 5px;
+              font-size: 16px;
+            }
+          }
+        }
+        .estimate-customer-notice-row:last-child {
+          border: none;
+          padding-bottom: 0px;
+          margin-bottom: 0px;
+        }
+      }
+
+      .estimate-customer-notice-btn-box {
+        display: flex;
+        justify-content: end;
+        align-items: center;
+        margin-top: 20px;
+
+        .estimate-customer-notice-btn {
+          padding: 5px 25px;
+          border: 1px solid #b1b1b1;
+          border-radius: 5px;
+          background-color: #fff;
+        }  
+        .estimate-customer-notice-btn:hover {
+          cursor: pointer;
+          border: 1px solid #333;
+        }
+      }
+
+      .estimate-customer-bottom-cost-cover {
+        display: flex;
+        width: 100%;
+        padding: 50px;
+        background-color: #585d63;
+        color: #fff;
+        @media (max-width: 800px) {
+          flex-direction: column;
+          background-color: #fff;
+          padding: 0px;
+        } 
+        .estimate-customer-bottom-cost-left-box {
+          width: 60%;
+          min-height: 120px;
+          display: flex;
+          justify-content: space-between;
+          flex-direction: column;
+          letter-spacing: 1px;
+          @media (max-width: 800px) {
+            width: 100%;
+            background-color: #585d63;
+            padding: 20px;
+          } 
+          h3 {
+            font-size: 22px;
+            font-weight: bold;
+          }
+          p {
+            color: #ccc;
+            font-size: 16px;
+          }
+          h1 {
+            color: #ccc;
+            font-size: 16px;
+            span {
+              color: #ffd672;
+              font-size: 26px;
+              margin-left: 10px;
+              margin-right: 5px;
+            }
+          }
+        }
+        .estimate-customer-bottom-cost-right-box {
+          width: 40%;
+          display: flex;
+          justify-content: space-between;
+          align-items: end;
+          flex-direction: column;
+          @media (max-width: 800px) {
+            width: 100%;
+            margin-top: 15px;
+            flex-direction: row;
+            gap: 10px;
+          } 
+
+          .estimate-customer-bottom-cost-Btnbox {
+            width: 250px;
+            height: 50px;
+            @include middle();
+            border-radius: 5px;
+            @media (max-width: 800px) {
+             border: 1px solid #333;
+            } 
+          }
+          .estimate-customer-bottom-cost-Btnbox:hover {
+            cursor: pointer;
+            opacity: 0.9;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+  

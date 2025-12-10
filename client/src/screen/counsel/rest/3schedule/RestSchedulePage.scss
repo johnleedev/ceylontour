@@ -1,0 +1,953 @@
+.RestSchedulePage {
+  margin-top: 100px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 50px;
+
+  // 오른쪽 패널 토글 버튼
+  .right-panel-toggle-btn {
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    z-index: 1000;
+    width: 60px;
+    height: 50px;
+    background-color: #fff;
+    border: none;
+    border-radius: 25px 0 0 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+
+    svg {
+      font-size: 24px;
+      color: #333;
+    }
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transform: translateX(-2px);
+    }
+  }
+
+  .schedule-container {
+    display: flex;
+    width: 100%;
+    min-height: calc(100vh - 100px);
+    margin: 0 auto;
+    transition: all 0.3s ease;
+
+    // 오른쪽 패널이 없을 때: 전체 스크롤 사용
+    &.without-right-panel {
+      justify-content: center;
+
+      .schedule-left-section {
+        max-width: 1100px;
+        width: 100%;
+        overflow-y: visible; // 전체 스크롤
+      }
+    }
+
+    // 오른쪽 패널이 있을 때: 각각 독립 스크롤
+    &.with-right-panel {
+      height: 100vh;
+      overflow: hidden;
+
+      .schedule-left-section {
+        overflow-y: auto; // 독립 스크롤
+        height: 100%;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        
+        &::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+      }
+    }
+
+    // 왼쪽 영역: 기존 내용
+    .schedule-left-section {
+      flex: 1;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    // 오른쪽 영역
+    .schedule-right-section {
+      flex: 1;
+      max-width: 670px;
+      padding: 0 20px 20px 20px;
+      box-sizing: border-box;
+      position: relative;
+      animation: slideInRight 0.3s ease;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+
+      // 닫기 버튼
+      .right-panel-close-btn {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        z-index: 9;
+        width: 32px;
+        height: 32px;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        svg {
+          font-size: 20px;
+          color: #000;
+        }
+
+        &:hover {
+          transform: scale(1.1);
+        }
+      }
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .schedule-center-wrapper {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hotel-title-wrapper {
+    display: flex;
+    align-items: center;
+
+    .arrow-back {
+      font-size: 20px;
+      margin-right: 10px;
+    }
+
+    .hotel-title {
+      margin: 20px;
+      display: flex;
+      align-items: end;
+      
+      .arrow-back {
+        font-size: 20px;
+        margin-right: 10px;
+      }
+      
+      .text-title {
+        font-size: 25px ;
+        margin-right: 10px;
+        font-weight: bold;
+      }
+  
+     
+    }
+  
+  }
+
+  .header-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+
+    .btn-tap {
+      border-radius: 7px;
+      padding: 8px 40px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid #999999;
+      background-color: transparent;
+      color: #646464;
+      font-weight: 400;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+
+      &.active {
+        background-color: #020202;
+        border: 1px solid #020202;
+        color: #ffffff;
+        font-weight: 500;
+
+        &:hover {
+          background-color: #333;
+        }
+      }
+    }
+  }
+
+  .nationnotice-image {
+    margin-top: 20px;
+    width: 100%;
+
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  }
+
+  .schedule-content {
+    margin-top: 20px;
+    width: 100%;
+
+    .schedule-placeholder {
+      width: 100%;
+      padding: 40px;
+      text-align: center;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      color: #666;
+      font-size: 16px;
+    }
+  }
+
+  .schedule-tab-content-left {
+    margin-top: 20px;
+    width: 100%;
+  }
+
+  // 오른쪽 섹션 스타일
+  .schedule-right-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding-top: 0;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+
+    // 탭 컨테이너
+    .right-tab-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #fff;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      margin-top: 50px;
+      border-bottom: 2px solid #ccc;
+
+      .right-tab-left {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .right-tab-button {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        position: relative;
+        color: #333;
+        font-size: 15px;
+        font-weight: 400;
+        padding: 8px 0;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        
+        &:hover {
+          font-weight: bold;
+        }
+
+        &.active {
+          font-weight: bold;
+
+          &::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #333
+          }
+        }
+      }
+    }
+
+    // 탭 컨텐츠
+    .right-tab-content {
+      flex: 1;
+      overflow-y: auto;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
+
+      // RestTripPage와 동일한 하이라이트 카드 스타일
+      .highlight-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+
+        .highlight-card {
+          background: #ffffff;
+          border-radius: 16px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+          &:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+          }
+
+          .highlight-image-wrap {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            overflow: hidden;
+
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              display: block;
+            }
+          }
+
+          .highlight-title {
+            padding: 10px 12px 14px;
+            font-family: "Noto Sans KR", Helvetica;
+            font-size: 14px;
+            font-weight: 500;
+            color: #111111;
+          }
+        }
+      }
+    }
+
+    // 실론투어 베네핏 카드 섹션
+    .benefit-card-section {
+      background-color: #ffffff;
+      box-shadow: 0px 4px 9px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    // 하루 일정 섹션
+    .daily-schedule-section {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      margin-top: 20px;
+
+      .schedule-time-block {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+
+        .time-header {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          margin-bottom: 16px;
+
+          .time-label {
+            color: #000000;
+            font-family: "Noto Sans KR", Helvetica;
+            font-size: 31px;
+            font-weight: 500;
+          }
+
+          .time-range {
+            color: #333333;
+            font-family: "Noto Sans KR", Helvetica;
+            font-size: 17px;
+            font-weight: 400;
+          }
+        }
+
+        // schedule-time-block 안의 benefit-options 스타일
+        .benefit-options {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          margin-bottom: 20px;
+
+          .benefit-option {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            .option-label {
+              color: #222222;
+              font-family: "Noto Sans KR", Helvetica;
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 4px;
+            }
+
+            .option-content {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+
+              .option-title {
+                color: #444444;
+
+                font-size: 17px;
+                font-weight: 400;
+                text-align: center;
+              }
+
+              .option-description {
+                color: #444444;
+
+                font-size: 17px;
+                font-weight: 400;
+                line-height: 1.5;
+              }
+            }
+
+            .option-image {
+              width: 100%;
+              height: auto;
+              border-radius: 8px;
+              object-fit: cover;
+              margin-top: 8px;
+            }
+
+            .schedule-image {
+              width: 100%;
+              height: auto;
+              border-radius: 8px;
+              object-fit: cover;
+              max-height: 180px;
+              margin-top: 8px;
+            }
+
+            &.main-option {
+              .option-image {
+                max-height: 200px;
+              }
+            }
+
+            &.select-option {
+              .option-image {
+                max-height: 200px;
+              }
+            }
+          }
+        }
+
+        .tip-box {
+          background-color: #f1f5fa;
+          border-radius: 5px;
+          padding: 16px;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+
+          .tip-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+            }
+          }
+
+          .tip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+
+            .tip-label {
+              color: #3277ea;
+              font-family: "Noto Sans KR", Helvetica;
+              font-size: 18px;
+              font-weight: 600;
+            }
+
+            .tip-text {
+              color: #444444;
+              font-family: "Noto Sans KR", Helvetica;
+              font-size: 17px;
+              font-weight: 400;
+              margin: 0;
+              line-height: 1.5;
+            }
+          }
+        }
+
+        .experience-section {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+
+          .experience-label {
+            color: #222222;
+            font-family: "Noto Sans KR", Helvetica;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+          }
+
+          .experience-images {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            .experience-image {
+              width: 100%;
+              height: auto;
+              border-radius: 8px;
+              object-fit: cover;
+              max-height: 180px;
+            }
+
+            .experience-item {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              margin-top: 4px;
+
+              .experience-title {
+                color: #444444;
+
+                font-size: 17px;
+                font-weight: 400;
+              }
+
+              .experience-description {
+                color: #444444;
+
+                font-size: 17px;
+                font-weight: 400;
+                line-height: 1.5;
+              }
+            }
+          }
+        }
+
+        &.morning-block {
+          padding-bottom: 24px;
+          border-bottom: 1px solid #e0e0e0;
+        }
+      }
+    }
+
+
+
+    .schedule-summary-content {
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+  
+      .summary-card {
+        width: 100%;
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        
+        .summary-header {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          .summary-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+          }
+        }
+        
+      }
+  
+    
+  
+      .summary-day {
+        font-size: 18px;
+        font-weight: 600;
+        color: #000;
+      }
+  
+      .summary-date {
+        font-size: 14px;
+        color: #696969;
+      }
+  
+      .summary-main-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 8px;
+        border-bottom: 1px solid #e5e5e5;
+        padding-bottom: 8px;
+
+        .summary-main-tab {
+          width: 100px;
+          border: none;
+          background: none;
+          padding: 4px 0;
+          font-size: 15px;
+          color: #777;
+          cursor: pointer;
+          position: relative;
+
+          &.active {
+            color: #000;
+            font-weight: 500;
+
+            &::after {
+              content: '';
+              position: absolute;
+              left: 0;
+              bottom: -6px;
+              width: 100%;
+              height: 2px;
+              background-color: #000;
+            }
+          }
+        }
+      }
+  
+      .summary-sub-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 14px;
+
+        .sub-tab {
+          color: #858585;
+          cursor: pointer;
+          white-space: nowrap;
+
+          &.active {
+            color: #000;
+            font-weight: 500;
+          }
+        }
+      }
+  
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+
+        .summary-item {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          background-color: #ffffff;
+          border: 1px solid #e3e3e3;
+          border-radius: 8px;
+          overflow: hidden;
+
+          .summary-item-image {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+          }
+
+          .summary-item-content {
+            padding: 10px 12px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .summary-item-title {
+              font-size: 15px;
+              font-weight: 500;
+              color: #000;
+            }
+
+            .summary-item-rating {
+              font-size: 13px;
+              color: #ffb400;
+            }
+
+            .summary-item-price-row {
+              display: flex;
+              justify-content: flex-end;
+              gap: 4px;
+              align-items: baseline;
+              margin-top: 4px;
+
+              .summary-item-price {
+                font-size: 14px;
+                font-weight: 600;
+                color: #000;
+              }
+          
+              .summary-item-unit {
+                font-size: 12px;
+                color: #777;
+              }
+            }
+          }
+        }
+      }
+  
+      .summary-footer {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #e3e3e3;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .summary-footer-top {
+          font-size: 16px;
+          font-weight: 500;
+          color: #000;
+        }
+    
+        .summary-footer-bottom {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+    
+          .summary-footer-left {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+    
+            .summary-footer-field {
+              padding: 6px 10px;
+              border: 1px solid #e3e3e3;
+              border-radius: 4px;
+              font-size: 13px;
+              color: #444;
+    
+              &.price-field {
+                font-weight: 500;
+              }
+            }
+          }
+    
+          .summary-footer-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+    
+            .summary-total-label {
+              font-size: 13px;
+              color: #333;
+            }
+    
+            .summary-total-price {
+              font-size: 20px;
+              font-weight: 700;
+              color: #000;
+            }
+          }
+        }
+        .cost-schedule-btn-wrapper {
+          display: flex;
+          gap: 16px;
+
+          .cost-schedule-btn {
+            width: 50%;
+            margin-top: 16px;
+            padding: 14px;
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-family: "Noto Sans KR", Helvetica;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+          }
+        }
+
+        
+      }
+    }
+  
+    @media (max-width: 1024px) {
+      .schedule-summary-content .summary-card {
+        max-width: 100%;
+      }
+  
+      .schedule-summary-content .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  
+    @media (max-width: 768px) {
+      .schedule-summary-content {
+        padding: 12px;
+      }
+  
+      .schedule-summary-content .summary-card {
+        padding: 16px;
+      }
+  
+      .schedule-summary-content .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+
+  // 반응형
+  @media (max-width: 1200px) {
+    .right-panel-toggle-btn {
+      top: 100px;
+      right: 15px;
+      width: 50px;
+      height: 45px;
+
+      svg {
+        font-size: 20px;
+      }
+    }
+
+    .schedule-container {
+      flex-direction: column;
+      height: auto;
+      min-height: calc(100vh - 100px);
+      overflow: visible;
+
+      &.without-right-panel {
+        .schedule-left-section {
+          max-width: 100%;
+        }
+      }
+
+      &.with-right-panel {
+        height: auto;
+        overflow: visible;
+
+        .schedule-left-section {
+          height: auto;
+          overflow-y: visible;
+        }
+      }
+
+      .schedule-left-section {
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        height: auto;
+        overflow-y: visible;
+      }
+
+      .schedule-right-section {
+        flex: 1;
+        max-width: 100%;
+        position: relative;
+        top: 0;
+        height: auto;
+        overflow-y: visible;
+
+        .right-panel-close-btn {
+          top: 15px;
+          right: 15px;
+          width: 28px;
+          height: 28px;
+
+          svg {
+            font-size: 18px;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 15px;
+
+    .right-panel-toggle-btn {
+      top: 80px;
+      right: 10px;
+      width: 45px;
+      height: 40px;
+
+      svg {
+        font-size: 18px;
+      }
+    }
+
+    .schedule-container {
+      .schedule-left-section {
+        padding: 15px;
+      }
+
+      .schedule-right-section {
+        padding: 0 15px 15px 15px;
+
+        .right-panel-close-btn {
+          top: 10px;
+          right: 10px;
+          width: 26px;
+          height: 26px;
+
+          svg {
+            font-size: 16px;
+          }
+        }
+      }
+    }
+
+    .schedule-right-section {
+      .right-tab-container {
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 50px;
+
+        .right-tab-left {
+          gap: 12px;
+        }
+
+        .right-tab-button {
+          padding: 6px 0;
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+}

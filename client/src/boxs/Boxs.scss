@@ -1,0 +1,382 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+// TitleBox
+.title {
+  background-color: #f6f6f6;
+  border-bottom: 1px solid #e9e9e9;
+  height: 40px;
+  @include middle();
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+  }
+}
+
+.titlelist {
+  background-color: #f6f6f6;
+  height: 40px;
+  @include middle();
+
+  h3 {
+    font-size: 17px;
+    font-weight: 500;
+  }
+}
+
+// TextBox
+.text {
+  height: 50px;
+  @include middle();
+
+  p {
+    font-weight: normal;
+  }
+}
+
+// DateBox
+.calendarDouble {
+  width: 200px;
+}
+.calendarSingleTime {
+  width: 150px;
+}
+.calendarSingle {
+  width: 120px;
+}
+.calendarbox {
+  position: relative;
+  min-height: 30px; 
+  display: flex; 
+  align-items: center;
+  border: 1px solid #E9E9E9;
+  box-sizing: border-box;
+  border-radius: 5px;
+  padding: 5px;
+
+  .dateboxDouble {
+    width: 180px;
+    position: relative;
+    .react-datepicker__tab-loop {
+      .react-datepicker-popper {
+        .react-datepicker {
+          width: 1000px;
+          display: flex;
+          justify-content: space-between;
+          flex-wrap: wrap;
+
+          .react-datepicker__month-container {
+            .react-datepicker__header {
+              .react-datepicker__header__dropdown {
+                right: 0;
+              }
+            }
+          }
+        }
+      }
+    }
+    .react-datepicker-wrapper {
+      .react-datepicker__input-container {
+        > input {
+          width: 180px;
+        }
+        .react-datepicker__close-icon {
+          display: none;
+        }
+      }
+    }
+  }
+  .dateboxSingleTime {
+    width: 130px;
+    position: relative;
+    .react-datepicker__tab-loop {
+      .react-datepicker-popper {
+        .react-datepicker {
+          width: 400px;
+
+          .react-datepicker__month-container {
+            .react-datepicker__header {
+              .react-datepicker__header__dropdown {
+                left: 20px;
+              }
+            }
+          }
+        }
+      }
+    }
+    .react-datepicker-wrapper {
+      .react-datepicker__input-container {
+        > input {
+          width: 130px;
+        }
+        .react-datepicker__close-icon {
+          display: none;
+        }
+      }
+    }
+  }
+  .dateboxSingle {
+    width: 100px;
+    .react-datepicker__tab-loop {
+      .react-datepicker-popper {
+        .react-datepicker {
+          width: 310px;
+
+          .react-datepicker__month-container {
+            .react-datepicker__header {
+              .react-datepicker__header__dropdown {
+                left: 20px;
+              }
+            }
+          }
+        }
+      }
+    }
+    .react-datepicker-wrapper {
+      .react-datepicker__input-container {
+        > input {
+          width: 100px;
+        }
+        .react-datepicker__close-icon {
+          display: none;
+        }
+      }
+    }
+  }
+  .datebox {
+    position: relative;
+     
+    // 달력 날짜 선택, 하단 모달창
+    .react-datepicker__tab-loop {
+
+      .react-datepicker-popper {
+
+        .react-datepicker {
+          position: absolute;
+          top: 0;
+          left: -100px;
+          display: flex;
+          justify-content: space-between;
+          border: 1px solid #ccc;
+          border-radius: 10px;
+
+          // 왼쪽(지난달) 버튼
+          .react-datepicker__navigation {
+            margin: 10px;
+            width: 30px;
+            height: 30px;
+          
+            .react-datepicker__navigation-icon::before {
+              border-color:  rgb(95, 183, 239);
+              border-width: 2px 2px 0 0;
+            }
+            &:hover {
+              cursor: pointer;
+              opacity: 0.8;
+            }
+          }
+
+          // 달력 content
+          .react-datepicker__month-container {
+            width: 300px;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+          
+            .react-datepicker__header {
+              background-color: #fff;
+              border-top-left-radius: 10px;
+              border-top-right-radius: 10px;
+
+              // 월녁 타이틀
+              .react-datepicker__current-month {
+                height: 35px;
+                color: #333;
+              }
+              // 년도 선택 드롭박스
+              .react-datepicker__header__dropdown {
+                position: absolute;
+                top: 10px;
+
+                .react-datepicker__year-dropdown-container {
+
+                  .react-datepicker__year-read-view {
+                    
+                    .react-datepicker__year-read-view--down-arrow {
+                      border-color:  rgb(95, 183, 239);
+                      border-width: 2px 2px 0 0;
+                    }
+                  }
+                  .react-datepicker__year-dropdown {
+                    width: 70px;
+                    background-color: #fff;
+                    .react-datepicker__year-option {
+                      height: 30px;
+                      font-size: 14px;
+                      font-weight: 400;
+                      margin: 0;
+                      padding: 0;
+                      @include middle();
+                    }
+                    .react-datepicker__year-option--selected_year {
+                      background-color:  rgb(95, 183, 239);
+                      .react-datepicker__year-option--selected {
+                        display: none;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            // 요일 row
+            .react-datepicker__day-names {
+              font-family: 'Noto Sans KR', sans-serif;
+              display: grid;
+              grid-template-columns: 12% 12% 12% 12% 12% 12% 12%;
+              justify-content: space-between;
+              align-items: flex-start;
+              margin: 0 10px;
+
+              .react-datepicker__day-name {
+                width: 40px;
+                margin: 0;
+              }
+            }
+            // 달력 box 
+            .react-datepicker__month {
+              padding: 0;
+              margin: 10px;
+
+              .react-datepicker__week {
+                font-family: 'Noto Sans KR', sans-serif;
+                display: grid;
+                grid-template-columns: 12% 12% 12% 12% 12% 12% 12%;
+                justify-content: space-between;
+                align-items: flex-start;
+
+                .react-datepicker__day {
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 20px;
+                  margin: 0;
+                  @include middle();
+                }
+                .react-datepicker__day--keyboard-selected {
+                  background-color: rgb(95, 183, 239);
+                }
+                .react-datepicker__day--outside-month {
+                  color: #ccc;
+                }
+                .react-datepicker__day--in-selecting-range {
+                  background-color: #ccc;
+                }
+                .react-datepicker__day--in-range {
+                  background-color: rgb(205, 228, 242);
+                }
+                .react-datepicker__day--range-start,
+                .react-datepicker__day--range-end {
+                  background-color: rgb(43, 153, 222);
+                }
+                .react-datepicker__day--selecting-range-end {
+                  background-color: rgb(95, 183, 239);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  .calender-icon {
+    position: absolute;
+    pointer-events: none; 
+  }
+}
+
+
+// // Inputbox & Radiobox
+.inputdefault {
+  font-size: 14px;
+  font-weight: normal;
+  height: 35px;
+  text-align: center;
+  border: 1px solid #E9E9E9;
+  box-sizing: border-box;
+  border-radius: 5px;
+  padding-left: 3px;
+}
+
+// DropDownbox
+.dropdownBox {
+  border: 1px solid #dedede;
+  border-radius: 5px;
+  padding: 2px;
+  width: 100%;
+  height: 30px;
+  outline: none;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+
+// Selectbox
+.selectbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 10px;
+}
+.css-13cymwt-control {
+  width: 70px;
+  min-height: 15px;
+  height: 25px;
+}
+.css-1fdsijx-ValueContainer {
+  padding: 0 7px;
+  margin: 0;
+}        
+.css-1hb7zxy-IndicatorsContainer {
+  
+  .css-1u9des2-indicatorSeparator {
+    display: none;
+  }
+  .css-1xc3v61-indicatorContainer {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      margin: 0;
+      width: 20px;
+      height: 15px;
+    }
+  }
+}
+
+
+.EditorTinymce {
+  z-index: 0;
+
+  .symbolBox {
+    padding-left: 5px;
+
+    .symbolBtn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #dadada;
+      border-radius: 3px;
+      @include middle();
+    }
+    .symbolBtn:hover {
+      cursor: pointer;
+      opacity: 0.8;
+    }
+  }
+
+}

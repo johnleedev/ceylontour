@@ -1,0 +1,1241 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+@mixin width-main {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+};
+
+.resort_detail_page {
+  width: 100%;
+  min-height: 100vh;
+
+  .resort_detail_breadcrumb {
+    @include width-main();
+    margin-top: 20px;
+    font-size: 15px;
+    color: #888;
+    letter-spacing: 0.5px;
+    line-height: 1.7;
+    padding-left: 8px;
+    @media (max-width: 800px) {
+      font-size: 13px;
+      padding-left: 2vw;
+    }
+  }
+  .resort_detail-header {
+    @include width-main();
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 10px;
+
+    .resort_detail-header-back-icon {
+      font-size: 25px;
+      margin-right: 10px;
+    }
+    .resort_detail-header-back-icon:hover {
+      cursor: pointer;
+      opacity: 0.8;
+    }
+    .resort_detail-header-title {
+      display: flex;
+      align-items: flex-end;
+      justify-content: start;
+
+      h1 {
+        font-size: 25px;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+      p {
+        font-size: 18px;
+        color: #888;
+        margin-left: 10px;
+        margin-bottom: 5px;
+      }
+    }
+    
+  }
+  .bottombar {
+    @include width-main();
+    height: 2px;
+    background-color: #333;
+  }
+
+
+  .resort_detail-search-row {
+    @include width-main();
+    margin-top: 20px;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border: 1px solid #ddd;
+    padding: 20px;
+    box-sizing: border-box;
+
+    .search-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 280px;
+    }
+    .search-label {
+      font-size: 15px;
+      color: #888;
+      margin-bottom: 2px;
+    }
+    .search-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      .search-icon {
+        display: flex;
+        align-items: center;
+        svg {
+          display: block;
+          width: 32px;
+          height: 32px;
+        }
+      }
+      .search-text {
+        font-size: 20px;
+        color: #222;
+        font-weight: 500;
+        b {
+          font-weight: 700;
+          color: #222;
+        }
+      }
+    }
+    @media (max-width: 800px) {
+      flex-direction: column;
+      gap: 18px;
+      padding: 18px 8px 10px 8px;
+      .search-col {
+        min-width: 0;
+      }
+      .search-content .search-text {
+        font-size: 17px;
+      }
+    }
+  }
+
+  .hotel-detail-tab-row {
+    @include width-main();
+    display: flex;
+    align-items: flex-end;
+    margin-top: 50px;
+    margin-bottom: 20px;
+    gap: 32px;
+    padding-left: 2px;
+    border-bottom: 1.5px solid #eee;
+    background: #fff;
+
+    .hotel-detail-tab-btn {
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 19px;
+      font-weight: 500;
+      color: #bbb;
+      padding: 0 0 12px 0;
+      margin: 0;
+      border-bottom: 2.5px solid transparent;
+      cursor: pointer;
+      transition: color 0.2s, border-bottom 0.2s;
+      position: relative;
+    }
+    .hotel-detail-tab-btn.active {
+      color: #111;
+      border-bottom: 2.5px solid #111;
+      font-weight: 700;
+      z-index: 1;
+    }
+    @media (max-width: 800px) {
+      .hotel-detail-tab-row {
+        gap: 18px;
+        margin-top: 18px;
+        padding-left: 0;
+      }
+      .hotel-detail-tab-btn {
+        font-size: 16px;
+        padding-bottom: 8px;
+      }
+    }
+  }
+  
+  .hotel-detail-wrapper {
+    @include width-main();
+    font-size: 18px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    padding: 20px;
+
+    .hotel-detail-box {
+      width: 100%;
+      display: flex;
+      align-items: flex-start; // 상단 정렬
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+      }
+
+      .left-maintext {
+        width: 200px;
+        height: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start; // 상단 끝 정렬
+        flex-direction: column;
+        font-weight: bold;
+        .hotel-name {
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+      }
+      .right-contenttext {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+  
+        .hotel-detail-image-box {
+          width: 30%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          img {
+            width: 100%;
+            aspect-ratio: 1.8;
+            object-fit: cover;
+          }
+        }
+        .hotel-text-cover {
+          width: 70%;
+          padding: 10px 20px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          .hotel-detail-textbox-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .hotel-detail-textbox-title-main {
+              font-size: 20px;
+              font-weight: bold;
+        
+            }
+            .hotel-detail-textbox-title-notice {
+              font-size: 14px;
+              color: #888;
+              display: flex;
+              align-items: center;
+              gap: 5px;
+            }
+            .btn-ccc {
+              border: 1px solid #ccc;
+              padding: 1px 10px;
+              
+              font-size: 14px;
+              margin-left: 10px;
+            }
+            .btn-ccc:hover {
+              cursor: pointer;
+              border: 1px solid #adadad;
+            }
+          }
+          .hotel-detail-textbox-notice {
+            padding: 10px 0 0 0;
+            p {
+              margin: 5px 0;
+              color: #a8a8a8;
+              font-size: 14px;
+            }
+          }
+        }
+      }
+    }
+
+  }
+
+
+  .resort-detail-keywords-section {
+   @include width-main();
+    text-align: left;
+    margin-top: 50px; 
+    margin-bottom: 50px;
+
+    .package-detail-keywords-row {
+
+      .package-detail-keyword-label {
+        font-weight: 500;
+        font-size: 18px;
+      }
+      .package-detail-keywords {
+        display: flex;
+        margin-top: 10px;
+        gap: 12px;
+
+        .package-detail-keyword {
+          background: #efefef;
+          color: #222;
+          border-radius: 20px;
+          padding: 7px 20px;
+          font-size: 16px;
+          font-weight: 500;
+          display: inline-block;
+        }
+      }
+    }
+  }
+
+  // 항공사별 일정표 ----------------------------------------------------------------
+  .resort_detail_schedule__byairline__wrapper {
+    @include width-main();
+    margin-bottom: 50px;
+
+    .resort_detail_schedule_header__wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      .header__main {
+        font-weight: 500;
+        font-size: 18px;
+        color: rgba(0, 0, 0, 1);
+      }
+      .sidebar__wrapper {
+        display: flex;
+        justify-content: flex-end;
+        color: rgba(51, 51, 51, 1);
+        span {
+          line-height: 1;
+          border-right: 1px solid rgba(148, 148, 148, 1);
+          padding: 0 1vw;
+          @media (max-width: 800px) {
+            padding: 1px 15px;
+          }
+          &.selected__sidebar {
+            font-weight: 700;
+            color: rgba(11, 11, 11, 1);
+          }
+          &:last-child {
+            padding-right: 0px;
+            border-right: none;
+          }
+        }
+      }
+      .sidebar__wrapper:hover {
+        cursor: pointer;
+      }
+    }
+
+    
+  }
+
+  .flight__item__wrapper {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e5e5;
+    margin-bottom: 18px;
+    min-height: 90px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    position: relative;
+    .flight__info__col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 16px;
+      color: #222;
+      .flight__airport {
+        font-weight: 600;
+        font-size: 18px;
+      }
+      .flight__time {
+        font-size: 15px;
+        color: #37b0d9;
+        font-weight: 500;
+      }
+      .flight__label {
+        font-size: 13px;
+        color: #aaa;
+        margin-top: 2px;
+      }
+    }
+    .flight__info__airline {
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      display: flex;
+      .airline__logo__circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #f5f6fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        img {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
+        }
+      }
+      .airline__name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #222;
+        margin: 0 6px;
+      }
+      .flight__arrow {
+        font-size: 22px;
+        color: #bbb;
+        margin: 0 8px;
+      }
+    }
+  }
+
+  .flight__row__wrapper {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    background: #fff;
+    border: 1px solid #000;
+    padding: 5px 20px;
+    position: relative;
+    
+    .flight__row__left {
+      width: 30%;
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+      .custom__dropdown__wrapper {
+        position: relative;
+        width: 100%;
+        .custom__dropdown__selected {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border: none;
+          border-radius: 6px;
+          background: #fff;
+          cursor: pointer;
+          font-size: 15px;
+          .dropdown__text {
+            flex: 1;
+            font-weight: 500;
+            color: #333;
+          }
+          .dropdown__arrow {
+            font-size: 16px;
+            color: #666;
+            margin-left: 8px;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+        
+        .custom__dropdown__selected:hover {
+          background: #f8f9fa;
+        }
+        .custom__dropdown__options {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: #fff;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          z-index: 1000;
+          max-height: 200px;
+          overflow-y: auto;
+          .custom__dropdown__option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            .dropdown__text {
+              flex: 1;
+              font-weight: 500;
+              color: #333;
+            }
+          }
+          .custom__dropdown__option:hover {
+            background: #f8f9fa;
+          }
+          .custom__dropdown__option:last-child {
+            border-bottom: none;
+          }
+        }
+      }
+    }
+    
+    /* 두 드롭다운 사이 세로 구분선 */
+    .flight__row__middle {
+      width: 1px;
+      height: 30px;
+      background: #ccc;
+    }
+    
+    .flight__row__right {
+      width: 60%;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: 15px;
+      select {
+        font-size: 15px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: none;
+        background: #fff;
+        min-width: 260px;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path fill="%23666" d="M1 1l5 5 5-5"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px 8px;
+        padding-right: 35px;
+      }
+      .flight__airline__logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f5f6fa;
+        object-fit: contain;
+        margin-left: 10px;
+      }
+      .custom__dropdown__wrapper {
+        position: relative;
+        width: 100%;
+        .custom__dropdown__selected {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border: none;
+          border-radius: 6px;
+          background: #fff;
+          cursor: pointer;
+          font-size: 15px;
+          .dropdown__left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            .dropdown__airline__logo {
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              background: #f5f6fa;
+              object-fit: contain;
+            }
+            .dropdown__airline__name {
+              font-weight: 500;
+              color: #333;
+            }
+          }
+          .dropdown__center {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            .dropdown__flight__info {
+              font-weight: 500;
+              color: #333;
+              text-align: center;
+            }
+          }
+          .dropdown__right {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            .dropdown__arrow {
+              font-size: 16px;
+              color: #666;
+              width: 16px;
+              height: 16px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+          }
+        }
+        .custom__dropdown__selected:hover {
+          background: #f8f9fa;
+        }
+        .custom__dropdown__options {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: #fff;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          z-index: 1000;
+          max-height: 200px;
+          overflow-y: auto;
+          .custom__dropdown__option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            .dropdown__left {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              min-width: 120px;
+              .dropdown__airline__logo {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: #f5f6fa;
+                object-fit: contain;
+              }
+              .dropdown__airline__name {
+                font-weight: 500;
+                color: #333;
+              }
+            }
+            .dropdown__center {
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              .dropdown__flight__info {
+                font-weight: 500;
+                color: #333;
+                text-align: center;
+              }
+            }
+            .dropdown__right {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-width: 20px;
+            }
+          }
+          .custom__dropdown__option:hover {
+            background: #f8f9fa;
+          }
+          .custom__dropdown__option:last-child {
+            border-bottom: none;
+          }
+        }
+      }
+    }
+  }
+
+  // 일정표 ----------------------------------------------------------------
+
+  .resort_detail_mx__section {
+    @media (min-width: 800px) {
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto 5vw auto;
+    }
+    @media (max-width: 800px) {
+      width: 90%;
+      margin: 0 auto 30px auto;
+    }
+
+    .resort_detail_schedule_header__wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      .header__main {
+        font-weight: 500;
+        font-size: 18px;
+      }
+      .sidebar__wrapper {
+        display: flex;
+        justify-content: flex-end;
+        color: rgba(51, 51, 51, 1);
+        span {
+          line-height: 1;
+          border-right: 1px solid rgba(148, 148, 148, 1);
+          padding: 0 1vw;
+          @media (max-width: 800px) {
+            padding: 1px 15px;
+          }
+          &.selected__sidebar {
+            font-weight: 700;
+            color: rgba(11, 11, 11, 1);
+          }
+          &:last-child {
+            padding-right: 0px;
+            border-right: none;
+          }
+        }
+      }
+      .sidebar__wrapper:hover {
+        cursor: pointer;
+      }
+    }
+  }
+
+  
+  .schedule__tables__wrapper {
+    display: flex;
+    flex-direction: column;
+
+    .schedule__table__wrapper {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid rgba(0, 0, 0, 1);
+      color: rgba(0, 0, 0, 1);
+      white-space: pre-line;
+      line-height: 25px;
+
+      &:last-child {
+        border-bottom: 1px solid rgba(0, 0, 0, 1);
+      }
+      .schedule__header {
+        display: flex;
+        align-items: center;
+        gap: 1.5vw;
+        padding: 1vw 3.5vw;
+        background-color: rgba(248, 248, 248, 1);
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        
+
+        @media (max-width: 800px) {
+          padding: 13px 20px 10px 20px;
+          gap: 20px;
+        }
+        .main__text {
+          font-weight: 700;
+          line-height: 1;
+          font-size: 25px;
+        }
+        .sub__text {
+          line-height: 1;
+          font-size: 21px;
+        }
+      }
+
+
+      .schedule__main__wrapper {
+        padding: 0 30px;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        
+        .schedule__element__wrapper {
+          position: relative;
+          margin-left: 30px;
+          padding-top: 30px;
+          padding-bottom: 20px;
+          border-left: 1px dotted rgba(180, 180, 180, 1);
+ 
+          .flight__schedule__board__wrapper {
+            @media (min-width: 800px) {
+              display: flex;
+              width: 100%;
+              flex-direction: column;
+              align-items: center;
+              padding: 1.5vw 0;
+            }
+            .flight__schedule__board {
+              display: flex;
+              flex-direction: column;
+              width: 40%;
+              .flight__info__wrapper {
+                display: flex;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                padding-bottom: 20px;
+                border-bottom: 1px solid rgba(0, 0, 0, 1);
+                img {
+                  max-width: 100px;
+                  max-height: 30px;
+                }
+                span {
+                  font-size: 16px;
+                  color: #333;
+                }
+              }
+              .flight__time__wrapper {
+                display: flex;
+                justify-content: center;
+                margin-top: 0.5vw;
+                position: relative;
+                .flight__time {
+                  color: #686868;
+                  font-size: 14px;
+                }
+                & > div {
+                  position: absolute;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  .time__text {
+                    font-size: 25px;
+                    font-weight: 700;
+                  }
+                  .airport__text {
+                    font-size: 15px;
+                  }
+                  div {
+                    width: 0.625vw;
+                    height: 0.625vw;
+                    border: 1px solid rgba(0, 0, 0, 1);
+                    border-radius: 50%;
+                    background-color: rgba(255, 255, 255, 1);
+                    margin-bottom: 0.4vw;
+                  }
+                }
+                .depart__info {
+                  left: 0;
+                  transform: translate(-50%, -0.85vw);
+                }
+                .arrive__info {
+                  right: 0;
+                  transform: translate(50%, -0.85vw);
+                }
+              }
+            }
+          }
+
+          .schedule__element__header__wrapper {
+            border-left: 1px dotted rgba(180, 180, 180, 1);
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            @media (max-width: 800px) {
+              padding-top: 20px;
+            }
+            .schedule__location__wrapper {
+              position: relative;
+              display: flex;
+              align-items: center;
+              margin-bottom: 10px;
+              
+              .location__absolute__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+              }
+              .location__text {
+                padding-left: clamp(27px, 2.5vw, 57px);
+                font-size: 20px;
+                line-height: 1.3;
+              }
+            }
+          }
+          .schedule__sub_element__wrapper {
+
+            .schedule__element__subTitle__wrapper {
+              
+  
+              .schedule__element__subTitle {
+                display: flex;
+                align-items: center;
+                height: 40px;
+                @media (max-width: 800px) {
+                  padding-top: 10px;
+                }
+                .absolute__wrapper {
+                  position: absolute;
+                  transform: translate(-50%, 0);
+                  z-index: 3;
+  
+                  .dot__icon {
+                    width: clamp(8px, 0.52vw, 10px);
+                    height: clamp(8px, 0.52vw, 10px);
+                    background-color: rgba(52, 52, 52, 1);
+                    border-radius: 50%;
+                  }
+          
+                }
+                .schedule__text__wrapper {
+                  position: absolute;
+                  display: flex;
+                  margin-left: 30px;
+                  font-size: 18px;
+  
+                  @media (max-width: 800px) {
+                    padding-left: clamp(27px, 2.5vw, 57px);
+                    flex-direction: column;
+                    gap: 0px;
+                    .time__text {
+                      font-size: 20px;
+                      font-weight: 700;
+                    }
+                  }
+                }
+              }
+            }
+            .schedule__element__main__wrapper {
+              width: 100%;
+              min-height: 200px;
+              margin: 20px 0 20px 30px;
+              border: 1px solid #ccc;
+              display: flex;
+              
+              .image__wrapper {
+                width: 30%;
+                @include middle();
+  
+                .imagebox {
+            
+                  img {
+                    
+                  }
+                }
+              }
+  
+              .table__wrapper {
+                width: 70%;
+                padding: 20px;
+  
+                .table__header {
+                  font-size: 18px;
+                  color: rgba(0, 0, 0, 1);
+                  margin-bottom: 10px;
+                }
+                .table__main {
+                  display: flex;
+                  flex-direction: column;
+                  
+                  .detailbox {
+                    
+                    .detailbox-name {
+                      margin-bottom: 5px;
+                    }
+                    .detailbox-notice {
+                      margin-bottom: 10px;
+                      margin-left: 10px;
+                      color: #969696;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+
+
+          
+        }
+      }
+
+      .additional__schedule__wrapper {
+        display: flex;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        margin: 10px 0;
+
+        &:last-child {
+          border: none;
+        }
+        .index__wrapper {
+          width: 25%;
+          @include middle();
+          padding: 10px 0;
+          @media (max-width: 800px) {
+            padding: 8px 0;
+            gap: 10px;
+          }
+          img {
+            max-width: 50px;
+            margin-right: 20px;
+          }
+        }
+        & > div:last-child {
+          display: flex;
+          align-items: center;
+          padding: 0 20px;
+          color: rgba(51, 51, 51, 1);
+
+          &.meal__info__wrapper {
+            gap: 10vw;
+            @media (max-width: 800px) {
+              gap: 10px;
+            }
+          }
+          &.additional__info__wrapper {
+            display: flex;
+            
+            p {
+              font-size: 14px;
+            }
+            .additional__rating__wrapper {
+              margin-left: 10px;
+  
+              .rating__board__wrapper {
+                width: 100%;
+                display: flex;
+            
+                .rating__icon {
+                  @include middle();
+                  
+                  .empty__star .filled__star {
+                    width: 100%;
+                    height: 100%;
+                  }
+                  .empty__star {
+                    fill: rgba(119, 119, 119, 1);
+                  }
+                  .filled__star {
+                    fill: rgba(252, 196, 0, 1);
+                    z-index: 2;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // 포함/불포함 --------------------------------------------
+  .single__header__main {
+    font-weight: 500;
+    font-size: 18px;
+    color: rgba(0, 0, 0, 1);
+    margin-bottom: 0.5vw;
+  }
+
+  .resort_detail_included__items__section__wrapper {
+     @include width-main();
+     margin-bottom: 100px;
+
+    .included__items__wrapper {
+      @media (min-width: 800px) {
+        display: grid;
+        grid-template-columns: 0.25fr 0.75fr;
+        border-top: 1px solid rgba(0, 0, 0, 1);
+        & > div {
+          border-bottom: 1px solid rgba(187, 187, 187, 1);
+        }
+        & > div:nth-of-type(odd) {
+          border-right: 1px solid rgba(187, 187, 187, 1);
+        }
+      }
+      .index__title__wrapper {
+        display: flex;
+        color: rgba(0, 0, 0, 1);
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(248, 248, 248, 1);
+        gap: 5px;
+        @media (max-width: 800px) {
+          align-items: flex-start;
+          justify-content: flex-start;
+          background-color: rgba(255, 255, 255, 1);
+          border-bottom: 1px solid rgba(0, 0, 0, 1);
+          padding: 5px 0;
+        }
+        .included__icon {
+          @include middle();
+          font-weight: 700;
+          color: rgba(40, 171, 225, 1);
+        }
+        .unincluded__icon {
+          @include middle();
+          font-weight: 700;
+          color: rgba(224, 49, 49, 1);
+        }
+      }
+      .elements__wrapper {
+        display: flex;
+        flex-direction: column;
+        color: rgba(51, 51, 51, 1);
+        gap: 0.2vw;
+        padding: 1vw 2vw;
+        @media (max-width: 800px) {
+          padding: 10px 0 30px;
+          gap: 2px;
+        }
+      }
+    }
+  }
+
+  // 필독사항 --------------------------------------------
+  .resort_detail_must__read__section__wrapper {
+    @include width-main();
+    margin-bottom: 100px;
+
+    .must__read__wrapper {
+      display: flex;
+      flex-direction: column;
+      color: rgba(51, 51, 51, 1);
+      gap: 0.4vw;
+      padding: 2vw 0;
+      border-top: 1px solid rgba(0, 0, 0, 1);
+      border-bottom: 1px solid rgba(187, 187, 187, 1);
+      white-space: pre-line;
+      @media (max-width: 800px) {
+        border-bottom: none;
+        padding: 10px 0 30px;
+        gap: 2px;
+        line-height: 1.6;
+      }
+    }
+  }
+
+
+  .resort_detail_benefit__section__wrapper {
+     @include width-main();
+     margin-bottom: 100px;
+ 
+     .benefit__wrapper {
+       background-color: #f2faff;
+       display: flex;
+       flex-direction: column;
+       color: rgba(51, 51, 51, 1);
+       gap: 0.4vw;
+       padding: 20px;
+       border: 1px solid #0082EA;
+       white-space: pre-line;
+       @media (max-width: 800px) {
+         border-bottom: none;
+         padding: 10px 0 30px;
+         gap: 2px;
+         line-height: 1.6;
+       }
+     }
+  }
+
+  .bottom__section__wrapper {
+    @include width-main();
+    margin-bottom: 100px;
+  
+    .bottom--cost-cover {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 30px;
+      background-color: #585d63;
+      color: #fff;
+
+      .bottom--cost-content {
+        display: flex;
+        width: 100%;
+        height: 120px;
+        gap: 40px;
+        align-items: flex-start;
+
+        .bottom--cost-left {
+          flex: 2;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+
+          .resort-title__wrapper {
+
+            .resort-title {
+              font-size: 22px;
+              font-weight: bold;
+              color: #fff;
+              line-height: 1.3;
+            }
+  
+            .schedule-info {
+              font-size: 18px;
+              color: #ccc;
+              margin: 0;
+            }
+          }
+
+          .price-per-person {
+            font-size: 16px;
+            color: #fff;
+            font-weight: normal;
+            margin: 0;
+            margin-top: auto;
+            
+            span {
+              font-size: 20px;
+              font-weight: bold;
+            }
+          }
+        }
+
+        .bottom--cost-right {
+          flex: 1;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          justify-content: flex-end;
+          
+
+          .adult-count-box {
+            padding: 3px 20px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            
+            p {
+              font-size: 14px;
+              font-weight: 500;
+              margin: 0;
+            }
+          }
+
+          .total-price {
+            p {
+              color: #fff;
+              font-size: 24px;
+              font-weight: normal;
+              margin: 0;
+              text-align: right;
+              
+              span {
+                color: #ffd672;
+                font-weight: bold;
+              }
+            }
+            
+            .flight-notice {
+              color: #ccc;
+              font-size: 14px;
+              margin-bottom: 0;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+

@@ -1,0 +1,540 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// 메인 모달 래퍼
+.modal-addinput {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 20px 30px 40px;
+  font-size: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+
+  // 전체 레이아웃 (좌측 일정표만 사용)
+  .schedule-layout-container {
+    display: flex;
+    gap: 20px;
+  }
+
+  .schedule-layout-left {
+    width: 100%;
+  }
+
+  // 추천 여행 일정표 헤더
+  .schedule-resort_detail_mx__section {
+    width: 100%;
+
+    .schedule-resort_detail_schedule_header__wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+
+      .schedule-header__main {
+        font-weight: 600;
+        font-size: 20px;
+      }
+
+        // 상단 스케줄 탭 영역
+        .schedule-header__tabs {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .schedule-header__tab {
+          padding: 6px 12px;
+          border: 1px solid #bbb;
+          border-radius: 6px;
+          background: #fff;
+          font-size: 13px;
+          font-weight: 400;
+          color: #333;
+          min-width: 80px;
+          transition: all 0.2s ease;
+        }
+
+        .schedule-header__tab--active {
+          border: 2px solid #007bff;
+          background: #e3f2fd;
+          font-weight: 600;
+          color: #007bff;
+        }
+
+        .schedule-header__tab__codes {
+          margin: 0 2px;
+          font-size: 11px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .schedule-header__tab__code {
+          margin: 0;
+          line-height: 1.2;
+        }
+
+        .schedule-header__tab__empty {
+          margin: 0;
+          color: #999;
+        }
+    }
+  }
+
+  // DAY 별 일정 테이블 래퍼
+  .schedule-schedule__tables__wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 40px;
+
+    .schedule-schedule__table__wrapper {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #fff;
+
+      .schedule-schedule__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        background-color: #f8f8f8;
+        border-bottom: 1px solid #e0e0e0;
+
+          .schedule-schedule__header-inner {
+            display: flex;
+            align-items: center;
+          }
+
+        .schedule-main__text {
+          font-size: 18px;
+          font-weight: 700;
+        }
+      }
+
+      // 일정 본문
+      .schedule-schedule__main__wrapper {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+
+        .schedule-schedule__element__wrapper {
+          position: relative;
+          border-left: 1px dotted #b4b4b4;
+          margin-left: 30px;
+          padding-top: 15px;
+
+          .schedule-schedule__element__header__wrapper {
+            border-left: 1px dotted #b4b4b4;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            padding: 5px 0;
+            
+            .schedule-schedule__location__wrapper {
+              position: relative;
+              display: flex;
+              align-items: center;
+
+              .schedule-location__absolute__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+                width: 35px;
+                height: 35px;
+                @include middle;
+                border-radius: 50%;
+                border: 1px solid #ccc;
+                background-color: #fff;
+                box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+
+              }
+              .schedule-location-bluedot__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+                width: 35px;
+                height: 35px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                border: 1px solid #ccc;
+                background-color: #5fb7ef;
+                box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+
+                .schedule-white-dot__icon {
+                  color: #fff;
+                  font-size: 40px;
+                }
+                
+              }
+              .traffic-wrapper {
+                top: 10px;
+              }
+              .schedule-location__icon-relative {
+                position: relative;
+              }
+
+              .schedule-location__icon-button {
+                background: none;
+                border: none;
+                padding: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+
+              .schedule-location__icon {
+                font-size: 30px;
+                font-weight: bold;
+              }
+
+              .schedule-location__icon--airline {
+                color: #ff6b6b;
+              }
+
+              .schedule-location__icon--train,
+              .schedule-location__icon--bus,
+              .schedule-location__icon--ship {
+                color: #5fb7ef;
+              }
+
+              .schedule-location__row {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                padding-left: 30px;
+              }
+
+              .schedule-location__name {
+                width: 100%;
+                display: inline-block;
+              }
+            }
+          }
+          .schedule-location__content-wrapper {
+            margin: 10px 0 0 30px;
+          }
+          // 공통 교통수단 블록 (항공/기차/버스/선박)
+          .schedule__element__wrapper {
+            margin: 10px 0 0 30px;
+
+            .schedule-flight__schedule__board__wrapper {
+              min-height: 100px;
+              display: flex;
+              justify-content: center;
+
+              .schedule-flight__schedule__board {
+                display: flex;
+                flex-direction: column;
+                width: 60%;
+                min-width: 260px;
+
+                .schedule-flight__info__wrapper {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 8px;
+                  padding-bottom: 12px;
+                  border-bottom: 1px solid #000;
+
+                  img {
+                    max-width: 100px;
+                    max-height: 30px;
+                  }
+
+                  span {
+                    font-size: 14px;
+                    color: #333;
+                  }
+                }
+
+                .schedule-flight__time__wrapper {
+                  display: flex;
+                  justify-content: center;
+                  margin-top: 10px;
+                  position: relative;
+
+                  .schedule-flight__time {
+                    color: #686868;
+                    font-size: 13px;
+                  }
+
+                  .schedule-depart__info,
+                  .schedule-arrive__info {
+                    position: absolute;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+
+                    > div {
+                      width: 10px;
+                      height: 10px;
+                      border: 1px solid #000;
+                      border-radius: 50%;
+                      background-color: #fff;
+                      margin-bottom: 4px;
+                    }
+                  }
+
+                  .schedule-depart__info {
+                    left: 0;
+                    transform: translate(-50%, -12px);
+                  }
+
+                  .schedule-arrive__info {
+                    right: 0;
+                    transform: translate(50%, -12px);
+                  }
+
+                  .schedule-time__text {
+                    font-size: 18px;
+                    font-weight: 700;
+                  }
+
+                  .schedule-airport__text {
+                    font-size: 13px;
+                  }
+                }
+              }
+            }
+          }
+
+          // 묶음/상세 일정 하위 블록
+          .schedule-schedule__sub_element__wrapper {
+            width: 100%;
+            
+
+            .schedule-schedule__element__subTitle__wrapper {
+              border-left: 1px dotted #b4b4b4;
+
+              .schedule-schedule__element__subTitle {
+                display: flex;
+                align-items: center;
+                height: 40px;
+
+                .schedule-absolute__wrapper {
+                  position: absolute;
+                  transform: translate(-50%, 0);
+                  z-index: 3;
+
+                  .schedule-dot__icon {
+                    width: 8px;
+                    height: 8px;
+                    background-color: #343434;
+                    border-radius: 50%;
+                  }
+                }
+
+                .schedule-schedule__text__wrapper {
+                  display: flex;
+                  margin-left: 30px;
+                  font-size: 16px;
+                  align-items: center;
+                  justify-content: space-between;
+                }
+              }
+            }
+            .schedule-subLocationContent__wrapper {
+              width: 100%;
+              padding-top: 10px;
+              padding-left: 20px;
+              border-radius: 8px;
+              background-color: #fff;
+              box-sizing: border-box;
+              margin-bottom: 10px;
+
+              .schedule-subLocationContent__text {
+                font-size: 15px;
+                color: #333;
+                white-space: pre-wrap;
+              }
+            }
+
+            .schedule-schedule__element__main__wrapper {
+              width: 95%;
+              margin: 10px 0 0 30px;
+              border: 1px solid #ccc;
+              display: flex;
+              flex-direction: column;
+              gap: 15px;
+              padding: 20px 30px;
+              border-radius: 8px;
+              background-color: #fff;
+              box-sizing: border-box;
+
+              .schedule-table__wrapper {
+                width: 100%;
+                padding: 10px 0;
+
+                .schedule-table__header {
+                  font-size: 20px;
+                  color: #000;
+                  margin-bottom: 10px;
+                  font-weight: bold;
+                }
+
+                .schedule-table__main {
+                  font-size: 15px;
+                  line-height: 1.8;
+                  color: #333;
+                  white-space: pre-wrap;
+                }
+              }
+
+              .schedule-image__wrapper {
+                width: 100%;
+                overflow: hidden;
+                margin-top: 8px;
+
+                .schedule-image__list {
+                  display: flex;
+                  width: 100%;
+                  justify-content: space-between;
+                  gap: 0;
+                }
+
+                .schedule-image__list--two {
+                  justify-content: flex-start;
+                  gap: 2%;
+                }
+
+                .schedule-image__item {
+                  width: 32%;
+                  aspect-ratio: 4 / 3;
+                  object-fit: cover;
+                  border-radius: 8px;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 하단 추가 정보(식사/호텔)
+      .schedule-additional__schedule__wrapper {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 10px 0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .schedule-index__wrapper {
+          width: 25%;
+          @include middle;
+          padding: 8px 0;
+        }
+
+        .schedule-additional__schedule__wrapper__textbox {
+          width: 75%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+
+          .schedule-meal__info__wrapper {
+            width: 80%;
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+
+            .schedule-meal__info__wrapper__text {
+              display: flex;
+              align-items: center;
+
+              span:first-child {
+                font-weight: 500;
+              }
+
+              .schedule-meal__value {
+                margin-left: 10px;
+              }
+            }
+          }
+
+          .schedule-additional__info__wrapper {
+
+          }
+        }
+      }
+    }
+  }
+
+  // 평점 보드 (RatingBoard 용)
+  .schedule-rating__board__wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+
+    .schedule-rating__icon {
+      @include middle;
+    }
+
+    .schedule-empty__star,
+    .schedule-filled__star {
+      width: 100%;
+      height: 100%;
+    }
+
+    .schedule-empty__star {
+      fill: #777;
+    }
+
+    .schedule-filled__star {
+      fill: #fcc400;
+      z-index: 2;
+    }
+  }
+}
+
+// 반응형
+@media (max-width: 800px) {
+  .modal-addinput {
+    padding: 16px 16px 30px;
+
+    .schedule-schedule__table__wrapper {
+      border-radius: 6px;
+    }
+
+    .schedule-schedule__main__wrapper {
+      padding: 0 12px 8px 12px;
+    }
+
+    .schedule-schedule__element__wrapper {
+      margin-left: 20px;
+    }
+
+    .schedule-schedule__text__wrapper {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .schedule-additional__schedule__wrapper {
+      display: flex;
+      justify-content: left;
+      
+
+      .schedule-additional__schedule__wrapper__textbox {
+        
+      }
+
+      .schedule-index__wrapper {
+        width: 100px;
+        display: flex;
+        justify-content: left;
+        align-items: center;
+      }
+    }
+  }
+}
+
+

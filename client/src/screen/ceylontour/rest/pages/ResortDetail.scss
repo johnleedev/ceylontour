@@ -1,0 +1,1562 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+.resort_detail_page {
+  width: 100%;
+  min-height: 100vh;
+
+  .resort_page__header__section___wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    letter-spacing: 0.5px;
+    justify-content: center;
+    background-color: rgba(145, 133, 133, 0.3);
+    color: #fff;
+    overflow: hidden;
+
+    .resort_page_bg__image {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+    .resort_page_header__info {
+      width: 80%;
+      max-width: 1200px;
+      padding-top: 200px;
+      padding-bottom: 50px;
+      display: flex;
+      flex-direction: column;
+      @media (max-width: 800px) {
+        padding-top: 150px;
+        padding-bottom: 50px;
+      }
+      .resort_page_header__title {
+        line-height: 1.45;
+        letter-spacing: -1px;
+        font-weight: 700;
+        font-size: 45px;
+        margin-bottom: 0.6vw;
+        @media (max-width: 1200px) {
+          font-size: 30px;
+        }
+        @media (max-width: 800px) {
+          margin-bottom: 0px;
+        }
+      }
+  
+      .resort_page_header__loc__rating {
+        display: flex;
+        align-items: center;
+        @media (min-width: 800px) {
+          display: flex;
+          align-items: center;
+          margin-bottom: 50px;
+        }
+        .header__rating {
+          margin-left: 10px;
+          color: #FCC400;
+        }
+      }
+      .header__desc {
+        width: 50%;
+        line-height: 1.8;
+        word-break: keep-all;
+        font-weight: 500;
+        @media (max-width: 1200px) {
+          width: 100%;
+        }
+        @media (max-width: 800px) {
+          margin-top: 43px;
+        }
+      }
+    }
+  }
+
+  .resort_page_category__selector__wrapper {
+    padding-top: 50px;
+    margin: 0 auto;
+    margin-bottom: 50px;
+    width: 90%;
+    max-width: 1200px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 30px;
+    
+    .category__bar {
+      display: flex;
+      height: 50px;
+      justify-content: center;
+      color: rgba(228, 228, 228, 1);
+      border-bottom: 1px solid rgba(228, 228, 228, 1);
+      font-size: 21px;
+      font-weight: 700;
+      @media (max-width: 1000px) {
+        font-size: 18px;
+      }
+      line-height: 1.6;
+      position: relative;
+      overflow: hidden;
+
+      &::after {
+        content: '';
+        display: block;
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 0;
+        height: 3px;
+        transform: translateX(-50%);
+        transition: width 0.4s ease;
+        background-color: #000;
+      }
+
+      &:hover::after,
+      &.on::after {
+        width: 100%;
+      }
+      &:hover {
+        color: #333;
+        cursor: pointer;
+      }
+
+      &.on {
+        color: #333;
+
+        &::after {
+          content: '';
+          display: block;
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          width: 100%;
+          height: 3px;
+          transform: translateX(-50%);
+          background-color: #333;
+        }
+      }
+    }
+   
+  }
+
+  // 리조트 상품보기 상단 --------------------------------------------------
+
+  .resort_detail_selector__productList__wrapper {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 1200px;
+
+    .resort_detail_selector__box {
+      width: 100%;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+
+      .resort_detail_selector__btn {
+        width: 49%;
+        height: 100%;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 20px 25px;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: space-between;
+
+        .selector__btn__top_area {
+          .p {
+            font-size: 16px;
+          }
+        }
+        .selector__btn__bottom_area {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          h3 {
+            font-size: 30px;
+          }
+          .selector__btn__bottom_icon {
+            font-size: 36px;
+          }
+          .selector__btn__bottom_icon2 {
+            font-size: 20px;
+          }
+        }
+      }
+      .selected {
+        background-color: #37b0d9;
+        color: #fff;
+      }
+      .resort_detail_selector__btn:hover {
+        cursor: pointer;
+      }
+    }
+    .resort_detail_productList__box {
+      width: 100%;
+      height: 200px;
+      
+      .resort_detail_productList_textRow {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom : 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px dashed #ccc;
+
+        .resort_detail_productList_text_left {
+          width: 70%;
+          display: flex;
+          h3 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-right: 20px;
+            color: #ccc;
+          }
+        }
+        .resort_detail_productList_text_middle {
+          width: 20%;
+          display: flex;
+          p {
+            margin-right: 5px;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            color: #8a8a8a;
+          }
+        }
+        .resort_detail_productList_text_right {
+          width: 10%;
+          display: flex;
+          justify-content: end;
+          .productList_text_btn {
+            width: 120px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            padding: 5px 12px;
+            p {
+              font-size: 15px;
+              color: #ccc;
+            }
+          }
+          .productList_text_btn:hover {
+            cursor: pointer;
+            opacity: 0.8;
+          }
+        }
+       
+      }
+      .selected {
+        .resort_detail_productList_text_left {
+          h3 {
+            color: #333;
+          }
+        }
+        .resort_detail_productList_text_right {
+          .productList_text_btn {
+            background-color: #37b0d9;
+            p {
+              color: #fff;
+            }
+          }
+        }
+      }
+      .resort_detail_productList_textRow:last-child {
+        border-bottom: 1px solid #ccc;
+      }
+
+    }
+    
+  }
+
+  .resort_detail_acommodation__selector__wrapper {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 1200px;
+    margin-top: 50px;
+    color: rgba(51, 51, 51, 1);
+    @media (max-width: 1200px) {
+      width: 90%;
+    }
+
+    .selected__item__wrapper {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      .selected__item {
+        font-weight: 600;
+        line-height: 1.2;
+        font-size: 24px;
+        @media (max-width: 1000px) {
+          font-size: 20px;
+        }
+      }
+      .extension__btn {
+        width: 1.2vw;
+        color: rgba(0, 0, 0, 1);
+      }
+    }
+  }
+  .resort_detail_roomtype__selector__wrapper {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 1200px;
+    margin-top: 30px;
+    color: rgba(51, 51, 51, 1);
+    @media (max-width: 1200px) {
+      width: 90%;
+    }
+
+    .resort__selector__wrapper {
+      display: flex;
+      letter-spacing: -1px;
+      font-size: 16px;
+      gap: 10px;
+      margin: 30px 0;
+      .resort__selector__Btn {
+        padding: 10px 20px;
+        border: 1px solid rgba(153, 153, 153, 1);
+        border-radius: 7px;
+        &.selected {
+          background-color: rgba(2, 2, 2, 1);
+          color: rgba(255, 255, 255, 1);
+        }
+        @media (max-width: 1000px) {
+          font-size: 14px;
+        }
+      }
+      .resort__selector__Btn:hover {
+        cursor: pointer;
+      }
+    }
+  }
+  
+  .resort_page_image__selector__wrapper {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 25px;
+    @media (min-width: 800px) {
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto 2.5vw auto;
+    }
+    .images__grid__wrapper {
+      display: grid;
+      gap: 10px;
+      height: 400px;
+      
+      @media (min-width: 800px) {
+        grid-template:
+          "a a b" 1fr
+          "a a c" 1fr;
+      }
+      @media (max-width: 800px) {
+        grid-template:
+          "a a a" 1fr
+          "a a a" 1fr
+          "b c" 0.85fr;
+        height: 350px;
+      }
+      
+      div {
+        position: relative;
+        overflow: hidden;
+        
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+        
+        &:hover img {
+          transform: scale(1.05);
+        }
+      }
+      
+      div:first-child {
+        grid-area: a;
+        @media (min-width: 800px) {
+          min-height: 200px;
+        }
+      }
+      div:nth-child(2) {
+        grid-area: b;
+        @media (min-width: 800px) {
+          min-height: 95px;
+        }
+      }
+      div:nth-child(3) {
+        grid-area: c;
+        @media (min-width: 800px) {
+          min-height: 95px;
+        }
+      }
+      
+      .show__all__btn {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 99;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        span:first-child {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 5px;
+        }
+        
+        span:last-child {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+      }
+    }
+  }
+
+  // 호텔 상세 이미지 박스 ---------------------------------------------
+
+  .resort_page_resort__info__image__wrapper {
+   
+    .web__image__wrapper {
+      @media (min-width: 800px) {
+        display: flex;
+      }
+      background-color: rgba(217, 217, 217, 1);
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      span {
+        font-size: clamp(20px, 1.3vw, 26px);
+        color: rgba(0, 0, 0, 1);
+      }
+    }
+    .mobile__image__wrapper {
+      overflow: hidden;
+      width: 100%;
+      margin: 100px 0;
+    }
+  }
+  
+
+  // 호텔 정보 박스 ----------------------------------------------------------------
+  .resort_page_info__items__wrapper {
+    @media (max-width: 800px) {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    div {
+      .item__title {
+        @media (max-width: 800px) {
+          margin-bottom: 15px;
+        }
+        display: inline-block;
+        color: rgba(0, 0, 0, 1);
+        font-size: clamp(17px, 1.1vw, 21px);
+        font-weight: 500;
+        line-height: 1.6;
+        padding-bottom: 0.25vw;
+        margin-bottom: 1.1vw;
+        border-bottom: 1px solid rgba(43, 43, 43, 1);
+      }
+      ul {
+        color: rgba(85, 85, 85, 1);
+        font-size: clamp(14px, 0.78vw, 15px);
+        line-height: 21.72px;
+        padding-right: 2vw;
+        .map__view__btn {
+          @media (max-width: 800px) {
+            width: 204px;
+            height: 38.28px;
+            gap: 10px;
+            margin-top: 15px;
+          }
+          margin-top: 1vw;
+          width: clamp(150px, 10vw, 197px);
+          height: 47px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.3vw;
+          border: 1px solid rgba(47, 47, 47, 1);
+          border-radius: 7px;
+          cursor: pointer;
+          svg {
+            width: 20px;
+          }
+          span {
+            font-size: clamp(14px, 0.83vw, 16px);
+            font-weight: 500;
+            margin-top: 4px;
+          }
+        }
+        .item__title_text {
+          font-size: 16px;
+          margin-bottom: 5px;
+        }
+        li {
+          label {
+            display: flex;
+            align-items: center;
+            gap: 0.7vw;
+            margin-bottom: 0.7vw;
+            @media (max-width: 800px) {
+              gap: 10px;
+              margin-bottom: 3px;
+            }
+          }
+          span {
+            font-size: 16px;
+            
+            color: rgba(0, 0, 0, 1);
+            &.select__room__type {
+              font-weight: 600;
+            }
+          }
+          input[type="radio"] {
+            -webkit-appearance: none; // 웹킷 브라우저에서 기본 스타일 제거
+            -moz-appearance: none; // 모질라 브라우저에서 기본 스타일 제거
+            appearance: none; // 기본 브라우저에서 기본 스타일 제거
+            width: clamp(18px, 1.1vw, 20px);
+            height: clamp(18px, 1.1vw, 20px);
+            border: 1px solid rgba(119, 119, 119, 1); // 체크되지 않았을 때의 테두리 색상
+            border-radius: 50%;
+            outline: none; // focus 시에 나타나는 기본 스타일 제거
+            cursor: pointer;
+            margin: 0;
+          }
+          // 체크 시 버튼 모양 스타일
+          input[type="radio"]:checked {
+            background-color: rgba(40, 171, 225, 1); // 체크 시 내부 원 색상
+            border: 4px solid #fff; // 라인이 아닌, 라인과 원 사이 색상
+            box-shadow: 0 0 0 1px rgba(40, 171, 225, 1); // 라인
+          }
+        }
+      }
+    }
+  }
+  .resort_page_mx__section {
+    @media (min-width: 800px) {
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto 5vw auto;
+    }
+    @media (max-width: 800px) {
+      width: 90%;
+      margin: 0 auto 30px auto;
+    }
+  }
+  
+  // 호텔 상품 박스 ----------------------------------------------------------------
+  .package__item__list__wrapper {
+    .header__title {
+      font-size: clamp(20px, 1.3vw, 26px);
+      color: rgba(0, 0, 0, 1);
+      margin-bottom: 1vw;
+      @media (max-width: 800px) {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      span:last-child {
+        font-weight: 700;
+        line-height: 1.1;
+        @media (max-width: 800px) {
+          font-size: 22px;
+        }
+      }
+    }
+    .package__items__wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1vw;
+      @media (max-width: 800px) {
+        gap: 0px;
+      }
+      .package__item__wrapper {
+        display: flex;
+        @media (min-width: 800px) {
+          border-radius: 7px;
+          border: 1px solid rgba(187, 187, 187, 1);
+          width: 100%;
+          aspect-ratio: 7.5;
+          overflow: hidden;
+        }
+        @media (max-width: 800px) {
+          padding: 13px 0;
+          border-bottom: 1px solid rgba(221, 221, 221, 1);
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+        cursor: pointer;
+        .image__wrapper {
+          width: 40%;
+          aspect-ratio: 1.4;
+          overflow: hidden;
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+        .package__info__wrapper {
+          width: 60%;
+          color: rgba(0, 0, 0, 1);
+          display: flex;
+          flex-direction: column;
+          padding: 0 2vw;
+          justify-content: center;
+          @media (max-width: 800px) {
+            padding: 5px 15px;
+            justify-content: flex-start;
+          }
+          .info__header {
+            margin-bottom: 0.8vw;
+            @media (max-width: 800px) {
+              margin-bottom: 10px;
+            }
+            .tour__title {
+              font-size: clamp(13px, 1.1vw, 22px);
+              font-weight: 700;
+              margin-right: 0.8vw;
+              @media (max-width: 800px) {
+                margin-right: 10px;
+              }
+            }
+            .tour__period {
+              font-size: clamp(13px, 0.83vw, 16px);
+              color: rgba(119, 119, 119, 1);
+            }
+          }
+          .package__title {
+            font-size: clamp(14px, 0.83vw, 17px);
+            color: rgba(51, 51, 51, 1);
+            line-height: 18px;
+          }
+        }
+      }
+    }
+  }
+
+  // 항공사별 일정표 ----------------------------------------------------------------
+  .resort_detail_schedule__byairline__wrapper {
+    width: 80%;
+    max-width: 1200px;
+    margin: 0 auto 5vw auto;
+    @media (max-width: 1200px) {
+      width: 90%;
+    }
+
+    .resort_detail_schedule_header__wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      .header__main {
+        font-weight: 500;
+        font-size: 20px;
+        color: rgba(0, 0, 0, 1);
+      }
+      .sidebar__wrapper {
+        display: flex;
+        justify-content: flex-end;
+        color: rgba(51, 51, 51, 1);
+        font-size: clamp(13px, 1vw, 19px);
+        span {
+          line-height: 1;
+          border-right: 1px solid rgba(148, 148, 148, 1);
+          padding: 0 1vw;
+          @media (max-width: 800px) {
+            padding: 1px 15px;
+          }
+          &.selected__sidebar {
+            font-weight: 700;
+            color: rgba(11, 11, 11, 1);
+          }
+          &:last-child {
+            padding-right: 0px;
+            border-right: none;
+          }
+        }
+      }
+      .sidebar__wrapper:hover {
+        cursor: pointer;
+      }
+    }
+
+    
+  }
+
+  .flight__item__wrapper {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 0.25fr 0.60fr 0.15fr;
+    color: rgba(51, 51, 51, 1);
+    border-radius: 7px;
+    border: 1px solid rgba(187, 187, 187, 1);
+    padding: 1vw;
+    font-size: clamp(12px, 0.78vw, 15px);
+    margin-bottom: 15px;
+    @media (max-width: 800px) {
+      display: flex;
+      flex-direction: column;
+      font-size: 15px;
+      padding: 15px;
+    }
+    & > div {
+      border-right: 1px dotted rgba(204, 204, 204, 1);
+      @media (max-width: 800px) {
+        width: 100%;
+        border: none;
+      }
+    }
+    & > div:last-child {
+      border: none;
+    }
+    .airline__wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      @media (max-width: 800px) {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+      img {
+        max-width: 200px;
+        max-height: 30px;
+      }
+      span {
+        line-height: 1.6;
+      }
+    }
+    .flight__schedule__wrapper {
+      display: flex;
+      align-items: center;
+      padding: 0 3vw;
+      width: 100%;
+      gap: 5vw;
+      span {
+        line-height: 1.6;
+      }
+      @media (max-width: 800px) {
+        padding-left: 50px;
+        flex-direction: column;
+        align-items: baseline;
+        gap: 5px;
+        .period__text {
+          font-size: 14px;
+          color: rgba(150, 150, 150, 1);
+        }
+      }
+      .flight__schedule_row {
+        width: 50%;
+        gap: 0.3vw;
+
+        .flight__schedule {
+          display: flex;
+        }
+      }
+    }
+    .flight__select__btn__wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      @media (max-width: 800px) {
+        justify-content: flex-end;
+      }
+     
+      .select__btn__wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: rgba(85, 85, 85, 1);
+        gap: 0.52vw;
+        padding: 0.52vw 1.1vw;
+        border: 1px solid rgba(85, 85, 85, 1);
+        border-radius: 0.26vw;
+        @media (max-width: 1000px) {
+          padding: 5px 10px;
+          border-radius: 5px;
+        }
+        @media (max-width: 800px) {
+          padding: 5px 20px;
+        }
+        cursor: pointer;
+        &.checked {
+          border: 1px solid rgba(36, 167, 212, 1);
+          background-color: rgba(36, 167, 212, 1);
+          color: rgba(253, 253, 253, 1);
+        }
+        span {
+          margin-top: 3px;
+          font-size: clamp(14px, 0.78vw, 15px);
+        }
+      }
+
+    }
+  }
+
+  // 일정표 ----------------------------------------------------------------
+
+  .resort_detail_mx__section {
+    @media (min-width: 800px) {
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto 5vw auto;
+    }
+    @media (max-width: 800px) {
+      width: 90%;
+      margin: 0 auto 30px auto;
+    }
+
+    .resort_detail_schedule_header__wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      .header__main {
+        font-weight: 500;
+        font-size: 20px;
+        color: rgba(0, 0, 0, 1);
+      }
+      .sidebar__wrapper {
+        display: flex;
+        justify-content: flex-end;
+        color: rgba(51, 51, 51, 1);
+        font-size: clamp(13px, 1vw, 19px);
+        span {
+          line-height: 1;
+          border-right: 1px solid rgba(148, 148, 148, 1);
+          padding: 0 1vw;
+          @media (max-width: 800px) {
+            padding: 1px 15px;
+          }
+          &.selected__sidebar {
+            font-weight: 700;
+            color: rgba(11, 11, 11, 1);
+          }
+          &:last-child {
+            padding-right: 0px;
+            border-right: none;
+          }
+        }
+      }
+      .sidebar__wrapper:hover {
+        cursor: pointer;
+      }
+    }
+  }
+
+  
+  .schedule__tables__wrapper {
+    display: flex;
+    flex-direction: column;
+
+    .schedule__table__wrapper {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid rgba(0, 0, 0, 1);
+      color: rgba(0, 0, 0, 1);
+      white-space: pre-line;
+      line-height: 25px;
+
+      &:last-child {
+        border-bottom: 1px solid rgba(0, 0, 0, 1);
+      }
+      .schedule__header {
+        display: flex;
+        align-items: center;
+        gap: 1.5vw;
+        padding: 1vw 3.5vw;
+        background-color: rgba(248, 248, 248, 1);
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        
+
+        @media (max-width: 800px) {
+          padding: 13px 20px 10px 20px;
+          gap: 20px;
+        }
+        .main__text {
+          font-size: clamp(19px, 1.3vw, 25px);
+          font-weight: 700;
+          line-height: 1;
+        
+        }
+        .sub__text {
+          font-size: clamp(15px, 1.1vw, 21px);
+          line-height: 1;
+          color: rgba(0, 0, 0, 1);
+        }
+      }
+
+
+      .schedule__main__wrapper {
+        padding: 0 30px;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        
+        .schedule__element__wrapper {
+          position: relative;
+          margin-left: 30px;
+          padding-top: 30px;
+          padding-bottom: 20px;
+          border-left: 1px dotted rgba(180, 180, 180, 1);
+ 
+          .flight__schedule__board__wrapper {
+            @media (min-width: 800px) {
+              display: flex;
+              width: 100%;
+              flex-direction: column;
+              align-items: center;
+              padding: 1.5vw 0;
+            }
+            .flight__schedule__board {
+              display: flex;
+              flex-direction: column;
+              width: 40%;
+              .flight__info__wrapper {
+                display: flex;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                padding-bottom: 20px;
+                border-bottom: 1px solid rgba(0, 0, 0, 1);
+                img {
+                  max-width: 100px;
+                  max-height: 30px;
+                }
+                span {
+                  font-size: 16px;
+                  color: #333;
+                }
+              }
+              .flight__time__wrapper {
+                display: flex;
+                justify-content: center;
+                margin-top: 0.5vw;
+                position: relative;
+                .flight__time {
+                  color: #686868;
+                  font-size: 14px;
+                }
+                & > div {
+                  position: absolute;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  .time__text {
+                    font-size: 25px;
+                    font-weight: 700;
+                  }
+                  .airport__text {
+                    font-size: 15px;
+                  }
+                  div {
+                    width: 0.625vw;
+                    height: 0.625vw;
+                    border: 1px solid rgba(0, 0, 0, 1);
+                    border-radius: 50%;
+                    background-color: rgba(255, 255, 255, 1);
+                    margin-bottom: 0.4vw;
+                  }
+                }
+                .depart__info {
+                  left: 0;
+                  transform: translate(-50%, -0.85vw);
+                }
+                .arrive__info {
+                  right: 0;
+                  transform: translate(50%, -0.85vw);
+                }
+              }
+            }
+          }
+
+          .schedule__element__header__wrapper {
+            border-left: 1px dotted rgba(180, 180, 180, 1);
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            @media (max-width: 800px) {
+              padding-top: 20px;
+            }
+            .schedule__location__wrapper {
+              position: relative;
+              display: flex;
+              align-items: center;
+              margin-bottom: 30px;
+              
+              .location__absolute__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+              }
+              .location__text {
+                padding-left: clamp(27px, 2.5vw, 57px);
+                font-size: 20px;
+                line-height: 1.3;
+              }
+            }
+            .schedule__element__header {
+              display: flex;
+              align-items: center;
+              @media (max-width: 800px) {
+                padding-top: 10px;
+              }
+              .absolute__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+                z-index: 3;
+
+                .dot__icon {
+                  width: clamp(8px, 0.52vw, 10px);
+                  height: clamp(8px, 0.52vw, 10px);
+                  background-color: rgba(52, 52, 52, 1);
+                  border-radius: 50%;
+                }
+        
+              }
+              .schedule__text__wrapper {
+                position: absolute;
+                display: flex;
+                margin-left: 30px;
+                font-size: 18px;
+
+                @media (max-width: 800px) {
+                  padding-left: clamp(27px, 2.5vw, 57px);
+                  flex-direction: column;
+                  gap: 0px;
+                  .time__text {
+                    font-size: 20px;
+                    font-weight: 700;
+                  }
+                }
+              }
+            }
+
+          }
+          .schedule__element__main__wrapper {
+            width: 100%;
+            min-height: 200px;
+            margin-top: 20px;
+            margin-left: 30px;
+            border: 1px solid #ccc;
+            display: flex;
+            
+            .image__wrapper {
+              width: 30%;
+              @include middle();
+
+              .imagebox {
+          
+                img {
+                  
+                }
+              }
+            }
+
+            .table__wrapper {
+              width: 70%;
+              padding: 20px;
+
+              .table__header {
+                font-size: 18px;
+                color: rgba(0, 0, 0, 1);
+                margin-bottom: 10px;
+              }
+              .table__main {
+                display: flex;
+                flex-direction: column;
+                
+                .detailbox {
+                  
+                  .detailbox-name {
+                    margin-bottom: 5px;
+                  }
+                  .detailbox-notice {
+                    margin-bottom: 10px;
+                    margin-left: 10px;
+                    color: #969696;
+                  }
+                }
+              }
+            }
+          }
+
+
+          
+        }
+      }
+
+      .additional__schedule__wrapper {
+        display: flex;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+
+        &:last-child {
+          border: none;
+        }
+        .index__wrapper {
+          width: 25%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.7vw;
+          padding: 0.7vw 0;
+          @media (max-width: 800px) {
+            padding: 8px 0;
+            gap: 10px;
+          }
+          svg {
+            width: clamp(23px, 1.84vw, 35px);
+          }
+          span {
+            font-size: clamp(14px, 0.94vw, 18px);
+            line-height: 1;
+          }
+        }
+        & > div:last-child {
+          display: flex;
+          align-items: center;
+          font-size: clamp(13px, 0.78vw, 15px);
+          padding: 0 20px;
+          color: rgba(51, 51, 51, 1);
+
+          &.meal__info__wrapper {
+            gap: 10vw;
+            @media (max-width: 800px) {
+              gap: 10px;
+            }
+          }
+          &.additional__info__wrapper {
+            display: flex;
+            
+            p {
+              font-size: 14px;
+              color: #ccc;
+            }
+            .additional__rating__wrapper {
+              margin-left: 10px;
+  
+              .rating__board__wrapper {
+                width: 100%;
+                display: flex;
+            
+                .rating__icon {
+                  @include middle();
+                  
+                  .empty__star .filled__star {
+                    width: 100%;
+                    height: 100%;
+                  }
+                  .empty__star {
+                    fill: rgba(119, 119, 119, 1);
+                  }
+                  .filled__star {
+                    fill: rgba(252, 196, 0, 1);
+                    z-index: 2;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // 포함/불포함 --------------------------------------------
+  .single__header__main {
+    font-weight: 500;
+    font-size: 18px;
+    color: rgba(0, 0, 0, 1);
+    margin-bottom: 0.5vw;
+  }
+
+  .resort_detail_included__items__section__wrapper {
+    
+    .included__items__wrapper {
+      @media (min-width: 800px) {
+        display: grid;
+        grid-template-columns: 0.25fr 0.75fr;
+        border-top: 1px solid rgba(0, 0, 0, 1);
+        & > div {
+          border-bottom: 1px solid rgba(187, 187, 187, 1);
+        }
+        & > div:nth-of-type(odd) {
+          border-right: 1px solid rgba(187, 187, 187, 1);
+        }
+      }
+      .index__title__wrapper {
+        display: flex;
+        color: rgba(0, 0, 0, 1);
+        align-items: center;
+        font-size: clamp(16px, 1vw, 20px);
+        justify-content: center;
+        background-color: rgba(248, 248, 248, 1);
+        gap: 5px;
+        @media (max-width: 800px) {
+          align-items: flex-start;
+          justify-content: flex-start;
+          background-color: rgba(255, 255, 255, 1);
+          border-bottom: 1px solid rgba(0, 0, 0, 1);
+          padding: 5px 0;
+        }
+        .included__icon {
+          @include middle();
+          font-weight: 700;
+          color: rgba(40, 171, 225, 1);
+        }
+        .unincluded__icon {
+          @include middle();
+          font-weight: 700;
+          color: rgba(224, 49, 49, 1);
+        }
+      }
+      .elements__wrapper {
+        display: flex;
+        flex-direction: column;
+        color: rgba(51, 51, 51, 1);
+        font-size: clamp(13px, 0.78vw, 15px);
+        gap: 0.2vw;
+        padding: 1vw 2vw;
+        @media (max-width: 800px) {
+          padding: 10px 0 30px;
+          gap: 2px;
+        }
+      }
+    }
+  }
+
+  // 필독사항 --------------------------------------------
+  .resort_detail_must__read__section__wrapper {
+    .must__read__wrapper {
+      display: flex;
+      flex-direction: column;
+      color: rgba(51, 51, 51, 1);
+      font-size: clamp(13px, 0.78vw, 15px);
+      gap: 0.4vw;
+      padding: 2vw 0;
+      border-top: 1px solid rgba(0, 0, 0, 1);
+      border-bottom: 1px solid rgba(187, 187, 187, 1);
+      white-space: pre-line;
+      @media (max-width: 800px) {
+        border-bottom: none;
+        padding: 10px 0 30px;
+        gap: 2px;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  // 하단 버튼 --------------------------------------------
+  .resort_detail_bottom_btn_cover {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .resort_detail_bottom_btn {
+      width: 24%;
+      @include middle();
+      padding: 20px;
+      border-radius: 5px;
+     p {
+        font-size: 18px;
+      }
+    }
+    .resort_detail_bottom_btn:hover {
+      cursor: pointer;
+      opacity: 0.9;
+    }
+  }
+
+
+  .resort_custom_bottom__content__wrapper {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 1200px;
+    margin-bottom: 500px;
+
+    // 커스텀 오더 메인 박스
+    .resort_custom_bottom__box {
+      width: 100%;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+
+      .resort_custom_bottom__leftbox {
+        width: 45%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: space-between;
+
+        .custom_bottom__box__top_area {
+          h3 {
+            font-size: 24px;
+            font-weight: bold;
+          }
+        }
+        .custom_bottom__box__middle_area {
+          display: flex;
+          align-items: center;
+          p {
+            font-size: 18px;
+            margin-right: 15px;
+          }
+        }
+        .custom_bottom__box__bottom_area {
+          color: #969696; 
+        }
+      }
+      .resort_custom_bottom__rightbox {
+        width: 45%;
+        height: 100%;
+        @include middle();
+        flex-direction: column;
+
+        .custom_bottom__box_btn {
+          width: 100%;
+          background-color: #37b0d9;
+          border-radius: 10px;
+          @include middle();
+          margin: 10px 0;
+          p {
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+          }
+        }
+        .custom_bottom__box_btn:hover {
+          cursor: pointer;
+          opacity: 0.8;
+        }
+      }
+      
+      .resort_custom_bottom__btn:hover {
+        cursor: pointer;
+      }
+    }
+  }
+  
+  // 원래 CSS 스타일에 맞는 호텔 상세 스타일
+  .hotel_detail {
+    // 아이템 박스 스타일 (원래 CSS 기반)
+    .item_box_s {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    // 호텔 포토 정보 이미지
+    .hotel_photo_info {
+      img {
+        width: 100%;
+      }
+    }
+    
+    // 호텔 로고 정보 이미지
+    .hotel_logo_info {
+      img {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+    
+    // 탭 타입 스타일 (이미지 참조하여 수정)
+    .tab_type {
+      position: relative;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      margin: 30px 0 10px;
+      border-bottom: 1px solid #ddd;
+      
+      &:before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 100%;
+        max-width: 1200px;
+        transform: translateX(-50%);
+        box-sizing: border-box;
+      }
+      
+      .tab-in {
+        max-width: 1200px;
+        display: flex;
+        box-sizing: border-box;
+        margin: 0 auto;
+        
+        li {
+          width: 130px;
+          text-align: center;
+          color: #888;
+          position: relative;
+          height: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          
+          .menu-face {
+            font-size: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 100ms;
+            color: #888;
+            line-height: 50px;
+            
+            &.on {
+              color: #333;
+              font-weight: 600;
+            }
+          }
+          
+          .menu-face2 {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 3px;
+            display: none;
+            background-color: #0079BC;
+            
+            &.on {
+              display: block;
+            }
+          }
+        }
+      }
+    }
+    
+    // 호텔 포토 뷰 스타일
+    .hotel_photo_view {
+      position: relative;
+      
+      .hotel-swiper {
+        width: 100%;
+        
+        .swiper-slide {
+          .photo {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+          }
+        }
+      }
+      
+      // 원래 slick 스타일에 맞는 네비게이션 버튼
+      .swiper-button-prev,
+      .swiper-button-next {
+        position: absolute;
+        top: calc(50% - 30px);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 10;
+        
+        img {
+          width: 30px;
+          height: 30px;
+        }
+        
+        &::after {
+          display: none;
+        }
+      }
+      
+      .swiper-button-prev {
+        left: -70px;
+      }
+      
+      .swiper-button-next {
+        right: -70px;
+      }
+      
+      // 페이지네이션 스타일
+      .swiper-pagination {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        
+        .swiper-pagination-bullet {
+          width: 10px;
+          height: 10px;
+          background: rgba(255, 255, 255, 0.5);
+          opacity: 1;
+          margin: 0 5px;
+          border-radius: 50%;
+          
+          &.swiper-pagination-bullet-active {
+            background: #fff;
+          }
+        }
+      }
+    }
+    
+    // 호텔 포토 텍스트 스타일
+    .hotel_photo_text {
+      font-size: 15px;
+      line-height: 1.6em;
+      width: 100%;
+      max-width: 1200px;
+      margin: 30px auto;
+      
+      .bold {
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+      
+      p {
+        margin-bottom: 15px;
+      }
+    }
+  }
+  
+}
+

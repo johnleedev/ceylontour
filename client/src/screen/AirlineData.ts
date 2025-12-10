@@ -1,0 +1,36 @@
+import KE from "./airlineLogos/KE.png";
+import A5J from "./airlineLogos/5J.png";
+import A5M from "./airlineLogos/5M.png";
+import A7C from "./airlineLogos/7C.png";
+import A8B from "./airlineLogos/8B.png";
+import AA from "./airlineLogos/AA.png";
+import AM from "./airlineLogos/AM.png";
+import BX from "./airlineLogos/BX.png";
+import CX from "./airlineLogos/CX.png";
+import D7 from "./airlineLogos/D7.png";
+import EK from "./airlineLogos/EK.png";
+import ET from "./airlineLogos/ET.png";
+import GA from "./airlineLogos/GA.png";
+import HA from "./airlineLogos/HA.png";
+import JL from "./airlineLogos/JL.png";
+import LJ from "./airlineLogos/LJ.png";
+import MH from "./airlineLogos/MH.png";
+import OZ from "./airlineLogos/OZ.png";
+import PG from "./airlineLogos/PG.png";
+import PR from "./airlineLogos/PR.png";
+import QF from "./airlineLogos/QF.png";
+import QR from "./airlineLogos/QR.png";
+import SQ from "./airlineLogos/SQ.png";
+import TG from "./airlineLogos/TG.png";
+import TK from "./airlineLogos/TK.png";
+import TN from "./airlineLogos/TN.png";
+import TW from "./airlineLogos/TW.png";
+import UA from "./airlineLogos/UA.png";
+import VJ from "./airlineLogos/VJ.png";
+import VN from "./airlineLogos/VN.png";
+import ZA from "./airlineLogos/ZA.png";
+import ZE from "./airlineLogos/ZE.png";
+
+export { KE, A5J, A5M, A7C, A8B, AA, AM, BX, CX, D7, EK, ET, GA, HA, JL, LJ, MH, OZ, PG, PR, QF, QR, SQ, TG, TK, TN, TW, UA, VJ, VN, ZA, ZE };
+
+export default { KE, A5J, A5M, A7C, A8B, AA, AM, BX, CX, D7, EK, ET, GA, HA, JL, LJ, MH, OZ, PG, PR, QF, QR, SQ, TG, TK, TN, TW, UA, VJ, VN, ZA, ZE };

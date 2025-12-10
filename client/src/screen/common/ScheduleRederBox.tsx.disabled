@@ -1,0 +1,1460 @@
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+import './ScheduleRederBox.scss'
+import { DropdownBox } from '../../../boxs/DropdownBox';
+import axios from 'axios';
+import { AdminURL } from '../../../MainURL';
+import { ImLocation } from 'react-icons/im';
+import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
+import RatingBoard from '../../common/RatingBoard';
+import { useRecoilValue } from 'recoil';
+import { recoilExchangeRate } from '../../../RecoilStore';
+import { fetchScheduleDetailDataExternal } from './ScheduleDetailRedering';
+
+
+interface ModalScheduleDetailProps {
+    airlineData: {
+      sort: string;
+      airlineCode: string[];
+    },
+    scheduleDetailData: {
+      breakfast :string;
+      lunch:string;
+      dinner :string;
+      hotel:string;
+      score:string;
+      scheduleDetail: {
+        id:number, 
+        sort:string,
+        st?: string,
+        isViewLocation:boolean,
+        locationIcon?: string,
+        location:string, 
+        isUseContent:boolean,
+        locationContent?: string,
+        locationDetail:{
+          subLocation:string, 
+          isUseContent:boolean,
+          subLocationContent:string, 
+          subLocationDetail:number[]}[]
+        airlineData?: {
+          airlineCode: string;
+          airlineName: string;
+          depart: string;
+          departTime: string;
+          arrive: string;
+          arriveTime: string;
+          addDay: string;
+          id?: string;
+        } | null;
+        trainData?: {
+          trainCode: string;
+          trainName: string;
+          depart: string;
+          departTime: string;
+          arrive: string;
+          arriveTime: string;
+          addDay: string;
+          id?: string;
+        } | null;
+        busData?: {
+          busCode: string;
+          busName: string;
+          depart: string;
+          departTime: string;
+          arrive: string;
+          arriveTime: string;
+          addDay: string;
+          id?: string;
+        } | null;
+        shipData?: {
+          shipCode: string;
+          shipName: string;
+          depart: string;
+          departTime: string;
+          arrive: string;
+          arriveTime: string;
+          addDay: string;
+          id?: string;
+        } | null;
+      }[];
+    }[]
+  }
+  
+
+export default function ScheduleRederBox (props : any) {
+	
+  const url = new URL(window.location.href);
+  const ID = url.searchParams.get("id");
+  const [mainTab, setMainTab] = useState<string>('일정미리보기');
+  
+  const fetchScheduleData = async () => {
+  
+
+    try {
+      setLoading(true);
+      const response = await fetch(`${AdminURL}/ceylontour/getschedulebyid/4`);
+
+      const data = await response.json();
+      const scheduleData = data[0];
+
+      try {
+        await fetchScheduleDetailData(scheduleData);
+      } catch (detailError) {
+        console.error('상세 데이터 처리 중 오류 발생:', detailError);
+        // 에러가 발생해도 기본 구조는 설정
+        const defaultSchedule = {
+          airlineData: { sort: '', airlineCode: [] },
+          scheduleDetailData: [createEmptyDay()]
+        };
+        setScheduleList([defaultSchedule]);
+      }
+      
+    } catch (error) {
+      console.error('스케줄 데이터를 가져오는 중 오류 발생:', error);
+      // 에러 발생 시에도 기본 구조 설정
+      const defaultSchedule = {
+        airlineData: { sort: '', airlineCode: [] },
+        scheduleDetailData: [createEmptyDay()]
+      };
+      setScheduleList([defaultSchedule]);
+    } finally {
+      // fetchScheduleDetailData가 완전히 끝난 후에만 로딩 해제
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchScheduleData();
+
+  }, []);
+
+
+  
+  // 처음 렌더링 시 일정 상세 데이터 받아오기 (2단계 fetch)
+  const fetchScheduleDetailData = async (dataToFetch?: any) => {
+    await fetchScheduleDetailDataExternal({
+      dataToFetch,
+      scheduleData:null,
+      propsScheduleInfo: props.scheduleInfo,
+      setScheduleList,
+      setManageAirline:() => {},
+      createEmptyDay,
+      safeJsonParse,
+      repairJsonString,
+      isAddOrRevise:'add',
+    });
+  };
+
+
+ 
+
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // JSON 문자열 복구 함수 (이스케이프되지 않은 큰따옴표 처리)
+  const repairJsonString = (jsonStr: string): string => {
+    if (!jsonStr || typeof jsonStr !== 'string') return jsonStr;
+    
+    try {
+      // 먼저 파싱 시도
+      JSON.parse(jsonStr);
+      return jsonStr; // 이미 올바른 형식이면 그대로 반환
+    } catch (e) {
+      // 파싱 실패 시 복구 시도
+      // 상태 머신 방식: 문자열 값 내부의 큰따옴표만 이스케이프
+      let result = '';
+      let inString = false;
+      let escapeNext = false;
+      let inValue = false; // 현재 값 문자열인지 (키가 아닌 값)
+      
+      for (let i = 0; i < jsonStr.length; i++) {
+        const char = jsonStr[i];
+        const afterChars = i < jsonStr.length - 1 ? jsonStr.substring(i + 1, Math.min(i + 20, jsonStr.length)) : '';
+        const beforeChars = i > 0 ? jsonStr.substring(Math.max(0, i - 20), i) : '';
+        
+        if (escapeNext) {
+          result += char;
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          result += char;
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"') {
+          // 키의 끝인지 확인 (" 다음에 : 가 오면 키의 끝)
+          const isKeyEnd = /^\s*:/.test(afterChars);
+          
+          // 값의 시작인지 확인 (:, [, { 뒤에 " 가 오면 값의 시작)
+          const isValueStart = /[:\[{]\s*$/.test(beforeChars);
+          
+          // 값의 끝인지 확인 (" 다음에 , 또는 } 또는 ] 가 오면 값의 끝)
+          const isValueEnd = /^\s*[,}\]\]]/.test(afterChars);
+          
+          if (isKeyEnd) {
+            // 키의 끝이므로 그대로
+            result += '"';
+            inString = false;
+            inValue = false;
+          } else if (isValueStart && !inString) {
+            // 값의 시작
+            result += '"';
+            inString = true;
+            inValue = true;
+          } else if (inString && inValue) {
+            // 값 문자열 내부에서 큰따옴표 발견
+            if (isValueEnd) {
+              // 문자열의 끝
+              result += '"';
+              inString = false;
+              inValue = false;
+            } else {
+              // 문자열 내부의 큰따옴표이므로 이스케이프
+              result += '\\"';
+            }
+          } else {
+            // 그 외의 경우
+            result += '"';
+            if (isValueStart && !inString) {
+              inString = true;
+              inValue = true;
+            } else if (isValueEnd && inString) {
+              inString = false;
+              inValue = false;
+            }
+          }
+        } else {
+          result += char;
+        }
+      }
+      
+      return result;
+    }
+  };
+
+
+  // 안전한 JSON 파싱 헬퍼 함수
+  const safeJsonParse = <T,>(jsonString: any, defaultValue: T): T => {
+    if (!jsonString) return defaultValue;
+    if (typeof jsonString !== 'string') {
+      // 이미 객체인 경우 그대로 반환
+      return Array.isArray(jsonString) ? jsonString as T : (typeof jsonString === 'object' ? jsonString as T : defaultValue);
+    }
+    try {
+      const trimmed = jsonString.trim();
+      if (!trimmed || trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+        return defaultValue;
+      }
+      // JSON.parse 시도
+      return JSON.parse(trimmed);
+    } catch (e: any) {
+      console.error('JSON 파싱 오류 (1차 시도):', e?.message || e);
+      
+      // 파싱 실패 시 JSON 복구 시도
+      try {
+        const trimmed = jsonString.trim();
+        const repaired = repairJsonString(trimmed);
+        return JSON.parse(repaired);
+      } catch (e2: any) {
+        console.error('JSON 파싱 오류 (복구 후 재시도 실패):', e2?.message || e2);
+        return defaultValue;
+      }
+    }
+  };
+
+
+  const [selectedNation, setSelectedNation] = useState<any>(null);
+
+ 
+
+
+  // Helpers to create empty schedule structures
+  const createEmptyDetail = () => ({
+    id: 0,
+    sort: '',
+    locationIcon: '',
+    location: '',
+    isUseContent: false,
+    locationContent: '',
+    isViewLocation: true,
+    locationDetail: [{ subLocation: '', subLocationContent: '', subLocationDetail: [], isUseContent: false }],
+    airlineData: null
+  });
+
+  const createEmptyDay = () => ({
+    breakfast: '',
+    lunch: '',
+    dinner: '',
+    hotel: '',
+    score: '',
+    scheduleDetail: [createEmptyDetail()]
+  });
+
+  // 일정표 -------------------------------------------------------------------------------------------------------------------
+
+  const [scheduleList, setScheduleList] = useState<ModalScheduleDetailProps[]>( 
+    [{
+      airlineData: {
+        sort: "",
+        airlineCode: []
+      },
+      scheduleDetailData: [createEmptyDay()]
+    }]
+  );  
+  const [selectedScheduleIndex, setSelectedScheduleIndex] = useState<number>(0);
+
+
+
+  const datmealOptions = [
+    { value: '선택', label: '선택' },
+    { value: '기내식', label: '기내식' },
+    { value: '선택식', label: '선택식' },
+    { value: '외부식', label: '외부식' },
+    { value: '리조트', label: '리조트' },
+    { value: '자유식', label: '자유식' },
+    { value: '현지식', label: '현지식' },
+    { value: '호텔식', label: '호텔식' },
+    { value: '포함', label: '포함' },
+    { value: '불포함', label: '불포함' }
+  ]
+  const productOptions = [
+    { value: '선택', label: '선택' },
+    { value: '리조트', label: '리조트' },
+    { value: '풀빌라', label: '풀빌라' },
+    { value: '호텔', label: '호텔' },
+    { value: '우붓', label: '우붓' },
+    { value: '경유지', label: '경유지' },
+  ]
+
+
+  // 도시명(공항코드) 반환 함수
+  function getCityNameByCode(code: string) {
+    if (code === 'ICN') return '인천(ICN)';
+    if (!selectedNation || !selectedNation.cities) return code;
+    const city = selectedNation.cities.find((c: any) => c.airportCode === code);
+    return city ? `${city.cityKo}(${code})` : code;
+  }
+
+  // 기차/버스/선박 코드로 도시명 찾기
+  function getCityNameByTrafficCode(code: string, type: 'train' | 'bus' | 'ship') {
+    if (!code) return code;
+    if (!selectedNation || !selectedNation.cities) return code;
+    
+    for (const city of selectedNation.cities) {
+      if (!city.trafficCode) continue;
+      const trafficCode = typeof city.trafficCode === 'string' 
+        ? safeJsonParse(city.trafficCode, null)
+        : city.trafficCode;
+      
+      if (!trafficCode) continue;
+      
+      let codeList: any[] = [];
+      if (type === 'train' && trafficCode.train) {
+        codeList = trafficCode.train;
+      } else if (type === 'bus' && trafficCode.bus) {
+        codeList = trafficCode.bus;
+      } else if (type === 'ship' && trafficCode.ship) {
+        codeList = trafficCode.ship;
+      }
+      
+      const found = codeList.find((item: any) => item.code === code);
+      if (found) {
+        const name = type === 'train' ? found.station : type === 'bus' ? found.terminal : found.port;
+        return name ? `${name}(${code})` : `${city.cityKo}(${code})`;
+      }
+    }
+    
+    return code;
+  }
+
+
+  // 검색 리스트 중에 하나 선택 시 일정 상세 데이터 입력 (대분류용)
+  
+  
+
+  const [editMealRowIndex, setEditMealRowIndex] = useState<number>(-1);
+
+  // 일정표 추가, 삭제, 이동 함수
+  const addDay = (idx:number) => {
+    const copy = [...scheduleList];
+    const target = copy[selectedScheduleIndex];
+    if (!target || !target.scheduleDetailData) return;
+    target.scheduleDetailData.splice(idx + 1, 0, createEmptyDay());
+    setScheduleList(copy);
+  };
+  const deleteDay = (idx:number) => {
+    const copy = [...scheduleList];
+    const target = copy[selectedScheduleIndex];
+    if (!target || !target.scheduleDetailData) return;
+    if (target.scheduleDetailData.length > 1) {
+      target.scheduleDetailData.splice(idx, 1);
+      setScheduleList(copy);
+    } else {
+      alert('마지막 1일은 삭제할 수 없습니다.');
+    }
+  };
+  const moveDayUp = (idx:number) => {
+    if (idx > 0) {
+      const copy = [...scheduleList];
+      const target = copy[selectedScheduleIndex];
+      if (!target || !target.scheduleDetailData) return;
+      const tmp = target.scheduleDetailData[idx];
+      target.scheduleDetailData[idx] = target.scheduleDetailData[idx - 1];
+      target.scheduleDetailData[idx - 1] = tmp;
+      setScheduleList(copy);
+    } else {
+      alert('맨 위 입니다.')
+    }
+  };
+  const moveDayDown = (idx:number) => {
+    const copy = [...scheduleList];
+    const target = copy[selectedScheduleIndex];
+    if (!target || !target.scheduleDetailData) return;
+    if (idx < target.scheduleDetailData.length - 1) {
+      const tmp = target.scheduleDetailData[idx];
+      target.scheduleDetailData[idx] = target.scheduleDetailData[idx + 1];
+      target.scheduleDetailData[idx + 1] = tmp;
+      setScheduleList(copy);
+    } else {
+      alert('맨 아래 입니다.')
+    }
+  };
+
+
+  // 유틸 함수: 출발-도착 시간으로 소요시간 계산
+  function getFlightDuration(departTime: any, arriveTime: any) {
+    if (!departTime || !arriveTime) return '';
+    const depH = parseInt(departTime.slice(0,2), 10);
+    const depM = parseInt(departTime.slice(2,4), 10);
+    const arrH = parseInt(arriveTime.slice(0,2), 10);
+    const arrM = parseInt(arriveTime.slice(2,4), 10);
+    let min = (arrH*60+arrM) - (depH*60+depM);
+    if (min < 0) min += 24*60;
+    const h = Math.floor(min/60);
+    const m = min%60;
+    return `${h.toString().padStart(2,'0')}시간 ${m.toString().padStart(2,'0')}분`;
+  }
+
+
+
+
+
+
+
+  return (
+    <div className='modal-addinput'>
+
+    
+
+      {/* 스케줄 ------------------------------------------------------------------------------------------------ */}
+
+      <div className="schedule-layout-container">
+        <div className="schedule-layout-left" style={{width:'100%'}}>
+          <div className="schedule-resort_detail_mx__section">
+            <div className="schedule-resort_detail_schedule_header__wrapper">
+              <span className="schedule-header__main">추천 여행일정표</span>
+              <div style={{display:'flex', gap:'8px', marginTop:'8px'}}>
+                {
+                  scheduleList.map((schedule, scheduleIndex) => {
+                    return (
+                      <button
+                        key={scheduleIndex}
+                        type="button"
+                        style={{
+                          padding:'6px 12px',
+                          border: selectedScheduleIndex === scheduleIndex ? '2px solid #007bff' : '1px solid #bbb',
+                          borderRadius:'6px',
+                          background: selectedScheduleIndex === scheduleIndex ? '#e3f2fd' : '#fff',
+                          cursor:'pointer',
+                          fontSize:'13px',
+                          fontWeight: selectedScheduleIndex === scheduleIndex ? '600' : '400',
+                          color: selectedScheduleIndex === scheduleIndex ? '#007bff' : '#333',
+                          minWidth:'80px',
+                          transition:'all 0.2s ease'
+                        }}
+                        onClick={() => setSelectedScheduleIndex(scheduleIndex)}
+                      >
+                        {
+                          schedule.airlineData.sort === '' 
+                          ? (
+                            <p style={{color:'#999'}}>항공편없음</p>
+                          )
+                          : (
+                           <>
+                            <p>{schedule.airlineData.sort === 'direct' ? '직항' : '경유'}</p>
+                            <div style={{margin:'0 2px', fontSize:'11px', display:'grid', gridTemplateColumns:'repeat(2, 1fr)'}}>
+                              {schedule.airlineData.airlineCode && schedule.airlineData.airlineCode.length > 0 
+                                ? schedule.airlineData.airlineCode.map((code, idx) => (
+                                    <p key={idx} style={{margin:'0', lineHeight:'1.2'}}>{code}</p>
+                                  ))
+                                : <p style={{margin:'0', color:'#999'}}>#</p>
+                              }
+                            </div>
+                           </>
+                          )
+                        }
+                      </button>
+                    )
+                })}
+                <button
+                  type="button"
+                  style={{
+                    padding:'6px 10px', 
+                    border:'1px solid #ddd', 
+                    borderRadius:'4px', 
+                    background:'#fff', 
+                    cursor:'pointer',
+                    color:'#6c757d',
+                  }}
+                  onClick={() => {
+                    if (selectedScheduleIndex >= 0 && scheduleList[selectedScheduleIndex]) {
+                      // 사용자에게 초기화 확인 요청
+                      if (window.confirm('선택된 스케줄을 초기화하시겠습니까?\n모든 입력된 데이터가 삭제됩니다.')) {
+                        // 선택된 스케줄을 빈 상태로 초기화
+                        const copy = [...scheduleList];
+                        copy[selectedScheduleIndex] = {
+                          airlineData: { sort: '', airlineCode: [] },
+                          scheduleDetailData: [
+                            {
+                              breakfast: '',
+                              lunch: '',
+                              dinner: '',
+                              hotel: '',
+                              score: '',
+                              scheduleDetail: [
+                                {
+                                  id: 0,
+                                  sort: '',
+                                  location: '',
+                                  isUseContent: false,
+                                  isViewLocation: true,
+                                  locationDetail: [{ subLocation: '', isUseContent: false, subLocationContent: '', subLocationDetail: [] }],
+                                  airlineData: null
+                                }
+                              ]
+                            }
+                          ]
+                        };
+                        setScheduleList(copy);
+                      }
+                    }
+                  }}
+                  disabled={selectedScheduleIndex < 0}
+                >
+                  초기화
+                </button>
+                <button
+                  type="button"
+                  style={{padding:'6px 10px', border:'1px solid #333', borderRadius:'4px', background:'#fff', cursor:'pointer'}}
+                  onClick={() => {
+                    // 현재 선택된 스케줄을 복사하여 새로운 스케줄로 추가
+                    if (scheduleList.length === 0) {
+                      // 스케줄이 없는 경우 빈 스케줄 추가
+                      const copy = [...scheduleList];
+                      copy.push({
+                        airlineData: { sort: '', airlineCode: [] },
+                        scheduleDetailData: [
+                          {
+                            breakfast: '',
+                            lunch: '',
+                            dinner: '',
+                            hotel: '',
+                            score: '',
+                            scheduleDetail: [
+                              {
+                                id: 0,
+                                sort: '',
+                                location: '',
+                                isUseContent: false,
+                                isViewLocation: true,
+                                locationDetail: [{ subLocation: '', isUseContent: false, subLocationContent: '', subLocationDetail: [] }],
+                                airlineData: null
+                              }
+                            ]
+                          }
+                        ]
+                      });
+                      setScheduleList(copy);
+                      setSelectedScheduleIndex(copy.length - 1);
+                    } else {
+                      // 현재 선택된 스케줄을 복사하여 추가
+                      const copy = [...scheduleList];
+                      const selectedSchedule = copy[selectedScheduleIndex];
+                      
+                      // 깊은 복사로 scheduleDetailData 복사
+                      const copiedScheduleDetailData = selectedSchedule.scheduleDetailData.map(day => ({
+                        ...day,
+                        scheduleDetail: day.scheduleDetail.map(detail => ({
+                          ...detail,
+                          locationDetail: detail.locationDetail.map(loc => ({
+                            ...loc,
+                            subLocationDetail: [...loc.subLocationDetail]
+                          }))
+                        }))
+                      }));
+                      
+                      copy.push({
+                        ...selectedSchedule,
+                        scheduleDetailData: copiedScheduleDetailData
+                      });
+                      
+                      setScheduleList(copy);
+                      setSelectedScheduleIndex(copy.length - 1);
+                    }
+                  }}
+                  >
+                    <p>추가</p>
+                    <p>(복사)</p>
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding:'6px 10px', 
+                    border:'1px solid #dc3545', 
+                    borderRadius:'4px', 
+                    background:'#fff', 
+                    cursor:'pointer',
+                    color:'#dc3545',
+                  }}
+                  onClick={() => {
+                    if (scheduleList.length > 1 && selectedScheduleIndex >= 0) {
+                      // 사용자에게 삭제 확인 요청
+                      if (window.confirm('선택된 스케줄을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                        // 스케줄이 2개 이상이고 선택된 스케줄이 있는 경우에만 삭제 가능
+                        const copy = [...scheduleList];
+                        copy.splice(selectedScheduleIndex, 1);
+                        setScheduleList(copy);
+                        
+                        // 삭제 후 선택된 인덱스 조정
+                        if (selectedScheduleIndex >= copy.length) {
+                          setSelectedScheduleIndex(copy.length - 1);
+                        }
+                      }
+                    } else if (scheduleList.length === 1) {
+                      // 마지막 스케줄인 경우 경고 메시지
+                      alert('최소 1개의 스케줄은 유지해야 합니다.');
+                    }
+                  }}
+                  disabled={scheduleList.length <= 1}
+                >
+                  <p>선택</p>
+                  <p>삭제</p>
+                </button>
+              </div>
+            </div>
+
+            
+            <div className="schedule-schedule__tables__wrapper">
+              {
+                scheduleList.map((schedule, scheduleIndex) => {
+                  return (
+                    <div>
+                      { selectedScheduleIndex === scheduleIndex &&
+                        schedule.scheduleDetailData.map((dayItem, dayIndex) => {
+                          return (
+                            <div className="schedule-schedule__table__wrapper" key={dayIndex}>
+                              <div className="schedule-schedule__header" style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                                <div style={{display:'flex', alignItems:'center'}}>
+                                  <span className="schedule-main__text">{dayIndex +1} DAY</span>
+                                </div>
+                                <div style={{display:'flex', gap:'6px'}}>
+                                  <button
+                                    type="button"
+                                    style={{padding:'2px 8px', border:'1px solid #bbb', borderRadius:'4px', background:'#fff', cursor:'pointer'}}
+                                    title="DAY 추가"
+                                    onClick={() => addDay(dayIndex)}
+                                  >+
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={{padding:'2px 8px', border:'1px solid #bbb', borderRadius:'4px', background:'#fff', cursor:'pointer'}}
+                                    title="DAY 삭제"
+                                    onClick={() => deleteDay(dayIndex)}
+                                  >–
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={{padding:'2px 8px', border:'1px solid #bbb', borderRadius:'4px', background:'#fff', cursor:'pointer'}}
+                                    title="DAY 위로"
+                                    onClick={() => moveDayUp(dayIndex)}
+                                  >▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={{padding:'2px 8px', border:'1px solid #bbb', borderRadius:'4px', background:'#fff', cursor:'pointer'}}
+                                    title="DAY 아래로"
+                                    onClick={() => moveDayDown(dayIndex)}
+                                  >▼
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="schedule-schedule__main__wrapper">
+                                { (dayItem.scheduleDetail && dayItem.scheduleDetail.length > 0)
+                                  &&
+                                  dayItem.scheduleDetail.map((loctionItem:any, locationIndex:any) => (
+                                      <div className="schedule-schedule__element__wrapper" key={locationIndex}>
+                                        <div className="schedule-schedule__element__header__wrapper">
+                                          <div className="schedule-schedule__location__wrapper">
+                                            {loctionItem.isViewLocation !== false && (
+                                            <div className="schedule-location__absolute__wrapper">
+                                              <div style={{position: 'relative'}}>
+                                                <button
+                                                  type="button"
+                                                  style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '4px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                  }}
+                                                  onClick={() => {
+                                                    
+                                                  }}
+                                                >
+                                                  {(loctionItem.locationIcon || loctionItem.sort) === 'airline' ? (
+                                                    <span style={{color: '#ff6b6b', fontSize: '30px', fontWeight: 'bold'}}>✈</span>
+                                                  ) : (loctionItem.locationIcon || loctionItem.sort) === 'train' ? (
+                                                    <span style={{color: '#5fb7ef', fontSize: '30px', fontWeight: 'bold'}}>🚂</span>
+                                                  ) : (loctionItem.locationIcon || loctionItem.sort) === 'bus' ? (
+                                                    <span style={{color: '#5fb7ef', fontSize: '30px', fontWeight: 'bold'}}>🚌</span>
+                                                  ) : (loctionItem.locationIcon || loctionItem.sort) === 'ship' ? (
+                                                    <span style={{color: '#5fb7ef', fontSize: '30px', fontWeight: 'bold'}}>🚢</span>
+                                                  ) : (
+                                                    <ImLocation color='#5fb7ef' size={20}/>
+                                                  )}
+                                                </button>
+                                                
+                                              </div>
+                                            </div>
+                                            )}
+                                            <div style={{display:'flex', alignItems:'center', marginBottom:'10px', justifyContent:'flex-start', paddingLeft:'30px'}}>
+                                              {(loctionItem.sort !== 'airline' && loctionItem.sort !== 'train' && loctionItem.sort !== 'bus' && loctionItem.sort !== 'ship') &&
+                                                <>
+                                                  {loctionItem.isViewLocation !== false && (
+                                                    <>
+                                                      <input
+                                                        className="inputdefault"
+                                                        style={{width:'300px', margin:'0'}}
+                                                        value={loctionItem.location || ''}
+                                                        onChange={e => {
+                                                          setScheduleList(prev => {
+                                                            const next = [...prev];
+                                                            const schedule = next[selectedScheduleIndex];
+                                                            const day = schedule?.scheduleDetailData?.[dayIndex];
+                                                            const currentItem = day?.scheduleDetail?.[locationIndex];
+
+                                                            if (!schedule || !day || !currentItem) return prev;
+
+                                                            const newScheduleDetail = [...day.scheduleDetail];
+                                                            const updatedItem = { ...currentItem, sort: 'text', st: 'text', location: e.target.value };
+                                                            newScheduleDetail[locationIndex] = updatedItem;
+
+                                                            const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+
+                                                            const newScheduleDetailData = [...schedule.scheduleDetailData];
+                                                            newScheduleDetailData[dayIndex] = updatedDay;
+
+                                                            next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+
+                                                            return next;
+                                                          });
+                                                        }}
+                                                      />
+                                                      {/* 설명추가/설명없음 버튼 */}
+                                                      {!loctionItem.isUseContent ? (
+                                                        <button
+                                                          type="button"
+                                                          style={{
+                                                            color: '#333',
+                                                            border: '1px solid #ddd',
+                                                            backgroundColor:'#fff',
+                                                            borderRadius: '4px',
+                                                            padding: '8px 16px',
+                                                            fontSize: '14px',
+                                                            cursor: 'pointer',
+                                                            fontWeight: '500',
+                                                            marginLeft: '8px'
+                                                          }}
+                                                          onClick={() => {
+                                                            setScheduleList(prev => {
+                                                              const next = [...prev];
+                                                              const schedule = next[selectedScheduleIndex];
+                                                              const day = schedule?.scheduleDetailData?.[dayIndex];
+                                                              const currentItem = day?.scheduleDetail?.[locationIndex];
+
+                                                              if (!schedule || !day || !currentItem) return prev;
+
+                                                              const newScheduleDetail = [...day.scheduleDetail];
+                                                              const updatedItem = { ...currentItem, isUseContent: true };
+                                                              newScheduleDetail[locationIndex] = updatedItem;
+
+                                                              const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+
+                                                              const newScheduleDetailData = [...schedule.scheduleDetailData];
+                                                              newScheduleDetailData[dayIndex] = updatedDay;
+
+                                                              next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+
+                                                              return next;
+                                                            });
+                                                          }}
+                                                        >
+                                                          설명추가
+                                                        </button>
+                                                      ) : (
+                                                        <button
+                                                          type="button"
+                                                          style={{
+                                                            color: '#333',
+                                                            border: '1px solid #ddd',
+                                                            backgroundColor: '#fff',
+                                                            borderRadius: '4px',
+                                                            padding: '8px 16px',
+                                                            fontSize: '14px',
+                                                            cursor: 'pointer',
+                                                            fontWeight: '500',
+                                                            marginLeft: '8px'
+                                                          }}
+                                                          onClick={() => {
+                                                            setScheduleList(prev => {
+                                                              const next = [...prev];
+                                                              const schedule = next[selectedScheduleIndex];
+                                                              const day = schedule?.scheduleDetailData?.[dayIndex];
+                                                              const currentItem = day?.scheduleDetail?.[locationIndex];
+
+                                                              if (!schedule || !day || !currentItem) return prev;
+
+                                                              const newScheduleDetail = [...day.scheduleDetail];
+                                                              const updatedItem = { ...currentItem, locationContent: '', isUseContent: false };
+                                                              newScheduleDetail[locationIndex] = updatedItem;
+
+                                                              const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+
+                                                              const newScheduleDetailData = [...schedule.scheduleDetailData];
+                                                              newScheduleDetailData[dayIndex] = updatedDay;
+
+                                                              next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+
+                                                              return next;
+                                                            });
+                                                          }}
+                                                        >
+                                                          설명없애기
+                                                        </button>
+                                                      )}
+                                                    </>
+                                                  )}
+                                                  {/* 묶음일정 | 상세일정 탭 버튼 */}
+                                                  {(loctionItem.sort !== 'airline' && loctionItem.sort !== 'train' && loctionItem.sort !== 'bus' && loctionItem.sort !== 'ship') && loctionItem.isViewLocation !== false && (
+                                                    <div style={{
+                                                      display: 'flex',
+                                                      border: '1px solid #ddd',
+                                                      borderRadius: '4px',
+                                                      overflow: 'hidden',
+                                                      marginLeft: '8px',
+                                                      height: '30px'
+                                                    }}>
+                                                      <button
+                                                        type="button"
+                                                        style={{
+                                                          padding: '4px 12px',
+                                                          border: 'none',
+                                                          background: '#fff',
+                                                          color: '#333',
+                                                          cursor: 'pointer',
+                                                          fontSize: '12px',
+                                                          fontWeight: '400',
+                                                          borderRight: '1px solid #ddd'
+                                                        }}
+                                                        onClick={() => {
+                                                          const tabKey = `${dayIndex}-${locationIndex}`;
+                                                       
+                                                        }}
+                                                      >
+                                                        묶음일정
+                                                      </button>
+                                                      <button
+                                                        type="button"
+                                                        style={{
+                                                          padding: '4px 12px',
+                                                          border: 'none',
+                                                          background: '#fff',
+                                                          color: '#333',
+                                                          cursor: 'pointer',
+                                                          fontSize: '12px',
+                                                          fontWeight: '400'
+                                                        }}
+                                                        onClick={() => {
+                                                          const tabKey = `${dayIndex}-${locationIndex}`;
+                                                        
+                                                        }}
+                                                      >
+                                                        상세일정
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </>
+                                              }
+                                              {/* 버튼 그룹: ModalAddScheduleDetail.tsx와 동일한 구조/스타일 */}
+                                              <div className="schedule-schedule__btns" style={{display:'flex', alignItems:'center', marginLeft:'4px'}}>
+                                                <button
+                                                  className="schedule-schedule__btn"
+                                                  style={{padding:'2px 10px'}}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    // +: scheduleDetail 추가
+                                                    const copy = [...scheduleList];
+                                                    copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail.splice(locationIndex + 1, 0, {
+                                                      id: 0, 
+                                                      sort: "", 
+                                                      locationIcon: '',
+                                                      location: '', 
+                                                      isUseContent: false,
+                                                      locationContent: '',
+                                                      isViewLocation: true,
+                                                      locationDetail: [{
+                                                        subLocation: "", 
+                                                        isUseContent: false,
+                                                        subLocationContent: "", 
+                                                        subLocationDetail: []
+                                                      }], 
+                                                      airlineData: null
+                                                    });
+                                                    setScheduleList(copy);
+                                                  }}
+                                                >+</button>
+                                                <button
+                                                  className="schedule-schedule__btn"
+                                                  style={{padding:'2px 10px'}}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    // -: scheduleDetail 삭제
+                                                    if (dayItem.scheduleDetail.length > 1) {
+                                                      const copy = [...scheduleList];
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail.splice(locationIndex, 1);
+                                                      setScheduleList(copy);
+                                                    }
+                                                  }}
+                                                >–</button>
+                                                <button
+                                                  className="schedule-schedule__btn"
+                                                  style={{padding:'2px 7px'}}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    // 위로 이동
+                                                    if (locationIndex > 0) {
+                                                      // 같은 day 내에서 위로 이동
+                                                      const copy = [...scheduleList];
+                                                      const temp = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex] = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex - 1];
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex - 1] = temp;
+                                                      setScheduleList(copy);
+                                                    } else if (dayIndex > 0) {
+                                                      // 이전 day의 마지막 위치로 이동
+                                                      const copy = [...scheduleList];
+                                                      const currentItem = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
+                                                      const prevDay = copy[selectedScheduleIndex].scheduleDetailData[dayIndex - 1];
+                                                      
+                                                      // 현재 위치에서 제거
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail.splice(locationIndex, 1);
+                                                      
+                                                      // 이전 day의 마지막 위치에 추가
+                                                      prevDay.scheduleDetail.push(currentItem);
+                                                      
+                                                      setScheduleList(copy);
+                                                    } else {
+                                                      alert('첫 번째 day의 첫 번째 위치입니다.')
+                                                    }
+                                                  }}
+                                                ><TiArrowSortedUp /></button>
+                                                <button
+                                                  className="schedule-schedule__btn"
+                                                  style={{padding:'2px 7px'}}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    // 아래로 이동
+                                                    if (locationIndex < dayItem.scheduleDetail.length - 1) {
+                                                      // 같은 day 내에서 아래로 이동
+                                                      const copy = [...scheduleList];
+                                                      const temp = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex] = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex + 1];
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex + 1] = temp;
+                                                      setScheduleList(copy);
+                                                    } else if (dayIndex < scheduleList[selectedScheduleIndex].scheduleDetailData.length - 1) {
+                                                      // 다음 day의 첫 번째 위치로 이동
+                                                      const copy = [...scheduleList];
+                                                      const currentItem = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
+                                                      const nextDay = copy[selectedScheduleIndex].scheduleDetailData[dayIndex + 1];
+                                                      
+                                                      // 현재 위치에서 제거
+                                                      copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail.splice(locationIndex, 1);
+                                                      
+                                                      // 다음 day의 첫 번째 위치에 추가
+                                                      if (nextDay.scheduleDetail.length === 0) {
+                                                        nextDay.scheduleDetail.push(currentItem);
+                                                      } else {
+                                                        nextDay.scheduleDetail.unshift(currentItem);
+                                                      }
+                                                      
+                                                      setScheduleList(copy);
+                                                    } else {
+                                                      alert('마지막 day의 마지막 위치입니다.')
+                                                    }
+                                                  }}
+                                                ><TiArrowSortedDown /></button>
+                                                <button
+                                                  className="schedule-schedule__btn"
+                                                  onClick={async ()=>{
+                                                  
+                                                  }}
+                                                >교통편추가</button>
+                                                <button
+                                                  className="schedule-schedule__btn"
+                                                  onClick={() => {
+                                                    setScheduleList(prev => {
+                                                      const next = [...prev];
+                                                      const schedule = next[selectedScheduleIndex];
+                                                      const day = schedule?.scheduleDetailData?.[dayIndex];
+                                                      // idx를 사용하여 정확한 항목 찾기 (idx가 있으면 사용, 없으면 locationIndex 사용)
+                                                      const currentItem = (loctionItem.idx !== undefined && loctionItem.idx !== null)
+                                                        ? day?.scheduleDetail?.find((item: any) => item.idx === loctionItem.idx) || day?.scheduleDetail?.[locationIndex]
+                                                        : day?.scheduleDetail?.[locationIndex];
+                                                      if (!schedule || !day || !currentItem) return prev;
+                                                      const newScheduleDetail = [...day.scheduleDetail];
+                                                      // idx를 사용하여 정확한 위치 찾기 (idx가 있으면 사용, 없으면 locationIndex 사용)
+                                                      const itemIndex = (loctionItem.idx !== undefined && loctionItem.idx !== null)
+                                                        ? newScheduleDetail.findIndex((item: any) => item.idx === loctionItem.idx)
+                                                        : -1;
+                                                      const targetIndex = itemIndex !== -1 ? itemIndex : locationIndex;
+                                                      // isViewLocation이 undefined일 때는 true로 간주하고 false로 토글
+                                                      const currentIsViewLocation = currentItem.isViewLocation !== undefined 
+                                                        ? currentItem.isViewLocation 
+                                                        : true;
+                                                      const updatedItem = { ...currentItem, isViewLocation: !currentIsViewLocation };
+                                                      newScheduleDetail[targetIndex] = updatedItem;
+                                                      const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+                                                      const newScheduleDetailData = [...schedule.scheduleDetailData];
+                                                      newScheduleDetailData[dayIndex] = updatedDay;
+                                                      next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+                                                      return next;
+                                                    });
+                                                  }}
+                                                >{loctionItem.isViewLocation !== false ? '노출안함' : '노출함'}</button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        {/* locationContent 입력 영역 */}
+                                        {loctionItem.isUseContent && (
+                                          <div style={{
+                                            padding: '12px 30px',
+                                          }}>
+                                            <textarea
+                                              style={{
+                                                width: '100%',
+                                                minHeight: '80px',
+                                                padding: '8px 12px',
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                fontSize: '14px',
+                                                fontFamily: 'inherit',
+                                                resize: 'vertical',
+                                                lineHeight: '1.5'
+                                              }}
+                                              value={loctionItem.locationContent || ''}
+                                              onChange={e => {
+                                                setScheduleList(prev => {
+                                                  const next = [...prev];
+                                                  const schedule = next[selectedScheduleIndex];
+                                                  const day = schedule?.scheduleDetailData?.[dayIndex];
+                                                  const currentItem = day?.scheduleDetail?.[locationIndex];
+
+                                                  if (!schedule || !day || !currentItem) return prev;
+
+                                                  const newScheduleDetail = [...day.scheduleDetail];
+                                                  const updatedItem = { ...currentItem, locationContent: e.target.value };
+                                                  newScheduleDetail[locationIndex] = updatedItem;
+
+                                                  const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+
+                                                  const newScheduleDetailData = [...schedule.scheduleDetailData];
+                                                  newScheduleDetailData[dayIndex] = updatedDay;
+
+                                                  next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+
+                                                  return next;
+                                                });
+                                              }}
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        {loctionItem.sort === 'airline' && loctionItem.airlineData ? (
+                                          // 첨부 이미지 스타일의 항공편 정보 UI
+                                          <div className="schedule__element__wrapper">
+                                          <div className="schedule-flight__schedule__board__wrapper">
+                                            <div className="schedule-flight__schedule__board">
+                                                {loctionItem.airlineData && loctionItem.sort === 'airline' ? (
+                                                // 항공편 표시 (직항/경유 구분 없이)
+                                                <>
+                                                  <div className="schedule-flight__info__wrapper">
+                                                    {(() => {
+                                                      const airlineCode = loctionItem.airlineData?.airlineCode?.slice(0, 2);
+                                                      try {
+                                                        return <img src={require(`../../../airlineLogos/${airlineCode}.png`)} alt="항공사로고" />;
+                                                      } catch {
+                                                        return null;
+                                                      }
+                                                    })()}
+                                                    <span>{loctionItem.airlineData?.airlineName || '-'}</span>
+                                                    <span style={{marginLeft:'10px'}}>{loctionItem.airlineData?.airlineCode}</span>
+                                                    {loctionItem.airlineData?.addDay === 'true' && (
+                                                      <span style={{marginLeft:'10px', color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
+                                                    )}
+                                                  </div>
+                                                  <div className="schedule-flight__time__wrapper">
+                                                    <span className="schedule-flight__time">{getFlightDuration(loctionItem.airlineData?.departTime, loctionItem.airlineData?.arriveTime)}</span>
+                                                    <div className="schedule-depart__info">
+                                                      <div />
+                                                      <span className="schedule-time__text">{loctionItem.airlineData?.departTime?.slice(0,2) + ':' + loctionItem.airlineData?.departTime?.slice(2,4)}</span>
+                                                      <span className="schedule-airport__text">{getCityNameByCode(loctionItem.airlineData?.depart)} 출발</span>
+                                                    </div>
+                                                    <div className="schedule-arrive__info">
+                                                      <div />
+                                                      <span className="schedule-time__text">{loctionItem.airlineData?.arriveTime?.slice(0,2) + ':' + loctionItem.airlineData?.arriveTime?.slice(2,4)}</span>
+                                                      <span className="schedule-airport__text">{getCityNameByCode(loctionItem.airlineData?.arrive)} 도착</span>
+                                                    </div>
+                                                  </div>
+                                                </>
+                                              ) : (
+                                                // 직항 항공편: 기존 표시 방식
+                                                <>
+                                                  <div className="schedule-flight__info__wrapper">
+                                                    {(() => {
+                                                      const airlineCode = loctionItem.airlineData?.airlineCode?.slice(0, 2);
+                                                      try {
+                                                        return <img src={require(`../../../airlineLogos/${airlineCode}.png`)} alt="항공사로고" />;
+                                                      } catch {
+                                                        return null;
+                                                      }
+                                                    })()}
+                                                    <span>{loctionItem.airlineData?.airlineName || '-'}</span>
+                                                    <span style={{marginLeft:'10px'}}>{loctionItem.airlineData?.airlineCode}</span>
+                                                    {loctionItem.airlineData?.addDay === 'true' && (
+                                                      <span style={{marginLeft:'10px', color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
+                                                    )}
+                                                  </div>
+                                                  <div className="schedule-flight__time__wrapper">
+                                                    <span className="schedule-flight__time">{getFlightDuration(loctionItem.airlineData?.departTime, loctionItem.airlineData?.arriveTime)}</span>
+                                                    <div className="schedule-depart__info">
+                                                      <div />
+                                                      <span className="schedule-time__text">{loctionItem.airlineData?.departTime?.slice(0,2) + ':' + loctionItem.airlineData?.departTime?.slice(2,4)}</span>
+                                                      <span className="schedule-airport__text">{getCityNameByCode(loctionItem.airlineData?.depart)} 출발</span>
+                                                    </div>
+                                                    <div className="schedule-arrive__info">
+                                                      <div />
+                                                      <span className="schedule-time__text">{loctionItem.airlineData?.arriveTime?.slice(0,2) + ':' + loctionItem.airlineData?.arriveTime?.slice(2,4)}</span>
+                                                      <span className="schedule-airport__text">{getCityNameByCode(loctionItem.airlineData?.arrive)} 도착</span>
+                                                    </div>
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        ) : null}
+                                        {/* 기차편 렌더링 */}
+                                        {loctionItem.sort === 'train' && loctionItem.trainData ? (
+                                          <div className="schedule__element__wrapper">
+                                            <div className="schedule-flight__schedule__board__wrapper">
+                                              <div className="schedule-flight__schedule__board">
+                                                <div className="schedule-flight__info__wrapper">
+                                                  <span style={{fontSize:'16px', marginRight:'10px'}}>🚂</span>
+                                                  <span>{loctionItem.trainData?.trainName || '-'}</span>
+                                                  <span style={{marginLeft:'10px'}}>{loctionItem.trainData?.trainCode || '-'}</span>
+                                                  {loctionItem.trainData?.addDay === 'true' && (
+                                                    <span style={{marginLeft:'10px', color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
+                                                  )}
+                                                </div>
+                                                <div className="schedule-flight__time__wrapper">
+                                                  <span className="schedule-flight__time">{getFlightDuration(loctionItem.trainData?.departTime, loctionItem.trainData?.arriveTime)}</span>
+                                                  <div className="schedule-depart__info">
+                                                    <div />
+                                                    <span className="schedule-time__text">{loctionItem.trainData?.departTime?.slice(0,2) + ':' + loctionItem.trainData?.departTime?.slice(2,4)}</span>
+                                                    <span className="schedule-airport__text">{getCityNameByTrafficCode(loctionItem.trainData?.depart, 'train')} 출발</span>
+                                                  </div>
+                                                  <div className="schedule-arrive__info">
+                                                    <div />
+                                                    <span className="schedule-time__text">{loctionItem.trainData?.arriveTime?.slice(0,2) + ':' + loctionItem.trainData?.arriveTime?.slice(2,4)}</span>
+                                                    <span className="schedule-airport__text">{getCityNameByTrafficCode(loctionItem.trainData?.arrive, 'train')} 도착</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                        {/* 버스편 렌더링 */}
+                                        {loctionItem.sort === 'bus' && loctionItem.busData ? (
+                                          <div className="schedule__element__wrapper">
+                                            <div className="schedule-flight__schedule__board__wrapper">
+                                              <div className="schedule-flight__schedule__board">
+                                                <div className="schedule-flight__info__wrapper">
+                                                  <span style={{fontSize:'16px', marginRight:'10px'}}>🚌</span>
+                                                  <span>{loctionItem.busData?.busName || '-'}</span>
+                                                  <span style={{marginLeft:'10px'}}>{loctionItem.busData?.busCode || '-'}</span>
+                                                  {loctionItem.busData?.addDay === 'true' && (
+                                                    <span style={{marginLeft:'10px', color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
+                                                  )}
+                                                </div>
+                                                <div className="schedule-flight__time__wrapper">
+                                                  <span className="schedule-flight__time">{getFlightDuration(loctionItem.busData?.departTime, loctionItem.busData?.arriveTime)}</span>
+                                                  <div className="schedule-depart__info">
+                                                    <div />
+                                                    <span className="schedule-time__text">{loctionItem.busData?.departTime?.slice(0,2) + ':' + loctionItem.busData?.departTime?.slice(2,4)}</span>
+                                                    <span className="schedule-airport__text">{getCityNameByTrafficCode(loctionItem.busData?.depart, 'bus')} 출발</span>
+                                                  </div>
+                                                  <div className="schedule-arrive__info">
+                                                    <div />
+                                                    <span className="schedule-time__text">{loctionItem.busData?.arriveTime?.slice(0,2) + ':' + loctionItem.busData?.arriveTime?.slice(2,4)}</span>
+                                                    <span className="schedule-airport__text">{getCityNameByTrafficCode(loctionItem.busData?.arrive, 'bus')} 도착</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                        {/* 선박편 렌더링 */}
+                                        {loctionItem.sort === 'ship' && loctionItem.shipData ? (
+                                          <div className="schedule__element__wrapper">
+                                            <div className="schedule-flight__schedule__board__wrapper">
+                                              <div className="schedule-flight__schedule__board">
+                                                <div className="schedule-flight__info__wrapper">
+                                                  <span style={{fontSize:'16px', marginRight:'10px'}}>🚢</span>
+                                                  <span>{loctionItem.shipData?.shipName || '-'}</span>
+                                                  <span style={{marginLeft:'10px'}}>{loctionItem.shipData?.shipCode || '-'}</span>
+                                                  {loctionItem.shipData?.addDay === 'true' && (
+                                                    <span style={{marginLeft:'10px', color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
+                                                  )}
+                                                </div>
+                                                <div className="schedule-flight__time__wrapper">
+                                                  <span className="schedule-flight__time">{getFlightDuration(loctionItem.shipData?.departTime, loctionItem.shipData?.arriveTime)}</span>
+                                                  <div className="schedule-depart__info">
+                                                    <div />
+                                                    <span className="schedule-time__text">{loctionItem.shipData?.departTime?.slice(0,2) + ':' + loctionItem.shipData?.departTime?.slice(2,4)}</span>
+                                                    <span className="schedule-airport__text">{getCityNameByTrafficCode(loctionItem.shipData?.depart, 'ship')} 출발</span>
+                                                  </div>
+                                                  <div className="schedule-arrive__info">
+                                                    <div />
+                                                    <span className="schedule-time__text">{loctionItem.shipData?.arriveTime?.slice(0,2) + ':' + loctionItem.shipData?.arriveTime?.slice(2,4)}</span>
+                                                    <span className="schedule-airport__text">{getCityNameByTrafficCode(loctionItem.shipData?.arrive, 'ship')} 도착</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : null}
+                                        {loctionItem.sort === 'location' ? (
+                                          // location 타입일 때의 기존 UI
+                                          loctionItem.locationDetail.map((locationDetailItem:any, locationDetailIndex:number)=>{
+                                            return (
+                                              <div key={locationDetailIndex} className="schedule-schedule__sub_element__wrapper">
+                                                <div className="schedule-schedule__element__subTitle__wrapper">
+                                                  <div className="schedule-schedule__element__subTitle">
+                                                    <div className="schedule-absolute__wrapper">
+                                                      <div className="schedule-dot__icon" />
+                                                    </div>
+                                                    <div className="schedule-schedule__text__wrapper">
+                                                      <span>{locationDetailItem.subLocation ? locationDetailItem.subLocation.replace(/^\[|\]$/g, '') : ''}</span>
+                                                      <div className="schedule-schedule__btns">
+                                                        <button className="schedule-schedule__btn" title="변경"
+                                                          onClick={() => {
+                                                          
+                                                          }}>변경</button>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                {/* isUseContent가 true인 경우 subLocationContent 표시 */}
+                                                {locationDetailItem.isUseContent && locationDetailItem.subLocationContent && (
+                                                  <div style={{width:'100%', padding:'20px', marginTop:'10px', marginBottom:'10px', borderRadius:'8px'}}>
+                                                    <div 
+                                                      style={{
+                                                        fontSize:'15px', 
+                                                        lineHeight:'1.8', 
+                                                        color:'#333', 
+                                                        whiteSpace:'pre-wrap'
+                                                      }}
+                                                      dangerouslySetInnerHTML={{__html: locationDetailItem.subLocationContent}}
+                                                    />
+                                                  </div>
+                                                )}
+                                                {
+                                                  locationDetailItem.subLocationDetail.map((subDetailBoxItem:any, subDetailBoxIndex:number)=>{
+                                                    const shouldShowDivider = subDetailBoxIndex > 0;
+                                                    return (
+                                                      <div key={subDetailBoxIndex}>
+                                                        {shouldShowDivider && (
+                                                          <div style={{width:'100%', height:'1px', background:'#ddd', marginTop:'20px', marginBottom:'20px', borderTop:'1px dotted #999'}}></div>
+                                                        )}
+                                                      <div className="schedule-schedule__element__main__wrapper"
+                                                          style={{width:'100%', display:'flex', flexDirection:'column', gap:'15px', padding:'30px'}}>
+                                                          <div className="schedule-table__wrapper" style={{width:'100%', padding:'10px 0'}}>
+                                                            <div className="schedule-table__header" style={{fontSize:'20px', fontWeight:'bold', marginBottom:'10px', color:'#000'}}>
+                                                              <span>{subDetailBoxItem.locationTitle}</span>
+                                                            </div>
+                                                            <div className="schedule-table__main" style={{fontSize:'15px', lineHeight:'1.8', color:'#333', whiteSpace:'pre-wrap'}}
+                                                              dangerouslySetInnerHTML={{__html: subDetailBoxItem.locationContent}}
+                                                            />                                                
+                                                          </div>
+                                                          <div className="schedule-image__wrapper" style={{width:'100%', overflow:'hidden', marginTop:'8px'}}>
+                                                            <div style={{
+                                                              display:'flex', 
+                                                              width:'100%', 
+                                                              justifyContent: (subDetailBoxItem.postImages && subDetailBoxItem.postImages.length === 2) ? 'flex-start' : 'space-between',
+                                                              gap: (subDetailBoxItem.postImages && subDetailBoxItem.postImages.length === 2) ? '2%' : '0'
+                                                            }}>
+                                                              {subDetailBoxItem.postImages && subDetailBoxItem.postImages.length > 0 ? (
+                                                                subDetailBoxItem.postImages.slice(0, 3).map((imgName: string, imgIdx: number) => (
+                                                                  <img
+                                                                    key={imgIdx}
+                                                                    style={{width:'32%', aspectRatio:'4/3', objectFit:'cover', borderRadius:'8px'}}
+                                                                    src={`${AdminURL}/images/scheduledetailboximages/${imgName}`}
+                                                                    onError={e => { e.currentTarget.src = ''; e.currentTarget.alt = '이미지가 없습니다.'; }}
+                                                                  />
+                                                                ))
+                                                              ) : (
+                                                                <span></span>
+                                                              )}
+                                                        </div>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    )
+                                                  })
+                                                }
+                                              </div>
+                                            )
+                                          })
+                                        ) : null}
+                                      </div>
+                                    ))
+                                  }
+                              </div>
+                              <div className="schedule-additional__schedule__wrapper">
+                                <div className="schedule-index__wrapper">
+                                  <span>식사</span>
+                                </div>
+                                <div className="schedule-additional__schedule__wrapper__textbox">
+                                  <div className="schedule-meal__info__wrapper">
+                                    <div className="schedule-meal__info__wrapper__text">
+                                      <span>[조식]</span>
+                                      {editMealRowIndex === dayIndex ? (
+                                        <DropdownBox
+                                          widthmain="150px"
+                                          height="30px"
+                                          selectedValue={dayItem.breakfast || '선택'}
+                                          options={datmealOptions}
+                                          handleChange={e => {
+                                            const copy = [...scheduleList];
+                                            if (copy[selectedScheduleIndex].scheduleDetailData && copy[selectedScheduleIndex].scheduleDetailData.length > 0) {
+                                              copy[selectedScheduleIndex].scheduleDetailData[dayIndex].breakfast = e.target.value;
+                                            }
+                                            setScheduleList(copy);
+                                          }}
+                                        />
+                                      ) : (
+                                        <span style={{marginLeft:'10px'}}>{dayItem.breakfast || '없음'}</span>
+                                      )}
+                                    </div>
+                                    <div className="schedule-meal__info__wrapper__text">
+                                      <span>[중식]</span>
+                                      {editMealRowIndex === dayIndex ? (
+                                        <DropdownBox
+                                          widthmain="150px"
+                                          height="30px"
+                                          selectedValue={dayItem.lunch || '선택'}
+                                          options={datmealOptions}
+                                          handleChange={e => {
+                                            const copy = [...scheduleList];
+                                            if (copy[selectedScheduleIndex].scheduleDetailData && copy[selectedScheduleIndex].scheduleDetailData.length > 0) {
+                                              copy[selectedScheduleIndex].scheduleDetailData[dayIndex].lunch = e.target.value;
+                                            }
+                                            setScheduleList(copy);
+                                          }}
+                                        />
+                                      ) : (
+                                        <span style={{marginLeft:'10px'}}>{dayItem.lunch || '없음'}</span>
+                                      )}
+                                    </div>
+                                    <div className="schedule-meal__info__wrapper__text">
+                                      <span>[석식]</span>
+                                      {editMealRowIndex === dayIndex ? (
+                                        <DropdownBox
+                                          widthmain="150px"
+                                          height="30px"
+                                          selectedValue={dayItem.dinner || '선택'}
+                                          options={datmealOptions}
+                                          handleChange={e => {
+                                            const copy = [...scheduleList];
+                                            if (copy[selectedScheduleIndex].scheduleDetailData && copy[selectedScheduleIndex].scheduleDetailData.length > 0) {
+                                              copy[selectedScheduleIndex].scheduleDetailData[dayIndex].dinner = e.target.value;
+                                            }
+                                            setScheduleList(copy);
+                                          }}
+                                        />
+                                      ) : (
+                                        <span style={{marginLeft:'10px'}}>{dayItem.dinner || '없음'}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="schedule-additional__btn__wrapper schedule-schedule__btns">
+                                    {editMealRowIndex === dayIndex ? (
+                                      <button className="schedule-schedule__btn" style={{marginLeft:'8px'}} onClick={() => setEditMealRowIndex(-1)} title="완료">완료</button>
+                                    ) : (
+                                      <button className="schedule-schedule__btn" style={{marginLeft:'8px'}} onClick={() => setEditMealRowIndex(dayIndex)} title="식사 변경">식사 변경</button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="schedule-additional__schedule__wrapper">
+                                <div className="schedule-index__wrapper">
+                                  {/* 호텔 아이콘 대체 가능 */}
+                                  <span>호텔</span>
+                                </div>
+                                <div className="schedule-additional__schedule__wrapper__textbox">
+                                  <div className="schedule-additional__info__wrapper" style={{marginLeft:'0'}}>
+                                      <p>{dayItem.hotel || ''}</p>
+                                    <div className="schedule-additional__rating__wrapper">
+                                      <RatingBoard rating={parseInt(dayItem.score) || 0} />
+                                    </div>
+                                  </div>
+                                  <div className="schedule-additional__btn__wrapper schedule-schedule__btns">
+                                    <button className="schedule-schedule__btn" title="변경">변경</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })
+                      }
+                    </div>
+                  )
+                })
+              }
+            </div>
+          </div>
+        </div>
+        
+      </div>
+
+    
+           
+     
+      
+    </div>     
+  )
+}

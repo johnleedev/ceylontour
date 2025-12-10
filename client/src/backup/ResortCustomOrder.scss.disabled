@@ -1,0 +1,829 @@
+
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+.resort-custom-order-cover {
+  width: 100%;
+
+  .menucover {
+    width: 100%;
+    height: 100px;
+    background-color: #333;
+    margin-bottom: 50px;
+  }
+
+  section {
+    width: 100%;
+    margin-bottom: 50px;
+  }
+  
+  .custom-order-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .custom-header-back-icon {
+      font-size: 30px;
+      margin-right: 10px;
+    }
+    .custom-header-back-icon:hover {
+      cursor: pointer;
+      opacity: 0.8;
+    }
+    h1 {
+      font-size: 30px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+  }
+  .bottombar {
+    width: 100%;
+    height: 2px;
+    background-color: #333;
+  }
+
+  // 달력 인원 박스 ------------------------------
+  .custom-order-date-cover {
+    width: 100%;
+    height: 100px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .custom-order-date-box {
+      width: 48%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+
+      .main-text {
+        color: #9e9e9e;
+      }
+
+      .date-box-left-icon {
+        width: 30px;
+        margin-right: 10px;
+        .calender-icon {
+          font-size: 25px;
+          color: #007BFF;
+        }
+      }
+      .date-box-right-content {
+        flex: 1;
+
+        .person-box {
+          display: flex;
+          align-items: center;
+          
+          h3 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 20px;
+          }
+          h5 {
+            font-size: 22px;
+            margin-right: 20px;
+          }
+          .person-control-btn {
+            width: 27px;
+            height: 27px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 5px;
+            @include middle();
+            p {
+             font-size: 18px;
+            }
+          }
+          .person-control-btn:hover {
+            cursor: pointer;
+            border: 1px solid #a5a5a5;
+          }
+        }
+      }
+    }
+  }
+
+  // 호텔 커스텀 선택 박스 ------------------------------
+
+  .hotelCustom-select-row {
+    height: 50px;
+    display: flex;
+
+    .hotelCustomselect-btn {
+      width: 50%;
+      padding: 20px;
+      @include middle();
+      border-bottom: 2px solid #8e8e8e;
+      background-color: #f9f9f9;
+      p {
+        font-size: 20px;
+      }
+    }
+    .hotelCustomselect-btn:hover {
+      cursor: pointer;
+    }
+    .selected {
+      border: 2px solid #8e8e8e;
+      border-bottom: 2px solid #FFF;
+      background-color: #fff;
+    }
+  }
+
+
+  // 호텔 타입 선택 박스 ------------------------------
+
+  .custom-hotelTypeCover {
+    display: flex;
+    align-items: center;
+
+    .hotelTypeBox {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-right: 20px;
+      p {
+        padding: 10px 30px;
+      }
+    }
+    .hotelTypeBox:hover {
+      cursor: pointer;
+      border-color: #37b0d9;
+    }
+    .selected {
+      background-color: #37b0d9;
+      p {
+        color: #fff;
+      }
+    }
+   
+  }
+
+  // 호텔 공통 ------------------------------
+
+  .custom-toptextrow {
+    width: 100%;
+    display: flex;
+    font-size: 18px;
+    margin-bottom: 20px;
+    align-items: center;
+
+    .left-maintext {
+      width: 200px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+    .right-contenttext {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  }
+  
+  // 선택호텔 -----------------------------------------------
+  .hotel-detail-cover {
+    width: 100%;
+
+    .hotel-detail-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+
+      img {
+        width: 30%;
+        aspect-ratio: 1.8;
+        object-fit: cover;
+        border-radius: 10px;
+      }
+      .hotel-detail-textbox {
+        width: 70%;
+        padding: 10px 20px;
+
+        .hotel-detail-textbox-title {
+          display: flex;
+          font-weight: bold;
+          span {
+            border: 1px solid #ccc;
+            padding: 1px 10px;
+            
+            font-size: 14px;
+            margin-left: 10px;
+          }
+          span:hover {
+            cursor: pointer;
+            border: 1px solid #adadad;
+          }
+        }
+        .hotel-detail-textbox-notice {
+          padding: 10px;
+          p {
+            margin: 5px 0;
+            color: #a8a8a8;
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+
+
+  // 같은 가격대 호텔 -----------------
+  .hotelImage-cover {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+
+    .hotelImage-box {
+      width: 100%;
+      
+      img {
+        width: 95%;
+        aspect-ratio: 1.8;
+        object-fit: cover;
+        border-radius: 10px;
+        margin: 10px;
+      }
+    }
+ 
+    .hotel-checkInputCover {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+
+      .checkInputBox {
+        width: 30px;
+        height: 30px;
+        @include middle();
+        position: relative;
+    
+        .checkinput {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          appearance: none;
+          outline: none;
+          border: 1px solid #ccc;
+          background-color: #fff;
+          cursor: pointer;
+        }
+        .checkinput:checked {
+          background-color: #007BFF;
+          border-color: #007BFF;
+        }
+        .hotel-checkIcon {
+          position: absolute;
+          font-size: 12px;
+          color: #fff;
+        }
+      }
+    
+      p {
+        margin: 0 30px 0 5px;
+      }
+    }
+    .hotelRoomType-select-cover {
+      display: flex;
+      justify-content: space-between;
+
+      .hotelRoomType-select-left-box {
+        width: 60%;
+        display: flex;
+      }
+      .hotelRoomType-roomtype-select-box {
+        width: 40%;
+        display: flex;
+        justify-content: end;
+      
+        .hotelRoomType-roomtype-select-btn {
+          border: 1px solid #ccc;
+          width: 70px;
+          height: 30px;
+          @include middle();
+          border-radius: 5px;
+          p {
+            font-size: 14px;
+            margin-right: 10px;
+          }
+          .select-btn-icon {
+            font-size: 14px;
+          }
+        }
+        .hotelRoomType-roomtype-select-btn:hover {
+          cursor: pointer;
+        }
+        .selected {
+          background-color: #37b0d9;
+          p {
+            color: #fff;
+          }
+          .select-btn-icon {
+            color: #fff;
+          }
+        }
+      }
+    }
+  }
+
+
+
+  .middletext-cover {
+    width: 100%;
+    padding: 20px;
+    background-color: #9fa6ae;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+
+    h3 {
+      font-weight: bold;
+    }
+  }
+  .hotelRoomType-cover {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+
+    .hotelRoomType-box {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      img {
+        width: 100%;
+        height: 200px;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+      }
+      .hotelRoomType-textbox {
+        padding: 20px;
+
+        h3 {
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
+        .hotelRoomType-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          .daynight-btn-box {
+            display: flex;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+
+            .daynight-text {
+              @include middle();
+              p {
+                font-size: 18px;
+                margin-right: 5px;
+              }
+            }
+            .daynight-btn {
+              width: 27px;
+              height: 27px;
+              border-radius: 5px;
+              @include middle();
+              p {
+               font-size: 18px;
+              }
+            }
+            .daynight-text {
+              width: 35px;
+              border-left: 1px solid #ccc;
+              border-right: 1px solid #ccc;;
+            }
+            .daynight-btn:hover {
+              cursor: pointer;
+            }
+          }
+          .select-btn-box {
+            .select-btn {
+              padding: 5px 15px;
+              border-radius: 5px;
+              border: 1px solid #ccc;
+              
+              @include middle();
+              p {
+                font-size: 14px;
+                margin-right: 5px;
+                color: #ccc;
+              }
+              .select-btn-icon {
+                font-size: 14px;
+                color: #ccc;
+              }
+            }
+            .selected {
+              background-color: #37b0d9;
+              p {
+                color: #fff;
+              }
+              .select-btn-icon {
+                color: #fff;
+              }
+            }
+          }
+          .select-btn-box:hover {
+            cursor: pointer;
+          }
+        }
+      }
+
+    }
+    
+  }
+  
+  .notice-textbox {
+    width: 100%;
+    p {
+      color: #a1a1a1;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+  }
+
+  // 일정 커스텀 선택 박스 ------------------------------
+
+  .custom-scheduleTypeBtnCover-row {
+    display: flex; 
+    align-items: center;
+    justify-content: space-between;
+     
+
+    .custom-scheduleTypeBtnCover {
+      width: 40%;
+      display: flex;
+      align-items: center;
+  
+      .scheduleTypeBox {
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        margin-right: 20px;
+        p {
+          padding: 10px 30px;
+        }
+      }
+      .scheduleTypeBox:hover {
+        cursor: pointer;
+        border-color: #37b0d9;
+      }
+      .selected {
+        background-color: #37b0d9;
+        p {
+          color: #fff;
+        }
+      }
+     
+    }
+    .custom-scheduleDayBtnCover {
+      width: 40%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .scheduleBtnBox {
+        padding: 5px 15px;
+        border-radius: 5px;
+        color: #9fa6ae;
+      }
+      .scheduleBtnBox:hover {
+        cursor: pointer;
+        border: 1px solid #333;
+        color: #333;
+      }
+      .selected {
+        border: 1px solid #333;
+        color: #333;
+      }
+    }
+  }
+  
+
+  .custom-scheduleContent-Cover {
+    width: 100%;
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    margin-bottom: 50px;
+    
+    .custom-scheduleContent-leftBox {
+      width: 75%;
+      border: 1px solid #ccc;
+    }
+    .custom-scheduleContent-rightBox {
+      width: 23%;
+      border: 1px solid #ccc;
+      padding : 20px;
+
+      .custom-customTypeBtnCover {
+        width: 100%;
+        display: grid;
+        justify-content: space-between;
+        align-items: center;
+        grid-template-columns: 48% 48%;
+      
+        .customTypeBox {
+          border: 1px solid #ccc;
+          border-radius: 10px;
+          @include middle();
+          padding: 3px 5px;
+          margin: 5px;
+        }
+        .customTypeBox:hover {
+          cursor: pointer;
+          border-color: #37b0d9;
+        }
+        .selected {
+          background-color: #37b0d9;
+          p {
+            color: #fff;
+          }
+        }
+       
+      }
+      .custom-customImageBox {
+       width: 100%; 
+
+       .custom-customImage{
+        width: 100%;
+        margin-bottom: 10px;
+
+        img {
+          width: 100%;
+          aspect-ratio: 1.8;
+          overflow: hidden;
+        }
+        .custom-customImage-title-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 5px;
+
+          .custom-customImage-title {
+            @include middle();
+
+            span {
+              border: 1px solid #ccc;
+              padding: 1px 10px;
+              
+              font-size: 14px;
+              margin-left: 10px;
+            }
+            span:hover {
+              cursor: pointer;
+              border: 1px solid #adadad;
+            }
+          }
+          .custom-customImage-check {
+            
+            .checkInputBox {
+              width: 30px;
+              height: 30px;
+              @include middle();
+              position: relative;
+          
+              .checkinput {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                appearance: none;
+                outline: none;
+                border: 1px solid #ccc;
+                background-color: #fff;
+                cursor: pointer;
+              }
+              .checkinput:checked {
+                background-color: #007BFF;
+                border-color: #007BFF;
+              }
+              .hotel-checkIcon {
+                position: absolute;
+                font-size: 12px;
+                color: #fff;
+              }
+            }
+          }
+        }
+        .custom-customImage-cost-row {
+          display: flex;
+          align-items: center;
+          margin-top: 5px;
+
+          .custom-cost-text {
+            margin-right: 10px;
+          }
+          .custom-cost-btn-box {
+            display: flex;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+
+            .custom-cost-text {
+              @include middle();
+              p {
+                font-size: 18px;
+                margin-right: 5px;
+              }
+            }
+            .custom-cost-btn {
+              width: 20px;
+              height: 20px;
+              border-radius: 5px;
+              @include middle();
+              p {
+               font-size: 14px;
+              }
+            }
+            .custom-cost-personNum {
+              width: 20px;
+              @include middle();
+              p {
+                
+                font-size: 14px;
+              }
+            }
+            .custom-cost-btn:hover {
+              cursor: pointer;
+            }
+          }
+        }
+       }
+      }
+    }
+  }
+
+
+  // 총요금 ------------------------------
+  .custom-bottom-cost-cover {
+    display: flex;
+    width: 100%;
+    padding: 50px;
+    background-color: #585d63;
+    color: #fff;
+    .custom-bottom-cost-left-box {
+      width: 60%;
+      min-height: 120px;
+      display: flex;
+      justify-content: space-between;
+      flex-direction: column;
+      letter-spacing: 1px;
+
+      h3 {
+        font-size: 22px;
+        font-weight: bold;
+      }
+      p {
+        color: #ccc;
+        font-size: 16px;
+      }
+      h1 {
+        color: #ccc;
+        font-size: 16px;
+        span {
+          color: #ffd672;
+          font-size: 26px;
+          margin-left: 10px;
+          margin-right: 5px;
+        }
+      }
+    }
+    .custom-bottom-cost-right-box {
+      width: 40%;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      flex-direction: column;
+
+      .custom-bottom-cost-Btnbox {
+        width: 250px;
+        height: 50px;
+        @include middle();
+        border-radius: 5px;
+      }
+      .custom-bottom-cost-Btnbox:hover {
+        cursor: pointer;
+        opacity: 0.9;
+      }
+    }
+  }
+
+  .custom-bottom-cost-cover {
+    flex-direction: column;
+    width: 100%;
+    padding: 50px;
+    background-color: #585d63;
+    color: #fff;
+
+    .custom-bottom-cost-top-box {
+      width: 100%;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      h3 {
+        font-size: 22px;
+        font-weight: bold;
+      }
+      
+    }
+    .custom-bottom-cost-middle-box {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      h3 {
+        
+      }
+      .middle-box-right {
+        padding: 5px 30px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        p {
+          color: #ccc;
+          font-size: 14px;
+        }
+      }
+    }
+    .custom-bottom-cost-bottom-box {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      p {
+        color: #ccc;
+        font-size: 16px;
+      }
+      .bottom-box-icon {
+        font-size: 14px;
+        margin-right: 10px;
+      }
+
+      .bottom-cost-left-box {
+        h2 {
+          font-size: 22px;
+          span {
+            color: #ccc;
+            font-size: 16px;
+            margin-left: 5px;
+          }
+        }
+      }
+      .bottom-cost-right-box {
+        text-align: right;
+
+        h1 {
+          color: #ccc;
+          font-size: 16px;
+          span {
+            color: #ffd672;
+            font-size: 26px;
+            margin-left: 10px;
+            margin-right: 5px;
+          }
+        }
+        p {
+          color: #9fa6ae;
+        }
+      }
+      
+    }
+  }
+
+
+  .custom-bottom-btn-cover {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 100px;
+
+    .custom-bottom-btn-Btnbox {
+      width: 48%;
+      height: 50px;
+      @include middle();
+      border-radius: 5px;
+      h5 {
+        font-size: 18px;
+      }
+    }
+    .custom-bottom-btn-Btnbox:hover {
+      cursor: pointer;
+      opacity: 0.9;
+    }
+  }
+}
+
+
+
+  
+
+  

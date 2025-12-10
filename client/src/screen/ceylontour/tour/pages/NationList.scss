@@ -1,0 +1,1057 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+.nation_page {
+  width: 100%;
+  min-height: 100vh;
+
+  .nation_detail_search__bar___wrapper {
+    @media (max-width: 1200px) {
+      width: 90%;
+    }
+    @media (max-width: 1000px) {
+      display: none;
+    }
+    position: absolute;
+    width: 100%;
+    height: 80px;
+    top: 150px;
+    left: 0;
+    right: 0;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+    background-color: #fff;
+    border-radius: 11px;
+    max-width: 1200px;
+    color: rgba(0, 0, 0, 1);
+  
+    .nation_detail_search__box { 
+      width: 20%;
+      @include middle();
+  
+      .nation_detail_search__text{
+        width: 20%;
+        font-size: 22px;
+      }
+      .nation_detail_search__select {
+        width: 80%;
+        min-height: 50px;
+        border: none;
+        box-sizing: border-box;
+        color: #333;
+        font-size: 16px;
+        background-color: #fff;
+        outline: none;
+      }
+      .nation_detail_search__btn {
+        width: 80%;
+        height: 40px;
+        border-radius: 10px;
+        background-color: #2FB4E2;
+        color: #fff;
+        @include middle();
+      }
+      .nation_detail_search__btn:hover {
+        cursor: pointer;
+        border: 1px solid #1e82a4;
+      }
+    }
+    .nation_detail_search__bar {
+      width: 1px;
+      height: 40px;
+      margin: 0 10px;
+      background-color: #dedede;
+    }
+  }
+  
+
+  .nation__header__section__wrapper {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    color: #fff;
+    .bg__image {
+      width: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+  }
+
+  .nation_detail_category__menu__section__wrapper {
+    display: flex;
+    border-bottom: 1px solid #d9d9d9;
+
+    .nation_detail_category__menu__content {
+      position: relative;
+      margin: 0 auto;
+      width: 90%;
+      height: 80px;
+      max-width: 1200px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      // .nation_detail_category__menu__box {
+      //   width: 10%;
+      //   height: 100%;
+      //   color: #ccc;
+      //   @include middle();
+      // }
+      // .selected {
+      //   color: #333;
+      //   border-bottom: 3px solid  #28ABE1;
+      // }
+      
+      // .nation_detail_category__menu__box:hover {
+      //   cursor: pointer;
+      //   color: #333;
+      //   border-bottom: 3px solid  #28ABE1;
+      // }
+
+      .category__menu-item {
+        position: relative;
+        width: 10%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        @include middle();
+
+        .category__menu-face {
+          font-size: 16px;
+          cursor: pointer;
+          transition: color 100ms;
+
+          &.on {
+            color: #333;
+          }
+        }
+        .category__menu-face2 {
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 4px;
+          display: none;
+
+          &.on {
+            display: block;
+          }
+        }
+        &:after {
+          content: '';
+          width: 0px;
+          height: 4px;
+          background-color: #2FB4E2;
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          transform: translateX(-50%);
+          transition: all 0.2s ease-in-out;
+          opacity: 0;
+        }
+        &.on {
+          cursor: pointer;  
+          .category__menu-face { 
+            color: #2FB4E2;
+          }
+        }
+        &.on:after {
+          width: 90%;
+          opacity: 1;
+        }
+      }
+      .category__menu-item:hover {
+        cursor: pointer;
+        &:after {
+          width: 90%;
+          opacity: 1;
+        }
+        .category__menu-face { 
+          color: #2FB4E2;
+        }
+      }
+    }
+  }
+
+
+  // 기본일정 & 커스텀 오더 선택 --------------------------------------------------
+
+  .nation_detail_selector__productList__wrapper {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 1200px;
+    margin-top: 50px;
+
+    .nation_detail_selector__box {
+      width: 100%;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+
+      .nation_detail_selector__btn {
+        width: 49%;
+        height: 100%;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 20px 25px;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: space-between;
+
+        .selector__btn__top_area {
+          .p {
+            font-size: 16px;
+          }
+        }
+        .selector__btn__bottom_area {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          h3 {
+            font-size: 30px;
+          }
+          .selector__btn__bottom_icon {
+            font-size: 36px;
+          }
+          .selector__btn__bottom_icon2 {
+            font-size: 20px;
+          }
+        }
+      }
+      .selected {
+        background-color: #37b0d9;
+        color: #fff;
+      }
+      .nation_detail_selector__btn:hover {
+        cursor: pointer;
+      }
+    }
+    
+  }
+
+  
+  // 상품 박스 ----------------------------------------------------------------
+  .product__item__list__wrapper {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 1200px;
+    
+    .header__title {
+      font-size: clamp(20px, 1.3vw, 26px);
+      color: rgba(0, 0, 0, 1);
+      margin-bottom: 1vw;
+      @media (max-width: 800px) {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      span:last-child {
+        font-weight: 700;
+        line-height: 1.1;
+        @media (max-width: 800px) {
+          font-size: 22px;
+        }
+      }
+    }
+    .product__items__wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1vw;
+      @media (max-width: 800px) {
+        gap: 0px;
+      }
+      .product__item__wrapper {
+        display: flex;
+        cursor: pointer;
+        border-radius: 7px;
+        border: 1px solid rgba(187, 187, 187, 1);
+        width: 100%;
+        overflow: hidden;
+        @media (max-width: 800px) {
+          padding: 13px 0;
+          border-bottom: 1px solid rgba(221, 221, 221, 1);
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+        
+        .image__wrapper {
+          width: 40%;
+          aspect-ratio: 2;
+          overflow: hidden;
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+        .product__info__wrapper {
+          width: 60%;
+          display: flex;
+          padding: 30px 50px;
+          align-items: center;
+          justify-content: space-between;
+          
+          @media (max-width: 800px) {
+            padding: 5px 15px;
+            justify-content: flex-start;
+          }
+          .product__info__wrapper_left {
+            width: 60%;
+
+            .info__header {
+              display: flex;
+              align-items: center;
+              margin-bottom: 5px;
+
+              .tour__title {
+                font-size: 24px;
+                font-weight: 700;
+                margin-right: 10px;
+                @media (max-width: 800px) {
+                  margin-right: 10px;
+                }
+              }
+              .tour__period {
+                font-size: clamp(13px, 0.83vw, 16px);
+                color: rgba(119, 119, 119, 1);
+              }
+            }
+            .product__schedule {
+              color: rgba(51, 51, 51, 1);
+              line-height: 18px;
+              margin-bottom: 20px;
+            }
+            .product__content {
+              padding: 20px;
+              background-color: #e6f2f5;
+              border-radius: 10px;
+              line-height: 25px;
+              p {
+                color: #5e5e5e;
+              }
+            }
+          }
+          .product__info__wrapper_verticalBar {
+            width: 1px;
+            height: 100%;
+            border-right: 1px dashed #ccc;
+          }
+          .product__info__wrapper_right {
+            width: 30%;
+            @include middle();
+            flex-direction: column;
+
+            .product__cost {
+              font-size: 20px;
+              font-weight: bold;
+            }
+            .product__cost_sub {
+              color: #969696;
+            }
+            .product__cost_selectBtn_box {
+              padding: 5px 20px;
+              margin-top: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              p {
+                color: #969696;
+              }
+            }
+            .selected {
+              background-color: rgba(36, 167, 212, 1);
+              p {
+                color: #fff;
+              }
+            }
+          }
+        }
+        
+      }
+      .selectedbox {
+        border: 2px solid rgba(36, 167, 212, 1);
+      }
+    }
+  }
+  
+
+  
+
+  // 항공사별 일정표 ----------------------------------------------------------------
+  .nation_detail_schedule__byairline__wrapper {
+    width: 80%;
+    max-width: 1200px;
+    margin: 100px auto 100px auto;
+    @media (max-width: 1200px) {
+      width: 90%;
+    }
+
+    .nation_detail_schedule_header__wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      .header__main {
+        font-weight: 500;
+        font-size: 20px;
+        color: rgba(0, 0, 0, 1);
+      }
+      .sidebar__wrapper {
+        display: flex;
+        justify-content: flex-end;
+        color: rgba(51, 51, 51, 1);
+        font-size: clamp(13px, 1vw, 19px);
+        span {
+          line-height: 1;
+          border-right: 1px solid rgba(148, 148, 148, 1);
+          padding: 0 1vw;
+          @media (max-width: 800px) {
+            padding: 1px 15px;
+          }
+          &.selected__sidebar {
+            font-weight: 700;
+            color: rgba(11, 11, 11, 1);
+          }
+          &:last-child {
+            padding-right: 0px;
+            border-right: none;
+          }
+        }
+      }
+      .sidebar__wrapper:hover {
+        cursor: pointer;
+      }
+    }
+
+    
+  }
+
+  .flight__item__wrapper {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 0.25fr 0.60fr 0.15fr;
+    color: rgba(51, 51, 51, 1);
+    border-radius: 7px;
+    border: 1px solid rgba(187, 187, 187, 1);
+    padding: 1vw;
+    font-size: clamp(12px, 0.78vw, 15px);
+    margin-bottom: 15px;
+    @media (max-width: 800px) {
+      display: flex;
+      flex-direction: column;
+      font-size: 15px;
+      padding: 15px;
+    }
+    & > div {
+      border-right: 1px dotted rgba(204, 204, 204, 1);
+      @media (max-width: 800px) {
+        width: 100%;
+        border: none;
+      }
+    }
+    & > div:last-child {
+      border: none;
+    }
+    .airline__wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      @media (max-width: 800px) {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+      img {
+        max-width: 200px;
+        max-height: 30px;
+      }
+      span {
+        line-height: 1.6;
+      }
+    }
+    .flight__schedule__wrapper {
+      display: flex;
+      align-items: center;
+      padding: 0 3vw;
+      width: 100%;
+      gap: 5vw;
+      span {
+        line-height: 1.6;
+      }
+      @media (max-width: 800px) {
+        padding-left: 50px;
+        flex-direction: column;
+        align-items: baseline;
+        gap: 5px;
+        .period__text {
+          font-size: 14px;
+          color: rgba(150, 150, 150, 1);
+        }
+      }
+      .flight__schedule_row {
+        width: 50%;
+        gap: 0.3vw;
+
+        .flight__schedule {
+          display: flex;
+        }
+      }
+    }
+    .flight__select__btn__wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      @media (max-width: 800px) {
+        justify-content: flex-end;
+      }
+     
+      .select__btn__wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: rgba(85, 85, 85, 1);
+        gap: 0.52vw;
+        padding: 0.52vw 1.1vw;
+        border: 1px solid rgba(85, 85, 85, 1);
+        border-radius: 0.26vw;
+        @media (max-width: 1000px) {
+          padding: 5px 10px;
+          border-radius: 5px;
+        }
+        @media (max-width: 800px) {
+          padding: 5px 20px;
+        }
+        cursor: pointer;
+        &.checked {
+          border: 1px solid rgba(36, 167, 212, 1);
+          background-color: rgba(36, 167, 212, 1);
+          color: rgba(253, 253, 253, 1);
+        }
+        span {
+          margin-top: 3px;
+          font-size: clamp(14px, 0.78vw, 15px);
+        }
+      }
+
+    }
+  }
+
+  // 일정표 ----------------------------------------------------------------
+
+  .nation_detail_mx__section {
+    @media (min-width: 800px) {
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto 5vw auto;
+    }
+    @media (max-width: 800px) {
+      width: 90%;
+      margin: 0 auto 30px auto;
+    }
+
+    .nation_detail_schedule_header__wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      .header__main {
+        font-weight: 500;
+        font-size: 20px;
+        color: rgba(0, 0, 0, 1);
+      }
+      .sidebar__wrapper {
+        display: flex;
+        justify-content: flex-end;
+        color: rgba(51, 51, 51, 1);
+        font-size: clamp(13px, 1vw, 19px);
+        span {
+          line-height: 1;
+          border-right: 1px solid rgba(148, 148, 148, 1);
+          padding: 0 1vw;
+          @media (max-width: 800px) {
+            padding: 1px 15px;
+          }
+          &.selected__sidebar {
+            font-weight: 700;
+            color: rgba(11, 11, 11, 1);
+          }
+          &:last-child {
+            padding-right: 0px;
+            border-right: none;
+          }
+        }
+      }
+      .sidebar__wrapper:hover {
+        cursor: pointer;
+      }
+    }
+  }
+
+  
+  .schedule__tables__wrapper {
+    display: flex;
+    flex-direction: column;
+
+    .schedule__table__wrapper {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid rgba(0, 0, 0, 1);
+      color: rgba(0, 0, 0, 1);
+      white-space: pre-line;
+      line-height: 25px;
+
+      &:last-child {
+        border-bottom: 1px solid rgba(0, 0, 0, 1);
+      }
+      .schedule__header {
+        display: flex;
+        align-items: center;
+        gap: 1.5vw;
+        padding: 1vw 3.5vw;
+        background-color: rgba(248, 248, 248, 1);
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        
+
+        @media (max-width: 800px) {
+          padding: 13px 20px 10px 20px;
+          gap: 20px;
+        }
+        .main__text {
+          font-size: clamp(19px, 1.3vw, 25px);
+          font-weight: 700;
+          line-height: 1;
+        
+        }
+        .sub__text {
+          font-size: clamp(15px, 1.1vw, 21px);
+          line-height: 1;
+          color: rgba(0, 0, 0, 1);
+        }
+      }
+
+
+      .schedule__main__wrapper {
+        padding: 0 30px;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+        
+        .schedule__element__wrapper {
+          position: relative;
+          margin-left: 30px;
+          padding-top: 30px;
+          padding-bottom: 20px;
+          border-left: 1px dotted rgba(180, 180, 180, 1);
+ 
+          .flight__schedule__board__wrapper {
+            @media (min-width: 800px) {
+              display: flex;
+              width: 100%;
+              flex-direction: column;
+              align-items: center;
+              padding: 1.5vw 0;
+            }
+            .flight__schedule__board {
+              display: flex;
+              flex-direction: column;
+              width: 40%;
+              .flight__info__wrapper {
+                display: flex;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                padding-bottom: 20px;
+                border-bottom: 1px solid rgba(0, 0, 0, 1);
+                img {
+                  max-width: 100px;
+                  max-height: 30px;
+                }
+                span {
+                  font-size: 16px;
+                  color: #333;
+                }
+              }
+              .flight__time__wrapper {
+                display: flex;
+                justify-content: center;
+                margin-top: 0.5vw;
+                position: relative;
+                .flight__time {
+                  color: #686868;
+                  font-size: 14px;
+                }
+                & > div {
+                  position: absolute;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  .time__text {
+                    font-size: 25px;
+                    font-weight: 700;
+                  }
+                  .airport__text {
+                    font-size: 15px;
+                  }
+                  div {
+                    width: 0.625vw;
+                    height: 0.625vw;
+                    border: 1px solid rgba(0, 0, 0, 1);
+                    border-radius: 50%;
+                    background-color: rgba(255, 255, 255, 1);
+                    margin-bottom: 0.4vw;
+                  }
+                }
+                .depart__info {
+                  left: 0;
+                  transform: translate(-50%, -0.85vw);
+                }
+                .arrive__info {
+                  right: 0;
+                  transform: translate(50%, -0.85vw);
+                }
+              }
+            }
+          }
+
+          .schedule__element__header__wrapper {
+            border-left: 1px dotted rgba(180, 180, 180, 1);
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            @media (max-width: 800px) {
+              padding-top: 20px;
+            }
+            .schedule__location__wrapper {
+              position: relative;
+              display: flex;
+              align-items: center;
+              margin-bottom: 30px;
+              
+              .location__absolute__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+              }
+              .location__text {
+                padding-left: clamp(27px, 2.5vw, 57px);
+                font-size: 20px;
+                line-height: 1.3;
+              }
+            }
+            .schedule__element__header {
+              display: flex;
+              align-items: center;
+              @media (max-width: 800px) {
+                padding-top: 10px;
+              }
+              .absolute__wrapper {
+                position: absolute;
+                transform: translate(-50%, 0);
+                z-index: 3;
+
+                .dot__icon {
+                  width: clamp(8px, 0.52vw, 10px);
+                  height: clamp(8px, 0.52vw, 10px);
+                  background-color: rgba(52, 52, 52, 1);
+                  border-radius: 50%;
+                }
+        
+              }
+              .schedule__text__wrapper {
+                position: absolute;
+                display: flex;
+                margin-left: 30px;
+                font-size: 18px;
+
+                @media (max-width: 800px) {
+                  padding-left: clamp(27px, 2.5vw, 57px);
+                  flex-direction: column;
+                  gap: 0px;
+                  .time__text {
+                    font-size: 20px;
+                    font-weight: 700;
+                  }
+                }
+              }
+            }
+
+          }
+          .schedule__element__main__wrapper {
+            width: 100%;
+            min-height: 200px;
+            margin-top: 20px;
+            margin-left: 30px;
+            border: 1px solid #ccc;
+            display: flex;
+            
+            .image__wrapper {
+              width: 30%;
+              @include middle();
+
+              .imagebox {
+          
+                img {
+                  
+                }
+              }
+            }
+
+            .table__wrapper {
+              width: 70%;
+              padding: 20px;
+
+              .table__header {
+                font-size: 18px;
+                color: rgba(0, 0, 0, 1);
+                margin-bottom: 10px;
+              }
+              .table__main {
+                display: flex;
+                flex-direction: column;
+                
+                .detailbox {
+                  
+                  .detailbox-name {
+                    margin-bottom: 5px;
+                  }
+                  .detailbox-notice {
+                    margin-bottom: 10px;
+                    margin-left: 10px;
+                    color: #969696;
+                  }
+                }
+              }
+            }
+          }
+
+
+          
+        }
+      }
+
+      .additional__schedule__wrapper {
+        display: flex;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+
+        &:last-child {
+          border: none;
+        }
+        .index__wrapper {
+          width: 25%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.7vw;
+          padding: 0.7vw 0;
+          @media (max-width: 800px) {
+            padding: 8px 0;
+            gap: 10px;
+          }
+          svg {
+            width: clamp(23px, 1.84vw, 35px);
+          }
+          span {
+            font-size: clamp(14px, 0.94vw, 18px);
+            line-height: 1;
+          }
+        }
+        & > div:last-child {
+          display: flex;
+          align-items: center;
+          font-size: clamp(13px, 0.78vw, 15px);
+          padding: 0 20px;
+          color: rgba(51, 51, 51, 1);
+
+          &.meal__info__wrapper {
+            gap: 10vw;
+            @media (max-width: 800px) {
+              gap: 10px;
+            }
+          }
+          &.additional__info__wrapper {
+            display: flex;
+            
+            p {
+              font-size: 14px;
+              color: #ccc;
+            }
+            .additional__rating__wrapper {
+              margin-left: 10px;
+  
+              .rating__board__wrapper {
+                width: 100%;
+                display: flex;
+            
+                .rating__icon {
+                  @include middle();
+                  
+                  .empty__star .filled__star {
+                    width: 100%;
+                    height: 100%;
+                  }
+                  .empty__star {
+                    fill: rgba(119, 119, 119, 1);
+                  }
+                  .filled__star {
+                    fill: rgba(252, 196, 0, 1);
+                    z-index: 2;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // 포함/불포함 --------------------------------------------
+  .single__header__main {
+    font-weight: 500;
+    font-size: 18px;
+    color: rgba(0, 0, 0, 1);
+    margin-bottom: 0.5vw;
+  }
+
+  .nation_detail_included__items__section__wrapper {
+    
+    .included__items__wrapper {
+      @media (min-width: 800px) {
+        display: grid;
+        grid-template-columns: 0.25fr 0.75fr;
+        border-top: 1px solid rgba(0, 0, 0, 1);
+        & > div {
+          border-bottom: 1px solid rgba(187, 187, 187, 1);
+        }
+        & > div:nth-of-type(odd) {
+          border-right: 1px solid rgba(187, 187, 187, 1);
+        }
+      }
+      .index__title__wrapper {
+        display: flex;
+        color: rgba(0, 0, 0, 1);
+        align-items: center;
+        font-size: clamp(16px, 1vw, 20px);
+        justify-content: center;
+        background-color: rgba(248, 248, 248, 1);
+        gap: 5px;
+        @media (max-width: 800px) {
+          align-items: flex-start;
+          justify-content: flex-start;
+          background-color: rgba(255, 255, 255, 1);
+          border-bottom: 1px solid rgba(0, 0, 0, 1);
+          padding: 5px 0;
+        }
+        .included__icon {
+          @include middle();
+          font-weight: 700;
+          color: rgba(40, 171, 225, 1);
+        }
+        .unincluded__icon {
+          @include middle();
+          font-weight: 700;
+          color: rgba(224, 49, 49, 1);
+        }
+      }
+      .elements__wrapper {
+        display: flex;
+        flex-direction: column;
+        color: rgba(51, 51, 51, 1);
+        font-size: clamp(13px, 0.78vw, 15px);
+        gap: 0.2vw;
+        padding: 1vw 2vw;
+        @media (max-width: 800px) {
+          padding: 10px 0 30px;
+          gap: 2px;
+        }
+      }
+    }
+  }
+
+  // 필독사항 --------------------------------------------
+  .nation_detail_must__read__section__wrapper {
+    .must__read__wrapper {
+      display: flex;
+      flex-direction: column;
+      color: rgba(51, 51, 51, 1);
+      font-size: clamp(13px, 0.78vw, 15px);
+      gap: 0.4vw;
+      padding: 2vw 0;
+      border-top: 1px solid rgba(0, 0, 0, 1);
+      border-bottom: 1px solid rgba(187, 187, 187, 1);
+      white-space: pre-line;
+      @media (max-width: 800px) {
+        border-bottom: none;
+        padding: 10px 0 30px;
+        gap: 2px;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  // 하단 버튼 --------------------------------------------
+  .nation_detail_bottom_btn_cover {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .nation_detail_bottom_btn {
+      @include middle();
+      padding: 20px;
+      border-radius: 5px;
+     p {
+        font-size: 18px;
+      }
+    }
+    .nation_detail_bottom_btn:hover {
+      cursor: pointer;
+      opacity: 0.9;
+    }
+  }
+
+  // 하단 커스텀 메이드 박스 --------------------------------------------
+  .nation_detail_bottom_modal_cover {
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    @include middle();
+    z-index: 99;
+
+    .nation_detail_bottom_modal {
+      width: 700px;
+      height: 100px;
+      background-color: #37b0d9;
+      @include middle();
+      border-top-left-radius: 50px;
+      border-top-right-radius: 50px;
+
+      p {
+        font-size: 24px;
+        font-weight: bold;
+        margin-right: 20px;
+      }
+      .bottom_modal_icon {
+        color: #fff;
+      }
+    }
+    .nation_detail_bottom_modal:hover {
+      cursor: pointer;
+    }
+  }
+  
+  
+}
+

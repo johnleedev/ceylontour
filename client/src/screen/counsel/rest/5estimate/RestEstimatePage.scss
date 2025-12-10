@@ -1,0 +1,534 @@
+.rest-estimatePage {
+  margin-top: 100px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  padding: 0 50px;
+
+
+  .rest-estimate-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+
+    @media (min-width: 1024px) {
+      flex-direction: row;
+      gap: 32px;
+      align-items: flex-start;
+    }
+  }
+
+  .rest-left-section {
+    flex: 1;
+    min-width: 0;
+
+    .rest-estimate-header {
+      margin-bottom: 32px;
+
+      .rest-text-wrapper {
+        color: #000000;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 23px;
+        font-weight: 500;
+        margin: 0;
+      }
+    }
+
+    .rest-text-wrapper-2 {
+      color: #000000;
+      font-family: "Noto Sans KR", Helvetica;
+      font-size: 21px;
+      font-weight: 500;
+      margin: 0 0 24px 0;
+    }
+  }
+
+  .rest-right-section {
+    width: 100%;
+
+    @media (min-width: 1024px) {
+      width: 37.33%;
+      min-width: 400px;
+      flex-shrink: 0;
+    }
+  }
+
+  .rest-hotel-list-section {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 100px;
+
+    .rest-table-header {
+      display: none;
+
+      @media (min-width: 768px) {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 2fr 1fr;
+        gap: 16px;
+        padding: 16px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .rest-div,
+      .rest-text-wrapper-3,
+      .rest-text-wrapper-4,
+      .rest-text-wrapper-5 {
+        color: #000000;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 14px;
+        font-weight: 500;
+      }
+    }
+
+    .rest-hotel-items {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .rest-hotel-item {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+
+      @media (max-width: 767px) {
+        flex-direction: column;
+      }
+
+      .rest-hotel-image {
+        width: 280px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px;
+        flex-shrink: 0;
+
+        @media (max-width: 767px) {
+          width: 100%;
+          height: auto;
+          aspect-ratio: 16/9;
+        }
+      }
+
+      .rest-hotel-info {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+
+        .rest-p-3,
+        .rest-p-5 {
+          margin-bottom: 0;
+          order: 1;
+        }
+
+        .rest-text-wrapper-6,
+        .rest-text-wrapper-7 {
+          color: #fbc400;
+          font-size: 16px;
+          margin: 0;
+          order: 2;
+        }
+
+        .rest-p-instance,
+        .rest-p-2 {
+          margin-bottom: 0;
+          order: 3;
+        }
+
+        .rest-p-10,
+        .rest-p-12 {
+          margin-bottom: 0;
+          order: 4;
+        }
+
+        .rest-p-7,
+        .rest-p-9 {
+          margin-top: 8px;
+          margin-bottom: 0;
+          order: 5;
+        }
+      }
+    }
+
+ 
+  }
+
+  .rest-schedule-section {
+    margin-bottom: 100px;
+
+    // 일정표 탭 콘텐츠
+    .rest-schedule-tab-content-left {
+      width: 100%;
+    }
+
+    
+
+  
+  }
+
+
+  .rest-estimate-form {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    margin-bottom: 24px;
+
+    .rest-form-section {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+   
+      .rest-form-label-wrapper {
+
+        .rest-form-label {
+          width: 100px;
+          color: #040404;
+          font-family: "Noto Sans KR", Helvetica;
+          font-size: 16px;
+          font-weight: 500;
+          margin-right: 20px;
+        }
+      }
+
+
+      .rest-flight-info-wrapper {
+        gap: 8px;
+      }
+
+      .rest-flight-info {
+        color: #3b3b3b;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 14px;
+        font-weight: 400;
+          line-height: 1.6;
+        margin-bottom: 8px;
+        flex-direction: column;
+
+        .rest-text-wrapper-24 {
+          color: #3b3b3b;
+        }
+
+        .rest-text-wrapper-25 {
+          color: #045abc;
+        }
+      }
+
+      .rest-hotel-nights {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+
+        .rest-hotel-night {
+          color: #272727;
+          font-family: "Noto Sans KR", Helvetica;
+          font-size: 12px;
+          font-weight: 400;
+          padding: 4px 8px;
+          border: 1px solid #c3c3c3;
+          border-radius: 3px;
+        }
+      }
+    }
+  }
+
+  .rest-estimate-summary {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+
+    .rest-summary-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid #e5e5e5;
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+
+      &.rest-total {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 24px 0;
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+        margin: 16px 0;
+
+        .rest-text-wrapper-13 {
+          color: #000000;
+          font-family: "Noto Sans KR", Helvetica;
+          font-size: 20px;
+          font-weight: 600;
+        }
+
+        .rest-text-wrapper-18 {
+          color: #262626;
+          font-family: "Noto Sans KR", Helvetica;
+          font-size: clamp(28px, 4vw, 35px);
+          font-weight: 500;
+        }
+
+        .rest-text-wrapper-17 {
+          color: #333333;
+          font-family: "Noto Sans KR", Helvetica;
+          font-size: 17px;
+          font-weight: 400;
+        }
+      }
+
+      .rest-text-wrapper-11,
+      .rest-text-wrapper-12 {
+        color: #6e6e6e;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 15px;
+        font-weight: 500;
+      }
+
+      .rest-price-element {
+        color: #242424;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.5;
+
+        .rest-span {
+          font-weight: 600;
+        }
+
+        .rest-text-wrapper-14 {
+          font-size: 19px;
+          font-weight: 600;
+        }
+
+        .rest-text-wrapper-15 {
+          font-size: 15px;
+        }
+      }
+    }
+
+    .rest-vector-5 {
+      width: 100%;
+      height: 1px;
+      margin: 16px 0;
+      opacity: 0.2;
+    }
+
+    .rest-summary-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      margin-top: 16px;
+
+      .rest-text-wrapper-16 {
+        color: #333333;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 13px;
+        font-weight: 400;
+      }
+
+      .rest-text-wrapper-19 {
+        color: #222222;
+        font-family: "Noto Sans KR", Helvetica;
+        font-size: 15px;
+        font-weight: 400;
+      }
+    }
+
+    .rest-summary-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 24px;
+
+      @media (min-width: 768px) {
+        flex-direction: row-reverse;
+      }
+
+      .rest-action-button {
+        position: relative;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        flex: 1;
+
+        @media (min-width: 768px) {
+          flex: 0 0 auto;
+        }
+
+        &:hover {
+          opacity: 0.9;
+        }
+
+        .rest-rectangle-10 {
+          background-color: #010205;
+          border-radius: 3px;
+          height: 100%;
+          width: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .rest-rectangle-11 {
+          background-color: #ffffff;
+          border: 1px solid #000000;
+          border-radius: 3px;
+          height: 100%;
+          width: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+
+        .rest-text-wrapper-9,
+        .rest-text-wrapper-10 {
+          position: relative;
+          z-index: 1;
+          padding: 14px 24px;
+          text-align: center;
+          font-family: "Noto Sans KR", Helvetica;
+          font-size: 16px;
+          font-weight: 500;
+        }
+
+        &.rest-action-button-primary {
+          .rest-text-wrapper-9 {
+            color: #ffffff;
+          }
+        }
+
+        &.rest-action-button-secondary {
+          .rest-text-wrapper-10 {
+            color: #353535;
+          }
+        }
+      }
+    }
+  }
+
+  // P component styles
+  .rest-p {
+    .rest-text-wrapper {
+      font-family: "Noto Sans KR", Helvetica;
+    }
+
+    &.rest-p-instance,
+    &.rest-p-2 {
+      .rest-design-component-instance-node {
+        color: #222222;
+        font-size: 14px;
+        line-height: 1.64;
+      }
+    }
+
+    &.rest-p-3,
+    &.rest-p-5 {
+      .rest-p-4,
+      .rest-p-6 {
+        color: #0e0e0e;
+        font-size: 16px;
+        font-weight: 500;
+      }
+    }
+
+    &.rest-p-7,
+    &.rest-p-9 {
+      .rest-p-8 {
+        color: #555555;
+        line-height: 1.64;
+      }
+    }
+
+    &.rest-p-10,
+    &.rest-p-12 {
+      .rest-p-11 {
+        color: #555555;
+        font-size: 14px;
+      }
+    }
+
+    &.rest-p-14,
+    &.rest-p-16 {
+      .rest-p-15 {
+        color: #272727;
+        font-size: 14px;
+      }
+    }
+
+    &.rest-p-17,
+    &.rest-p-23,
+    &.rest-p-24,
+    &.rest-p-25,
+    &.rest-p-27 {
+      .rest-p-18 {
+        color: #272727;
+        font-size: 14px;
+      }
+    }
+
+    &.rest-p-28 {
+      .rest-p-29 {
+        color: #3b3b3b;
+        font-size: 14px;
+        line-height: 1.71;
+      }
+    }
+  }
+}
+
+// Mobile styles
+@media (max-width: 767px) {
+  .rest-estimatePage {
+    padding: 16px;
+
+    .rest-left-section {
+      .rest-estimate-header {
+        margin-bottom: 24px;
+      }
+    }
+
+    .rest-hotel-list-section {
+      .rest-hotel-item {
+        padding: 16px;
+      }
+    }
+
+    .rest-estimate-form {
+      padding: 16px;
+    }
+
+    .rest-estimate-summary {
+      padding: 16px;
+    }
+  }
+}
+
+// Tablet styles
+@media (min-width: 768px) and (max-width: 1023px) {
+  .rest-estimatePage {
+    padding: 24px;
+  }
+}
+
+// Desktop styles
+@media (min-width: 1024px) {
+  .rest-estimatePage {
+    padding: 32px 48px;
+  }
+}

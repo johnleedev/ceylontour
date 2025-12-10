@@ -1,0 +1,332 @@
+.div-wrapper-screen {
+  margin-top: 100px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  padding: 0 50px;
+
+  .hotel-header {
+    margin: 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .hotel-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .hotel-header-title {
+      margin: 0;
+      font-family: "Noto Sans KR", Helvetica;
+      font-size: 32px;
+      font-weight: 700;
+      color: #111111;
+    }
+
+    .hotel-header-subtitle {
+      margin: 0;
+      font-family: "Noto Sans KR", Helvetica;
+      font-size: 14px;
+      font-weight: 400;
+      color: #777777;
+    }
+  }
+
+  .hotel-header-search {
+    flex: 0 0 360px;
+
+    .hotel-search-form {
+      display: flex;
+      align-items: center;
+      background-color: #f4f5f7;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .hotel-search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 10px 14px;
+      font-size: 14px;
+      background-color: transparent;
+      font-family: "Noto Sans KR", Helvetica;
+      color: #333;
+
+      &::placeholder {
+        color: #b0b0b0;
+      }
+    }
+
+    .hotel-search-button {
+      width: 44px;
+      height: 40px;
+      border: none;
+      background-color: #4da9ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .hotel-search-icon {
+      color: #ffffff;
+      font-size: 16px;
+    }
+  }
+
+  .navbar-wrapper {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .navbar,
+  .navbar-2 {
+    align-items: center;
+    display: inline-flex;
+    gap: 14px;
+
+    .nav-item {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #8a8a8a;
+      font-family: "Inter", Helvetica;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: normal;
+      margin-top: -1px;
+      white-space: nowrap;
+      transition: color 0.2s ease, font-weight 0.2s ease;
+
+      &.active {
+        color: #0a0a0a;
+        font-weight: 700;
+      }
+    }
+
+    .nav-separator {
+      background-color: #939393;
+      height: 15px;
+      width: 1px;
+      display: inline-block;
+    }
+  }
+
+  .hotel-card-grid {
+    position: relative;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 24px;
+
+    .div-wrapper {
+      width: 100% !important;
+      position: relative !important;
+      border-radius: 5px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-image-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 12;
+      overflow: hidden;
+      border-radius: 5px;
+
+      .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+    }
+    .card-image-wrap:hover {
+      cursor: pointer;
+      transform: scale(1.05);
+      transition: transform 0.3s ease;
+    }
+
+    .card-body {
+      padding: 14px 16px 16px;
+    }
+
+    .hotel-name {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .hotel-location-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .hotel-location {
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .hotel-stars {
+      font-size: 16px;
+      color: #ffbf00;
+    }
+
+    .promo-text {
+      font-size: 13px;
+      font-weight: 400;
+      color: #c9c9c9;
+      margin: 4px 0 0;
+    }
+  }
+
+  .text-wrapper-nav-destination {
+    color: #888888;
+    font-family: "Noto Sans KR", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    left: 1328px;
+    letter-spacing: 0;
+    line-height: normal;
+    position: absolute;
+    text-align: center;
+    top: 43px;
+    width: 99px;
+  }
+
+  .text-wrapper-nav-schedule {
+    color: #888888;
+    font-family: "Noto Sans KR", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    left: 1520px;
+    letter-spacing: 0;
+    line-height: normal;
+    position: absolute;
+    text-align: center;
+    top: 43px;
+    width: 99px;
+  }
+
+  .text-wrapper-nav-hotel {
+    color: #2c2b2b;
+    font-family: "Noto Sans KR", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    left: 1427px;
+    letter-spacing: 0;
+    line-height: normal;
+    position: absolute;
+    text-align: center;
+    top: 43px;
+    width: 99px;
+  }
+
+  .text-wrapper-nav-estimate {
+    color: #888888;
+    font-family: "Noto Sans KR", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    left: 1696px;
+    letter-spacing: 0;
+    line-height: normal;
+    position: absolute;
+    text-align: center;
+    top: 43px;
+    width: 99px;
+  }
+
+  .text-wrapper-nav-flight {
+    color: #888888;
+    font-family: "Noto Sans KR", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    left: 1609px;
+    letter-spacing: 0;
+    line-height: normal;
+    position: absolute;
+    text-align: center;
+    top: 43px;
+    width: 99px;
+  }
+
+  .rectangle-nav-indicator {
+    background-color: #10a4d7;
+    height: 3px;
+    left: 1450px;
+    position: absolute;
+    top: 69px;
+    width: 56px;
+  }
+}
+
+// 반응형 레이아웃
+@media (max-width: 1400px) {
+  .div-wrapper-screen {
+    .hotel-card-grid {
+      margin-top: 220px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 0 24px;
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .div-wrapper-screen {
+    margin-top: 80px;
+    .hotel-header,
+    .navbar-wrapper {
+      padding: 0 24px;
+    }
+
+    .hotel-card-grid {
+      margin-top: 40px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 0 16px 40px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .div-wrapper-screen {
+    .hotel-header {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .navbar-wrapper {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .hotel-card-grid {
+      grid-template-columns: 1fr;
+      margin-top: 32px;
+      padding: 0 12px 32px;
+    }
+
+    .text-wrapper-nav-title {
+      left: 16px;
+      top: 120px;
+      font-size: 24px;
+    }
+  }
+}
