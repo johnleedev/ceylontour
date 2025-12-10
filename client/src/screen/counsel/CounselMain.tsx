@@ -5,6 +5,7 @@ import { recoilCounselFormData } from '../../RecoilStore';
 import { IoIosArrowDown } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import CounselMainHeader from './common/CounselMainHeader';
+import CustomerInfoModal from './CustomerInfoModal';
 
 interface CounselForm {
   theme: string[];
@@ -39,6 +40,8 @@ export default function CounselMain() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errors, setErrors] = useState<Partial<CounselForm>>({});
   const [showConsultForm, setShowConsultForm] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
 
   const travelDestinations = [
     {
@@ -192,7 +195,7 @@ export default function CounselMain() {
     }
   };
 
-  const handleDestinationClick = (destination: string) => {
+  const navigateToDestination = (destination: string) => {
     // '휴양지' 클릭 시 '/counsel/rest'로 이동
     if (destination === 'rest') {
       navigate('/counsel/rest');
@@ -210,6 +213,23 @@ export default function CounselMain() {
       destination: destination
     }));
     setShowConsultForm(true);
+  };
+
+  const handleDestinationClick = (destination: string) => {
+    // 모달 열기
+    setSelectedDestination(destination);
+    setShowCustomerModal(true);
+  };
+
+  const handleStartClick = () => {
+    // 모달 닫기
+    setShowCustomerModal(false);
+    
+    // 선택된 destination으로 페이지 전환
+    if (selectedDestination) {
+      navigateToDestination(selectedDestination);
+      setSelectedDestination(null);
+    }
   };
 
   return (
@@ -249,6 +269,16 @@ export default function CounselMain() {
         </div>
       </div>
 
+      {/* Customer Info Modal */}
+      {showCustomerModal && (
+        <CustomerInfoModal
+          onStart={handleStartClick}
+          onClose={() => {
+            setShowCustomerModal(false);
+            setSelectedDestination(null);
+          }}
+        />
+      )}
      
     </div>
   );

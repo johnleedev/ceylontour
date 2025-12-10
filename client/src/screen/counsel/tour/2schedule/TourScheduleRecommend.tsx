@@ -9,9 +9,6 @@ import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import axios from 'axios';
 
-// 이미지 import
-import PreviewImage from '../../../images/counsel/tour/schedule/eupath.png';
-import RouteImage from '../../../images/counsel/tour/schedule/eumap.png';
 import rectangle675 from '../../../lastimages/counselrest/hotel/detail/rectangle-675.png';
 import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle-676.png';
 import rectangle677 from '../../../lastimages/counselrest/hotel/detail/rectangle-677.png';

@@ -658,7 +658,7 @@ const TripPage: React.FC = () => {
                               className="schedule-item"
                               onClick={() => {
                                 if (schedule.id) {
-                                  navigate(`/counsel/tour/schedule`, { state: schedule });
+                                  navigate(`/counsel/tour/schedulerecommend`, { state: schedule });
                                   window.scrollTo(0, 0);
                                 }
                               }}
@@ -742,7 +742,7 @@ const TripPage: React.FC = () => {
                       // 다음 단계로 이동
                       const allSelectedCities = Object.values(selectedCities).flat();
                       if (allSelectedCities.length > 0) {
-                        navigate(`/counsel/tour/schedule/create?cities=${allSelectedCities.join(',')}&days=${createScheduleDays}`);
+                        navigate(`/counsel/tour/schedulecustom`);
                       }
                     }}
                     disabled={Object.values(selectedCities).flat().length === 0}
