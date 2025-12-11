@@ -1,16 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './RestHotelPage.scss';
 import { useNavigate, useLocation } from 'react-router-dom';
-import rectangle42 from '../../../lastimages/counselrest/hotel/rectangle-42.png';
-import rectangle42_3 from '../../../lastimages/counselrest/hotel/rectangle-42-3.png';
-import rectangle42_5 from '../../../lastimages/counselrest/hotel/rectangle-42-5.png';
-import rectangle42_6 from '../../../lastimages/counselrest/hotel/rectangle-42-6.png';
-import rectangle42_8 from '../../../lastimages/counselrest/hotel/rectangle-42-8.png';
-import rectangle42_9 from '../../../lastimages/counselrest/hotel/rectangle-42-9.png';
-import rectangle42_11 from '../../../lastimages/counselrest/hotel/rectangle-42-11.png';
-import rectangle42_12 from '../../../lastimages/counselrest/hotel/rectangle-42-12.png';
-import rectangle42_14 from '../../../lastimages/counselrest/hotel/rectangle-42-14.png';
-import rectangle42_15 from '../../../lastimages/counselrest/hotel/rectangle-42-15.png';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
 

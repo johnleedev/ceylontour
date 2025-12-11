@@ -41,47 +41,133 @@
         font-size: 20px;
       }
 
-        // 상단 스케줄 탭 영역
+        // 상단 스케줄 탭 영역 (항공편 카드 형태)
         .schedule-header__tabs {
           display: flex;
-          gap: 8px;
-          margin-top: 8px;
+          flex-direction: column;
+          gap: 15px;
+          margin-top: 16px;
         }
 
-        .schedule-header__tab {
-          padding: 6px 12px;
-          border: 1px solid #bbb;
-          border-radius: 6px;
-          background: #fff;
-          font-size: 13px;
-          font-weight: 400;
-          color: #333;
-          min-width: 80px;
+        .schedule-flight__item__wrapper {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 30% 40% 30%;
+          color: rgba(51, 51, 51, 1);
+          border-radius: 7px;
+          border: 1px solid rgba(187, 187, 187, 1);
+          padding: 1vw;
+          font-size: clamp(12px, 0.78vw, 15px);
+          cursor: pointer;
           transition: all 0.2s ease;
-        }
 
-        .schedule-header__tab--active {
+          @media (max-width: 800px) {
+            display: flex;
+            flex-direction: column;
+            font-size: 15px;
+            padding: 15px;
+          }
+
+          &:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+          }
+
+          &--active {
           border: 2px solid #007bff;
           background: #e3f2fd;
-          font-weight: 600;
-          color: #007bff;
+          }
+
+          & > div {
+            border-right: 1px dotted rgba(204, 204, 204, 1);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            @media (max-width: 800px) {
+              width: 100%;
+              border: none;
+            }
+          }
+
+          & > div:last-child {
+            border: none;
         }
 
-        .schedule-header__tab__codes {
-          margin: 0 2px;
-          font-size: 11px;
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          .schedule-airline__wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+
+            @media (max-width: 800px) {
+              flex-direction: row;
+              justify-content: space-between;
+            }
+
+            img {
+              max-width: 200px;
+              max-height: 30px;
+            }
+
+            span {
+              line-height: 1.6;
+            }
+          }
+
+          .schedule-flight__schedule__wrapper {
+            display: flex;
+            align-items: center;
+            padding: 0 3vw;
+            width: 100%;
+            gap: 5vw;
+
+            span {
+              line-height: 1.6;
+            }
+
+            @media (max-width: 800px) {
+              padding-left: 50px;
+              flex-direction: column;
+              align-items: baseline;
+              gap: 5px;
+
+              .schedule-period__text {
+                font-size: 14px;
+                color: rgba(150, 150, 150, 1);
+              }
         }
 
-        .schedule-header__tab__code {
-          margin: 0;
-          line-height: 1.2;
-        }
+            .schedule-flight__schedule_row {
+              width: 100%;
+              display: flex;
+              align-items: center;
+              gap: 0.3vw;
+            }
+          }
 
-        .schedule-header__tab__empty {
-          margin: 0;
-          color: #999;
+          .schedule-flight__fare-text {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            color: #333333;
+
+            .schedule-fare-label {
+              font-weight: 500;
+            }
+
+            .schedule-fare-amount {
+              font-weight: 600;
+            }
+
+            @media (max-width: 800px) {
+              justify-content: flex-start;
+              margin-top: 10px;
+            }
+          }
         }
     }
   }

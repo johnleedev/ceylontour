@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CustomerInfoModal.scss';
+import { useRecoilState } from 'recoil';
+import { recoilCustomerInfoFormData } from '../../RecoilStore';
+import ModalDateInput from './ModalDateInput';
+import { DateBoxSingle } from '../../boxs/DateBoxSingle'; 
+import { DateBoxSingleTime } from '../../boxs/DateBoxSingleTime';
 
 interface CustomerInfoModalProps {
   onStart: () => void;
@@ -7,22 +12,79 @@ interface CustomerInfoModalProps {
 }
 
 export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModalProps) {
-  const [formData, setFormData] = useState({
-    theme: ['honeymoon'],
-    customer1Name: '',
-    customer1Phone: '',
-    customer2Name: '',
-    customer2Phone: '',
-    destination: '',
-    weddingDate: '',
-    travelPeriod: '',
-    travelStyle: [] as string[],
-    flightStyle: [] as string[],
-    accommodationPreference: [] as string[],
-    wantsAndNeeds: '',
-    selfTicketing: false,
-    beforeTicketing: false
-  });
+  const [formData, setFormData] = useRecoilState(recoilCustomerInfoFormData);
+  const [isComposing, setIsComposing] = React.useState<{ [key: string]: boolean }>({});
+  
+  // 여행기간 날짜 상태 및 모달 상태
+  const [travelDateStart, setTravelDateStart] = useState<Date | null>(null);
+  const [travelDateEnd, setTravelDateEnd] = useState<Date | null>(null);
+  const [showDateModal, setShowDateModal] = useState(false);
+
+  // travelPeriod를 파싱하여 날짜 설정
+  useEffect(() => {
+    if (formData.travelPeriod) {
+      const travelPeriod = formData.travelPeriod.trim();
+      
+      // "YYYY-MM-DD ~ YYYY-MM-DD" 형식인 경우
+      if (travelPeriod.includes('~')) {
+        const parts = travelPeriod.split('~').map(part => part.trim());
+        if (parts.length === 2) {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(parts[0]) && dateRegex.test(parts[1])) {
+            const startDate = new Date(parts[0]);
+            const endDate = new Date(parts[1]);
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+              setTravelDateStart(startDate);
+              setTravelDateEnd(endDate);
+            }
+          }
+        }
+      } else {
+        // 단일 날짜인 경우
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(travelPeriod)) {
+          const date = new Date(travelPeriod);
+          if (!isNaN(date.getTime())) {
+            setTravelDateStart(date);
+            setTravelDateEnd(date);
+          }
+        }
+      }
+    }
+  }, [formData.travelPeriod]);
+
+  // 날짜 변경 핸들러 (ModalDateInput에서 호출)
+  const handleDateChange = (startDateStr: string, endDateStr: string) => {
+    if (startDateStr && endDateStr) {
+      if (startDateStr === endDateStr) {
+        setFormData(prev => ({
+          ...prev,
+          travelPeriod: startDateStr
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          travelPeriod: `${startDateStr} ~ ${endDateStr}`
+        }));
+      }
+      setTravelDateStart(new Date(startDateStr));
+      setTravelDateEnd(new Date(endDateStr));
+    } else if (startDateStr) {
+      setFormData(prev => ({
+        ...prev,
+        travelPeriod: startDateStr
+      }));
+      setTravelDateStart(new Date(startDateStr));
+      setTravelDateEnd(null);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        travelPeriod: ''
+      }));
+      setTravelDateStart(null);
+      setTravelDateEnd(null);
+    }
+  };
 
   const handleThemeChange = (theme: string) => {
     setFormData(prev => ({
@@ -42,13 +104,46 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
     }));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleCompositionStart = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const name = e.currentTarget.name;
+    setIsComposing(prev => ({ ...prev, [name]: true }));
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const name = e.currentTarget.name;
+    setIsComposing(prev => ({ ...prev, [name]: false }));
+    // 조합 종료 후 값 처리
+    handleInputChange(e as any, true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, forceProcess: boolean = false) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
+    // 조합 중일 때는 필터링하지 않음 (한글 입력 중)
+    if (!forceProcess && isComposing[name]) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+      return;
+    }
+    
+    let processedValue = value;
+    
+    // 고객명 필드는 문자만 허용 (한글, 영문, 공백)
+    if (name === 'customer1Name' || name === 'customer2Name') {
+      processedValue = value.replace(/[^가-힣a-zA-Z\s]/g, '');
+    }
+    
+    // 연락처 필드는 숫자와 하이픈만 허용
+    if (name === 'customer1Phone' || name === 'customer2Phone') {
+      processedValue = value.replace(/[^0-9-]/g, '');
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : processedValue
     }));
   };
 
@@ -101,22 +196,24 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
             <div className='form-section'>
               <div className='form-row'>
                 <div className='input-group'>
-                  <label>고객명</label>
                   <input
                     type='text'
                     name='customer1Name'
                     value={formData.customer1Name}
                     onChange={handleInputChange}
+                    onCompositionStart={handleCompositionStart}
+                    onCompositionEnd={handleCompositionEnd}
                     placeholder='고객명'
                   />
                 </div>
                 <div className='input-group'>
-                  <label>연락처</label>
                   <input
                     type='tel'
                     name='customer1Phone'
                     value={formData.customer1Phone}
                     onChange={handleInputChange}
+                    onCompositionStart={handleCompositionStart}
+                    onCompositionEnd={handleCompositionEnd}
                     placeholder='연락처'
                   />
                 </div>
@@ -127,22 +224,24 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
             <div className='form-section'>
               <div className='form-row'>
                 <div className='input-group'>
-                  <label>고객명</label>
                   <input
                     type='text'
                     name='customer2Name'
                     value={formData.customer2Name}
                     onChange={handleInputChange}
+                    onCompositionStart={handleCompositionStart}
+                    onCompositionEnd={handleCompositionEnd}
                     placeholder='고객명'
                   />
                 </div>
                 <div className='input-group'>
-                  <label>연락처</label>
                   <input
                     type='tel'
                     name='customer2Phone'
                     value={formData.customer2Phone}
                     onChange={handleInputChange}
+                    onCompositionStart={handleCompositionStart}
+                    onCompositionEnd={handleCompositionEnd}
                     placeholder='연락처'
                   />
                 </div>
@@ -152,7 +251,6 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
             {/* 관심여행지, 결혼예정일, 여행기간 */}
             <div className='form-section'>
               <div className='input-group full-width'>
-                <label>관심여행지</label>
                 <input
                   type='text'
                   name='destination'
@@ -166,7 +264,6 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
             <div className='form-section'>
               <div className='form-row'>
                 <div className='input-group'>
-                  <label>결혼예정일</label>
                   <div className='input-with-icon'>
                     <input
                       type='text'
@@ -179,20 +276,51 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
                   </div>
                 </div>
                 <div className='input-group'>
-                  <label>여행기간</label>
                   <div className='input-with-icon'>
                     <input
                       type='text'
                       name='travelPeriod'
                       value={formData.travelPeriod}
                       onChange={handleInputChange}
+                      onClick={() => setShowDateModal(true)}
                       placeholder='여행기간'
+                      readOnly
+                      style={{ cursor: 'pointer' }}
                     />
                     <span className='calendar-icon'>📅</span>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* 예약일자 */}
+            <div className='form-section'>
+              <div className='input-group full-width'>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#333'
+                  }}
+                >
+                  예약일자
+                </label>
+                <DateBoxSingle
+                  date={formData.reserveDate ? new Date(formData.reserveDate) : new Date()}
+                  setSelectDate={(dateStr: string) => {
+                    if (dateStr) {
+                      setFormData(prev => ({
+                        ...prev,
+                        reserveDate: dateStr
+                      }));
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
 
             {/* 여행 스타일 */}
             <div className='form-section'>
@@ -286,14 +414,23 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
           {/* Footer Buttons */}
           <div className='modal-footer'>
             <button className='shortcut-button' onClick={onClose}>
-              바로가기
+              닫기
             </button>
             <button className='start-button' onClick={onStart}>
-              시작하기
+              저장후 계속
             </button>
           </div>
         </div>
       </div>
+
+      {/* 날짜 선택 모달 */}
+      <ModalDateInput
+        isOpen={showDateModal}
+        onClose={() => setShowDateModal(false)}
+        dateStart={travelDateStart}
+        dateEnd={travelDateEnd}
+        onDateChange={handleDateChange}
+      />
     </div>
   );
 }

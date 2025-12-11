@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './TourEstimatePage.scss';
 import hotel1 from '../../../lastimages/counselrest/estimate/hotel1.png';
 import hotel2 from '../../../lastimages/counselrest/estimate/hotel2.png';
@@ -8,6 +8,8 @@ import { ImLocation } from 'react-icons/im';
 import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
+import { recoilCustomerInfoFormData, recoilSelectedHotelData, recoilSelectedScheduleData } from '../../../../RecoilStore';
 
 export default function TourEstimatePage() {
   const navigate = useNavigate();
@@ -15,70 +17,178 @@ export default function TourEstimatePage() {
   const stateProps = location.state;
   console.log('stateProps', stateProps);
 
-  const formSections = [
+  const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
+  const selectedHotelData = useRecoilValue(recoilSelectedHotelData);
+  const selectedScheduleData = useRecoilValue(recoilSelectedScheduleData);
+
+  // 테마 레이블 변환
+  const getThemeLabel = (themes: string[]) => {
+    const themeMap: Record<string, string> = {
+      honeymoon: '허니문',
+      family: '가족여행',
+      friends: '친구여행',
+      solo: '혼자여행',
+      business: '비즈니스'
+    };
+    return themes.map(t => themeMap[t] || t).join(', ') || '일반';
+  };
+
+  // 고객명 가져오기
+  const getCustomerName = () => {
+    return customerInfo.customer1Name || customerInfo.customer2Name || '고객';
+  };
+
+  // 호텔 정보를 formSections 형식으로 변환
+  const getHotelsForForm = () => {
+    if (!selectedHotelData.scheduleCards || selectedHotelData.scheduleCards.length === 0) {
+      return [];
+    }
+    return selectedHotelData.scheduleCards.map((card: any) => ({
+      name: card.title || selectedHotelData.hotelInfo?.hotelNameKo || '호텔명',
+      nights: card.nights || ''
+    }));
+  };
+
+  // 호텔 아이템 생성
+  const hotelItems = useMemo(() => {
+    if (!selectedHotelData.scheduleCards || selectedHotelData.scheduleCards.length === 0) {
+      return [];
+    }
+    
+    return selectedHotelData.scheduleCards.map((card: any, index: number) => {
+      // 호텔 이미지 가져오기
+      let hotelImage = index === 0 ? hotel1 : hotel2;
+      if (selectedHotelData.hotelInfo?.imageNamesAllView) {
+        try {
+          const images = JSON.parse(selectedHotelData.hotelInfo.imageNamesAllView);
+          if (images && images.length > 0) {
+            hotelImage = `${AdminURL}/images/hotelimages/${images[0].imageName}`;
+          }
+        } catch (e) {
+          console.error('Failed to parse hotel images:', e);
+        }
+      }
+
+      // 평점 계산
+      const levelNum = selectedHotelData.hotelInfo?.hotelLevel && !isNaN(parseInt(selectedHotelData.hotelInfo.hotelLevel, 10))
+        ? parseInt(selectedHotelData.hotelInfo.hotelLevel, 10)
+        : 4;
+      const stars = '★'.repeat(levelNum);
+
+      // 룸 타입 가져오기
+      let roomType = '객실';
+      if (selectedHotelData.hotelInfo?.hotelRoomTypes) {
+        try {
+          const roomTypes = JSON.parse(selectedHotelData.hotelInfo.hotelRoomTypes);
+          if (roomTypes && roomTypes.length > 0) {
+            roomType = roomTypes[0].roomTypeName || '객실';
+          }
+        } catch (e) {
+          console.error('Failed to parse room types:', e);
+        }
+      }
+
+      return {
+        id: index + 1,
+        image: hotelImage,
+        name: card.title || selectedHotelData.hotelInfo?.hotelNameKo || '호텔명',
+        rating: stars || '★★★★',
+        roomType: roomType,
+        nights: card.nights || '',
+        description: (
+          <>
+            {selectedHotelData.hotelInfo?.hotelIntro || selectedHotelData.hotelInfo?.hotelAddress || '호텔 설명이 없습니다.'}
+          </>
+        ),
+      };
+    });
+  }, [selectedHotelData]);
+
+  // formSections 동적 생성
+  const formSections = useMemo(() => {
+    const sections: any[] = [
     {
       label: '상품명',
-      value: '[발리] 코트메이어트1박+우붓포시즌2박+세인트레지스오션풀빌라3박',
+        value: selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || stateProps?.productName || '상품명',
       type: 'simple',
     },
     {
       label: '성명',
-      value: '홍길동',
+        value: getCustomerName(),
       type: 'simple',
     },
     {
       label: '여행형태',
-      value: '허니문',
+        value: getThemeLabel(customerInfo.theme),
       type: 'simple',
     },
     {
       label: '여행기간',
-      value: '3월 2일(월) ~ 3월 7일(화)',
+        value: customerInfo.travelPeriod || selectedHotelData.periodText || '여행기간',
       type: 'simple',
     },
-    {
+    ];
+
+    // 항공 정보가 있다면 추가
+    if (selectedScheduleData.selectedSchedule?.airlineData) {
+      const airlineData = selectedScheduleData.selectedSchedule.airlineData;
+      const scheduleDetailData = selectedScheduleData.selectedSchedule.scheduleDetailData || [];
+      
+      // 첫 번째 날짜에서 항공편 정보 추출
+      const firstDay = scheduleDetailData[0];
+      const airlineItems = firstDay?.scheduleDetail?.filter((item: any) => item.sort === 'airline' && item.airlineData) || [];
+      
+      if (airlineItems.length > 0) {
+        const flights = airlineItems.map((item: any) => {
+          const airline = item.airlineData;
+          return {
+            airline: airline.airlineName || '',
+            flightNumber: airline.airlineCode || '',
+            departure: airline.depart ? `${airline.depart} (${airline.departTime?.slice(0, 2) || ''}:${airline.departTime?.slice(2, 4) || ''})` : '',
+            arrival: airline.arrive ? `${airline.arrive} (${airline.arriveTime?.slice(0, 2) || ''}:${airline.arriveTime?.slice(2, 4) || ''})` : ''
+          };
+        });
+        
+        sections.push({
       label: '이용항공',
       type: 'airline',
-      flights: [
-        {
-          airline: '대한항공',
-          flightNumber: 'TK0021',
-          departure: '2025.07.03(수)',
-          arrival: '2025.07.03(수)',
-        },
-        {
-          airline: '대한항공',
-          flightNumber: 'TK0021',
-          departure: '2025.07.07(화)',
-          arrival: '2025.07.07(화)',
-        },
-      ],
-    },
-    {
+          flights: flights,
+        });
+      }
+    }
+
+    // 호텔 정보
+    const hotels = getHotelsForForm();
+    if (hotels.length > 0) {
+      sections.push({
       label: '이용호텔',
       type: 'hotel',
-      hotels: [
-        { name: '코트야드 호텔', nights: '2박' },
-        { name: '포시즌 호텔', nights: '1박' },
-        { name: '세인트레지스 호텔', nights: '2박' },
-      ],
-    },
-    {
+        hotels: hotels,
+      });
+    }
+
+    // 변경사항 (wants & needs)
+    if (customerInfo.wantsAndNeeds) {
+      sections.push({
       label: '변경사항',
       value: (
         <>
-          요청사항에 대해서 적는 곳입니다.
-          <br />
-          요청사항요청사항에 대해서 적는 곳입니다.
-          <br />
-          요청사항에 대해서 적는 곳입니다.
+            {customerInfo.wantsAndNeeds.split('\n').map((line: string, index: number, arr: string[]) => (
+              <React.Fragment key={index}>
+                {line}
+                {index < arr.length - 1 && <br />}
+              </React.Fragment>
+            ))}
         </>
       ),
       type: 'multiline',
-    },
-  ];
+      });
+    }
 
-  const hotelItems = [
+    return sections;
+  }, [customerInfo, selectedHotelData, selectedScheduleData, stateProps]);
+
+  const staticHotelItems = [
     {
       id: 1,
       image: hotel1,
@@ -135,13 +245,16 @@ export default function TourEstimatePage() {
         {/* 왼쪽 영역 */}
         <div className="tour-left-section">
           <div className="tour-estimate-header">
-            <h1 className="tour-text-wrapper">파리 + 스위스 + 이태리 5박 7일</h1>
+            <h1 className="tour-text-wrapper">
+              {selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || stateProps?.productName || '상품명'}
+            </h1>
           </div>
 
           <div className="tour-hotel-list-section">
             <h1 className="tour-text-wrapper-2">호텔구성</h1>
             <div className="tour-hotel-items">
-              {hotelItems.map((hotel) => (
+              {hotelItems && hotelItems.length > 0 ? (
+                hotelItems.map((hotel) => (
                 <div key={hotel.id} className="tour-hotel-item">
                   <img className="tour-hotel-image" alt={hotel.name} src={hotel.image} />
                   <div className="tour-hotel-info">
@@ -162,7 +275,10 @@ export default function TourEstimatePage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              ) : (
+                <div className="empty-message">담긴 호텔 정보가 없습니다.</div>
+              )}
             </div>
           </div>
 
@@ -170,7 +286,15 @@ export default function TourEstimatePage() {
             <h1 className="tour-text-wrapper-2">일정표</h1>
 
             <div className="tour-schedule-tab-content-left">
-             <ScheduleRederBox id={stateProps?.schedule?.id} />
+              {selectedScheduleData.selectedSchedule ? (
+                // 저장된 일정이 있으면 해당 일정만 표시
+                <ScheduleRederBox 
+                  id={selectedScheduleData.selectedSchedule?.id || stateProps?.id || stateProps?.schedule?.id} 
+                  scheduleInfo={selectedScheduleData.selectedSchedule}
+                />
+              ) : (
+                <ScheduleRederBox id={stateProps?.id || stateProps?.schedule?.id} />
+              )}
             </div>
           </div>
         </div>
@@ -195,7 +319,7 @@ export default function TourEstimatePage() {
 
                 {section.type === 'airline' && section.flights && (
                   <div className="tour-flight-info-wrapper">
-                    {section.flights.map((flight, index) => (
+                    {section.flights.map((flight: any, index: number) => (
                       <p key={index} className="tour-flight-info">
                         <span className="tour-text-wrapper-24">{flight.airline} </span>
                         <span className="tour-text-wrapper-25">{flight.flightNumber}</span>
@@ -209,13 +333,13 @@ export default function TourEstimatePage() {
 
                 {section.type === 'hotel' && section.hotels && (
                   <div className="tour-hotel-info-wrapper">
-                    {section.hotels.map((hotel, index) => (
+                    {section.hotels.map((hotel: any, index: number) => (
                       <div key={index} className={index === 0 ? "p p-23" : index === 1 ? "p p-24" : "p p-25"}>
                         <div className="tour-text-wrapper p-18">{hotel.name}</div>
                       </div>
                     ))}
                     <div className="tour-hotel-nights">
-                      {section.hotels.map((hotel, index) => (
+                      {section.hotels.map((hotel: any, index: number) => (
                         <div key={index} className="tour-hotel-night">
                           {hotel.nights}
                         </div>

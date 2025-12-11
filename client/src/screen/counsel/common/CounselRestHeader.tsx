@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import './CounselMainHeader.scss';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { recoilCounselFormData } from '../../../RecoilStore';
+import { recoilCustomerInfoFormData } from '../../../RecoilStore';
 import logoImage from '../../images/counsel/logo.png';
 import { IoMdClose } from 'react-icons/io';
 import { IoIosArrowForward } from 'react-icons/io';
+import CustomerInfoModal from '../CustomerInfoModal';
 
 const CounselRestHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const counselFormData = useRecoilValue(recoilCounselFormData);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const customerInfoFormData = useRecoilValue(recoilCustomerInfoFormData);
 
   const toggleMenu = () => {
     const newMenuState = !isMenuOpen;
@@ -50,17 +52,30 @@ const CounselRestHeader: React.FC = () => {
   };
 
   const formatTravelInfo = () => {
-    if (!counselFormData.customerName && !counselFormData.destination) {
+    const customer1 = customerInfoFormData.customer1Name;
+    const customer2 = customerInfoFormData.customer2Name;
+    const travelPeriod = customerInfoFormData.travelPeriod;
+    
+    if (!customer1 && !customer2 && !travelPeriod) {
       return '';
     }
     
-    const customer = counselFormData.customerName || '고객';
-    const theme = counselFormData.theme || '허니문';
-    const destination = counselFormData.destination || '목적지';
-    const date = counselFormData.travelDate || '';
-    const duration = counselFormData.duration ? ` (${counselFormData.duration})` : '';
+    // 고객명 처리 (둘 다 있으면 ", "로 구분, 하나만 있으면 그대로 사용)
+    let customerText = '';
+    if (customer1 && customer2) {
+      customerText = `${customer1}, ${customer2}`;
+    } else if (customer1) {
+      customerText = customer1;
+    } else if (customer2) {
+      customerText = customer2;
+    }
     
-    return `${customer}, ${destination} ${theme} ${date}${duration}`;
+    // 여행기간이 있으면 고객명과 함께 표시, 없으면 고객명만 표시
+    if (travelPeriod) {
+      return customerText ? `${customerText}, ${travelPeriod}` : travelPeriod;
+    }
+    
+    return customerText;
   };
 
   // 네비게이션 메뉴 항목
@@ -110,9 +125,24 @@ const CounselRestHeader: React.FC = () => {
           </div>
 
           {/* 여행 정보 표시 */}
-          {counselFormData.customerName && (
-            <div className="header-travel-info">
-              {formatTravelInfo()}
+          {(customerInfoFormData.customer1Name || customerInfoFormData.customer2Name || customerInfoFormData.travelPeriod) && (
+            <div className="header-travel-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span>{formatTravelInfo()}</span>
+              <button
+                onClick={() => setIsCustomerModalOpen(true)}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                변경
+              </button>
             </div>
           )}
         </div>
@@ -207,6 +237,18 @@ const CounselRestHeader: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 고객 정보 수정 모달 */}
+      {isCustomerModalOpen && (
+        <CustomerInfoModal
+          onStart={() => {
+            setIsCustomerModalOpen(false);
+          }}
+          onClose={() => {
+            setIsCustomerModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

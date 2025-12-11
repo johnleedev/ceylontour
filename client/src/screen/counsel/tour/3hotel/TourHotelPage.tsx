@@ -3,6 +3,8 @@ import './TourHotelPage.scss';
 import { AdminURL } from '../../../../MainURL';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { useSetRecoilState } from 'recoil';
+import { recoilSelectedHotelData } from '../../../../RecoilStore';
 
 // 호텔 페이지 이미지
 import HotelImage1 from '../../../lastimages/counseltour/hotel/image.png';
@@ -44,6 +46,7 @@ export default function HotelPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
+  const setSelectedHotelData = useSetRecoilState(recoilSelectedHotelData);
   
   const productScheduleData = stateProps?.productScheduleData;
   const parsedProductScheduleData = productScheduleData ? JSON.parse(productScheduleData) : [];
@@ -703,10 +706,61 @@ export default function HotelPage() {
                         : '문의요청'}
                     </div>
                   </div>
+                  <div className="select-button-wrapper">  
+                    <button className="select-button"
+                    onClick={() => {
+                      if (!selectedHotel) {
+                        alert('호텔을 선택해주세요.');
+                        return;
+                      }
 
-                  <button className="select-button"
-                  onClick={() => navigate('/counsel/tour/flight', { state: { schedule: parsedProductScheduleData, hotel: selectedHotel } })}
-                  >선택</button>
+                      // 일정에서 도시별 호텔 정보 추출
+                      const scheduleCards: any[] = [];
+                      if (parsedProductScheduleData && Array.isArray(parsedProductScheduleData)) {
+                        parsedProductScheduleData.forEach((scheduleItem: any) => {
+                          if (scheduleItem.city === selectedHotel.city || scheduleItem.city === selectedHotel._cityFromSchedule) {
+                            scheduleCards.push({
+                              title: selectedHotel.hotelNameKo || '',
+                              nights: stateProps?.tourPeriodData?.periodNight || '1박',
+                              city: scheduleItem.city || selectedHotel.city
+                            });
+                          }
+                        });
+                      }
+
+                      // 포함/제외 항목 추출
+                      const includeItems = stateProps?.includeNote ? stateProps.includeNote.split('\n').filter((item: string) => item.trim()) : [];
+                      const excludeItems = stateProps?.notIncludeNote ? stateProps.notIncludeNote.split('\n').filter((item: string) => item.trim()) : [];
+
+                      setSelectedHotelData({
+                        hotelInfo: selectedHotel,
+                        productInfo: {
+                          id: stateProps?.id,
+                          productName: stateProps?.productName,
+                          scheduleSort: stateProps?.scheduleSort,
+                          costType: stateProps?.costType,
+                          tourPeriodData: stateProps?.tourPeriodData,
+                          includeNote: stateProps?.includeNote,
+                          notIncludeNote: stateProps?.notIncludeNote,
+                          productScheduleData: stateProps?.productScheduleData
+                        },
+                        scheduleCards: scheduleCards,
+                        periodText: stateProps?.tourPeriodData?.periodNight ? `${stateProps.tourPeriodData.periodNight} ${stateProps.tourPeriodData.periodDay}` : '',
+                        includeItems: includeItems,
+                        excludeItems: excludeItems,
+                        priceInfo: {
+                          pricePerPerson: selectedHotel.lowestPrice ? Number(selectedHotel.lowestPrice) : 0,
+                          totalPrice: selectedHotel.lowestPrice ? Number(selectedHotel.lowestPrice) * 2 : 0,
+                          guestCount: 2
+                        }
+                      });
+                      alert('호텔이 담겼습니다.');
+                    }}
+                    >호텔담기</button>
+                    <button className="select-button"
+                    onClick={() => navigate('/counsel/tour/flight', { state: { schedule: parsedProductScheduleData, hotel: selectedHotel } })}
+                    >다음</button>
+                  </div>
                 </div>
               </>
             ) : (

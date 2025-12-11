@@ -34,7 +34,7 @@
       }
     }
   
-    .custom-container {
+    .hotel-container {
       display: flex;
       width: 100%;
       min-height: calc(100vh - 100px);
@@ -75,9 +75,10 @@
         padding: 20px;
         box-sizing: border-box;
       }
+      }
   
-      // 오른쪽 영역: 비워둠
-      .right-section {
+    // 오른쪽 영역 스타일 (hotel-container 내부)
+    .hotel-container .right-section {
         flex: 1;
         max-width: 670px;
         padding: 0 20px 20px 20px;
@@ -109,7 +110,6 @@
           &:hover {
             background-color: rgba(0, 0, 0, 0.7);
             transform: scale(1.1);
-          }
         }
       }
     }
@@ -902,6 +902,243 @@
       &::-webkit-scrollbar {
         display: none; /* Chrome, Safari, Opera */
       }
+
+      // 도시 탭 버튼들
+      .city-tab-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+
+        .city-tab-btn {
+          flex: 1;
+          padding: 10px;
+          border: 1px solid #e0e0e0;
+          background: white;
+          color: #333;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: 8px;
+      
+          &:hover {
+            background: white;
+            color: #666;
+            border-color: #ccc;
+          }
+
+          &.active {
+            background: white;
+            color: #000;
+            border-color: #000;
+            font-weight: bold;
+          }
+        }
+      }
+
+      // 일정표 오른쪽 요약 카드
+      .schedule-right-section {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding-top: 50px;
+      }
+
+      .schedule-summary-content {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+
+        .summary-card {
+          width: 100%;
+          background-color: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+          padding: 20px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+
+          .summary-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            .summary-main-tabs {
+              display: flex;
+              gap: 16px;
+              margin-top: 8px;
+              border-bottom: 1px solid #e5e5e5;
+              padding-bottom: 8px;
+
+              .summary-main-tab {
+                width: 100px;
+                border: none;
+                background: none;
+                padding: 4px 0;
+                font-size: 15px;
+                color: #777;
+                cursor: pointer;
+                position: relative;
+
+                &.active {
+                  color: #000;
+                  font-weight: 500;
+
+                  &::after {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    bottom: -6px;
+                    width: 100%;
+                    height: 2px;
+                    background-color: #000;
+                  }
+                }
+              }
+            }
+          }
+
+          .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+
+            .summary-item {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              background-color: #ffffff;
+              border: 1px solid #e3e3e3;
+              border-radius: 8px;
+              overflow: hidden;
+
+              .summary-item-image {
+                width: 100%;
+                height: 140px;
+                object-fit: cover;
+              }
+
+              .summary-item-content {
+                padding: 10px 12px 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+
+                .summary-item-title {
+                  font-size: 15px;
+                  font-weight: 500;
+                  color: #000;
+                }
+
+                .summary-item-rating {
+                  font-size: 13px;
+                  color: #ffb400;
+                }
+
+                .summary-item-price-row {
+                  display: flex;
+                  justify-content: flex-end;
+                  gap: 4px;
+                  align-items: baseline;
+                  margin-top: 4px;
+
+                  .summary-item-price {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #000;
+                  }
+                
+                  .summary-item-unit {
+                    font-size: 12px;
+                    color: #777;
+                  }
+                }
+              }
+            }
+          }
+
+          .summary-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e3e3e3;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            .summary-footer-top {
+              font-size: 16px;
+              font-weight: 500;
+              color: #000;
+            }
+        
+            .summary-footer-bottom {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 16px;
+              flex-wrap: wrap;
+        
+              .summary-footer-left {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+        
+                .summary-footer-field {
+                  padding: 6px 10px;
+                  border: 1px solid #e3e3e3;
+                  border-radius: 4px;
+                  font-size: 13px;
+                  color: #444;
+        
+                  &.price-field {
+                    font-weight: 500;
+                  }
+                }
+              }
+        
+              .summary-footer-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 4px;
+        
+                .summary-total-label {
+                  font-size: 13px;
+                  color: #333;
+                }
+        
+                .summary-total-price {
+                  font-size: 20px;
+                  font-weight: 700;
+                  color: #000;
+                }
+              }
+            }
+
+            .cost-schedule-btn-wrapper {
+              display: flex;
+              gap: 16px;
+        
+              .cost-schedule-btn {
+                width: 50%;
+                margin-top: 16px;
+                padding: 14px;
+                background-color: #000000;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                font-family: "Noto Sans KR", Helvetica;
+                font-size: 17px;
+                font-weight: 500;
+                cursor: pointer;
+              }
+            }
+          }
+        }
+      }
   
       // 탭 컨테이너
       .right-tab-container {
@@ -1303,7 +1540,7 @@
         }
       }
   
-      .custom-container {
+      .hotel-container {
         flex-direction: column;
         height: auto;
         min-height: calc(100vh - 100px);

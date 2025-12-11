@@ -8,6 +8,8 @@ import { IoMdClose } from "react-icons/io";
 import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import axios from 'axios';
+import { useSetRecoilState } from 'recoil';
+import { recoilSelectedScheduleData } from '../../../../RecoilStore';
 
 import rectangle675 from '../../../lastimages/counselrest/hotel/detail/rectangle-675.png';
 import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle-676.png';
@@ -45,6 +47,8 @@ const SchedulePage: React.FC = () => {
   const [cityInfoMap, setCityInfoMap] = useState<Record<string, any>>({});
   const [loadingCityInfo, setLoadingCityInfo] = useState<boolean>(false);
   const previewContentRef = useRef<HTMLDivElement>(null);
+  const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
+  const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
 
   
   
@@ -243,7 +247,13 @@ const SchedulePage: React.FC = () => {
             {/* 일정표 탭 콘텐츠 */}
             {mainTab === '일정표' && (
               <div className="schedule-tab-content-left">
-                <ScheduleRederBox id={stateProps?.id} />
+                <ScheduleRederBox 
+                  id={stateProps?.id}
+                  onSelectedScheduleChange={(schedule, index) => {
+                    setSelectedSchedule(schedule);
+                    setSelectedScheduleIndex(index);
+                  }}
+                />
               </div>
             )}
 
@@ -483,10 +493,40 @@ const SchedulePage: React.FC = () => {
                       <button
                         className="cost-schedule-btn"
                         onClick={() => {
-                          // TODO: 담기 동작 필요 시 구현
+                          if (!selectedSchedule) {
+                            alert('항공편을 선택해주세요.');
+                            return;
+                          }
+
+                          // 선택된 항공편의 일정 정보 추출
+                          const airlineData = selectedSchedule.airlineData;
+                          const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
+
+                          setSelectedScheduleData({
+                            productInfo: {
+                              id: stateProps?.id,
+                              productName: stateProps?.productName,
+                              scheduleSort: stateProps?.scheduleSort,
+                              costType: stateProps?.costType,
+                              tourPeriodData: stateProps?.tourPeriodData,
+                              includeNote: stateProps?.includeNote,
+                              notIncludeNote: stateProps?.notIncludeNote,
+                              productScheduleData: stateProps?.productScheduleData
+                            },
+                            scheduleDetails: {
+                              airlineData: airlineData,
+                              scheduleList: [selectedSchedule],
+                              selectedIndex: selectedScheduleIndex
+                            },
+                            selectedSchedule: selectedSchedule,
+                            selectedItems: [],
+                            totalPrice: 100000,
+                            guestCount: 2
+                          });
+                          alert('일정이 담겼습니다.');
                         }}
                       >
-                        담기
+                        일정담기
                       </button>
                       <button
                         className="cost-schedule-btn"

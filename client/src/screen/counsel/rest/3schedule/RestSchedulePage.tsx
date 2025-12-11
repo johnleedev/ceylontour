@@ -15,12 +15,15 @@ import scheduleImg2 from '../../../lastimages/counselrest/schedule/image-1.png';
 import scheduleImg3 from '../../../lastimages/counselrest/schedule/image-2.png';
 import scheduleImg4 from '../../../lastimages/counselrest/schedule/image-3.png';
 import { useEffect } from 'react';
+import { useSetRecoilState } from 'recoil';
+import { recoilSelectedScheduleData } from '../../../../RecoilStore';
 
 export default function RestSchedulePage() {
 
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
+  const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
 
   const [mainTab, setMainTab] = useState<string>('일정미리보기');
   const [productInfo, setProductInfo] = useState<any | null>(null);
@@ -29,6 +32,8 @@ export default function RestSchedulePage() {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [summaryMainTab, setSummaryMainTab] = useState<'상세일정' | '항공' | '식사' | '계약특전'>('상세일정');
   const [summarySubTab, setSummarySubTab] = useState<'익스커션' | '강습/클래스' | '스파/마사지' | '스냅촬영' | '차량/가이드' | '편의사항'>('익스커션');
+  const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
+  const [selectedScheduleIndex, setSelectedScheduleIndex] = useState<number>(0);
 
   useEffect(() => {
     setProductInfo(stateProps);
@@ -103,7 +108,13 @@ export default function RestSchedulePage() {
             {/* 일정표 탭 콘텐츠 */}
             {activeButton === 'create' && (
               <div className="schedule-tab-content-left">
-                <ScheduleRederBox id={stateProps.id} />
+                <ScheduleRederBox 
+                  id={stateProps.id}
+                  onSelectedScheduleChange={(schedule, index) => {
+                    setSelectedSchedule(schedule);
+                    setSelectedScheduleIndex(index);
+                  }}
+                />
               </div>
             )}
             
@@ -325,10 +336,35 @@ export default function RestSchedulePage() {
                     <button
                       className="cost-schedule-btn"
                       onClick={() => {
-                        
+                        if (!selectedSchedule) {
+                          alert('항공편을 선택해주세요.');
+                          return;
+                        }
+
+                        // 선택된 항공편의 일정 정보 추출
+                        const airlineData = selectedSchedule.airlineData;
+                        const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
+
+                        // 항공편 정보 추출 (첫 번째 날짜에서)
+                        const firstDay = scheduleDetailData[0];
+                        const airlineItem = firstDay?.scheduleDetail?.find((item: any) => item.sort === 'airline' && item.airlineData);
+
+                        setSelectedScheduleData({
+                          productInfo: productInfo,
+                          scheduleDetails: {
+                            airlineData: airlineData,
+                            scheduleList: [selectedSchedule], // 선택된 항공편의 일정만 저장
+                            selectedIndex: selectedScheduleIndex
+                          },
+                          selectedSchedule: selectedSchedule,
+                          selectedItems: [],
+                          totalPrice: 100000,
+                          guestCount: 2
+                        });
+                        alert('일정이 담겼습니다.');
                       }}
                     >
-                      담기
+                      일정담기
                     </button>
                     <button
                       className="cost-schedule-btn"

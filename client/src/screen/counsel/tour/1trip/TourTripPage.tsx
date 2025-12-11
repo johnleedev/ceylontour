@@ -742,7 +742,13 @@ const TripPage: React.FC = () => {
                       // 다음 단계로 이동
                       const allSelectedCities = Object.values(selectedCities).flat();
                       if (allSelectedCities.length > 0) {
-                        navigate(`/counsel/tour/schedulecustom`);
+                        navigate(`/counsel/tour/schedulecustom`, {
+                          state: {
+                            selectedCities: allSelectedCities,
+                            selectedCitiesByCountry: selectedCities,
+                            createScheduleDays: createScheduleDays
+                          }
+                        });
                       }
                     }}
                     disabled={Object.values(selectedCities).flat().length === 0}

@@ -509,7 +509,13 @@ export default function RestHotelDetail() {
                           key={product.id}
                           className="product-item"
                           onClick={() => {
-                            navigate(`/counsel/rest/hotelcost`, { state : {hotelInfo: hotelInfo, productInfo: product}});
+                            navigate('/counsel/rest/hotelcost', { 
+                              state: {
+                                hotelInfo: hotelInfo,
+                                productInfo: product,
+                                city: stateProps?.city
+                              }
+                            });
                             window.scrollTo(0, 0);
                           }}
                         >
@@ -518,7 +524,7 @@ export default function RestHotelDetail() {
                           </div>
                           <div className="product-content">
                             <p className="product-name">
-                              {productName}
+                              {productName} -
                               {periodText && (
                                 <span className="product-period">&nbsp;{periodText}</span>
                               )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './RestEstimatePage.scss';
 import hotel1 from '../../../lastimages/counselrest/estimate/hotel1.png';
 import hotel2 from '../../../lastimages/counselrest/estimate/hotel2.png';
@@ -8,115 +8,198 @@ import { ImLocation } from 'react-icons/im';
 import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
+import { 
+  recoilCustomerInfoFormData, 
+  recoilSelectedHotelData, 
+  recoilSelectedScheduleData 
+} from '../../../../RecoilStore';
 
 export default function RestEstimatePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
   
-  const formSections = [
-    {
-      label: '상품명',
-      value: '[발리] 코트메이어트1박+우붓포시즌2박+세인트레지스오션풀빌라3박',
-      type: 'simple',
-    },
-    {
-      label: '성명',
-      value: '홍길동',
-      type: 'simple',
-    },
-    {
-      label: '여행형태',
-      value: '허니문',
-      type: 'simple',
-    },
-    {
-      label: '여행기간',
-      value: '3월 2일(월) ~ 3월 7일(화)',
-      type: 'simple',
-    },
-    {
+  // Recoil에서 데이터 가져오기
+  const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
+  const selectedHotelData = useRecoilValue(recoilSelectedHotelData);
+  const selectedScheduleData = useRecoilValue(recoilSelectedScheduleData);
+
+  // 여행 형태 라벨 변환
+  const getThemeLabel = (theme: string[]) => {
+    if (!theme || theme.length === 0) return '';
+    const themeMap: { [key: string]: string } = {
+      'honeymoon': '허니문',
+      'family': '가족여행',
+      'fit': 'FIT',
+      'corporate': '기업/워크샵'
+    };
+    return themeMap[theme[0]] || theme[0];
+  };
+
+  // 고객명 가져오기
+  const getCustomerName = () => {
+    return customerInfo.customer1Name || customerInfo.customer2Name || '고객';
+  };
+
+  // 호텔 정보를 formSections 형식으로 변환
+  const getHotelsForForm = () => {
+    if (!selectedHotelData.scheduleCards || selectedHotelData.scheduleCards.length === 0) {
+      return [];
+    }
+    return selectedHotelData.scheduleCards.map((card: any) => ({
+      name: card.title || '호텔명',
+      nights: (selectedHotelData.selectedNights?.[card.id] || card.nights || ''),
+      roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || ''
+    }));
+  };
+
+  // 호텔 아이템 생성
+  const hotelItems = useMemo(() => {
+    if (!selectedHotelData.scheduleCards || selectedHotelData.scheduleCards.length === 0) {
+      return [];
+    }
+    
+    return selectedHotelData.scheduleCards.map((card: any, index: number) => {
+      // 호텔 이미지 가져오기 (이미지 배열이 있다면 첫 번째 이미지 사용)
+      let hotelImage = index === 0 ? hotel1 : hotel2;
+      if (selectedHotelData.hotelInfo?.imageNamesAllView) {
+        try {
+          const images = JSON.parse(selectedHotelData.hotelInfo.imageNamesAllView);
+          if (images && images.length > 0) {
+            hotelImage = `${AdminURL}/images/hotelimages/${images[0].imageName}`;
+          }
+        } catch (e) {
+          console.error('Failed to parse hotel images:', e);
+        }
+      }
+
+      // 평점 계산
+      const rating = selectedHotelData.hotelInfo?.tripAdviser || selectedHotelData.hotelInfo?.customerScore || '0';
+      const ratingNum = parseFloat(rating);
+      const stars = '★'.repeat(Math.floor(ratingNum));
+
+      return {
+        id: index + 1,
+        image: hotelImage,
+        name: card.title || selectedHotelData.hotelInfo?.hotelNameKo || '호텔명',
+        rating: stars || '★★★★★',
+        roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || '객실',
+        nights: selectedHotelData.selectedNights?.[card.id] 
+          ? `${selectedHotelData.selectedNights[card.id]}박`
+          : card.nights || '',
+        description: (
+          <>
+            {selectedHotelData.hotelInfo?.hotelAddress || '호텔 설명이 없습니다.'}
+          </>
+        ),
+      };
+    });
+  }, [selectedHotelData]);
+
+  // formSections 동적 생성
+  const formSections = useMemo(() => {
+    const sections: any[] = [
+      {
+        label: '상품명',
+        value: selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || '상품명',
+        type: 'simple',
+      },
+      {
+        label: '성명',
+        value: getCustomerName(),
+        type: 'simple',
+      },
+      {
+        label: '연락처',
+        value: customerInfo.customer1Phone || customerInfo.customer2Phone || '',
+        type: 'simple',
+      },
+      {
+        label: '여행형태',
+        value: getThemeLabel(customerInfo.theme),
+        type: 'simple',
+      },
+      {
+        label: '여행기간',
+        value: customerInfo.travelPeriod || selectedHotelData.travelPeriod || selectedHotelData.periodText || '여행기간',
+        type: 'simple',
+      },
+      {
+        label: '예약일자',
+        value: customerInfo.reserveDate || selectedHotelData.reserveDate || '',
+        type: 'simple',
+      },
+      {
+        label: '관심여행지',
+        value: customerInfo.destination || '',
+        type: 'simple',
+      },
+      {
+        label: '결혼예정일',
+        value: customerInfo.weddingDate || '',
+        type: 'simple',
+      },
+    ];
+
+    // 항공 정보가 있다면 추가
+    if (selectedScheduleData.selectedSchedule?.airlineData) {
+      const airlineData = selectedScheduleData.selectedSchedule.airlineData;
+      const scheduleDetailData = selectedScheduleData.selectedSchedule.scheduleDetailData || [];
+      
+      // 첫 번째 날짜에서 항공편 정보 추출
+      const firstDay = scheduleDetailData[0];
+      const airlineItems = firstDay?.scheduleDetail?.filter((item: any) => item.sort === 'airline' && item.airlineData) || [];
+      
+      if (airlineItems.length > 0) {
+        const flights = airlineItems.map((item: any) => {
+          const airline = item.airlineData;
+          return {
+            airline: airline.airlineName || '',
+            flightNumber: airline.airlineCode || '',
+            departure: airline.depart ? `${airline.depart} (${airline.departTime?.slice(0, 2) || ''}:${airline.departTime?.slice(2, 4) || ''})` : '',
+            arrival: airline.arrive ? `${airline.arrive} (${airline.arriveTime?.slice(0, 2) || ''}:${airline.arriveTime?.slice(2, 4) || ''})` : ''
+          };
+        });
+        
+        sections.push({
       label: '이용항공',
       type: 'airline',
-      flights: [
-        {
-          airline: '대한항공',
-          flightNumber: 'TK0021',
-          departure: '2025.07.03(수)',
-          arrival: '2025.07.03(수)',
-        },
-        {
-          airline: '대한항공',
-          flightNumber: 'TK0021',
-          departure: '2025.07.07(화)',
-          arrival: '2025.07.07(화)',
-        },
-      ],
-    },
-    {
+          flights: flights,
+        });
+      }
+    }
+
+    // 호텔 정보
+    const hotels = getHotelsForForm();
+    if (hotels.length > 0) {
+      sections.push({
       label: '이용호텔',
       type: 'hotel',
-      hotels: [
-        { name: '코트야드 호텔', nights: '2박' },
-        { name: '포시즌 호텔', nights: '1박' },
-        { name: '세인트레지스 호텔', nights: '2박' },
-      ],
-    },
-    {
+        hotels: hotels,
+      });
+    }
+
+    // 변경사항 (wants & needs)
+    if (customerInfo.wantsAndNeeds) {
+      sections.push({
       label: '변경사항',
       value: (
         <>
-          요청사항에 대해서 적는 곳입니다.
-          <br />
-          요청사항요청사항에 대해서 적는 곳입니다.
-          <br />
-          요청사항에 대해서 적는 곳입니다.
-        </>
+            {customerInfo.wantsAndNeeds.split('\n').map((line: string, index: number, arr: string[]) => (
+              <React.Fragment key={index}>
+                {line}
+                {index < arr.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </>
       ),
-      type: 'multiline',
-    },
-  ];
+        type: 'multiline',
+      });
+    }
 
-  const hotelItems = [
-    {
-      id: 1,
-      image: hotel1,
-      name: '코트야드 호텔',
-      rating: '★★★★',
-      roomType: '스위트룸',
-      nights: '2박',
-      description: (
-          <>
-            내용을 적는 곳입니다.
-            <br />
-            내용을 적는 곳입니다.내용을 적는 곳입니다.
-            <br />
-            내용을 적는 곳입니다.
-            <br />
-            내용을 적는 곳입니다.
-          </>
-      ),
-    },
-    {
-      id: 2,
-      image: hotel2,
-      name: '아야나오션뷰 풀빌라',
-      rating: '★★★★★',
-      roomType: '오션 풀빌라',
-      nights: '2박',
-      description: (
-          <>
-            내용을 적는 곳입니다.
-            <br />
-            내용을 적는 곳입니다.내용을 적는 곳입니다.
-            <br />
-            내용을 적는 곳입니다.
-            <br />
-            내용을 적는 곳입니다.
-          </>
-      ),
-    },
-  ];
+    return sections;
+  }, [customerInfo, selectedHotelData, selectedScheduleData]);
 
  
   
@@ -134,34 +217,40 @@ export default function RestEstimatePage() {
         {/* 왼쪽 영역 */}
         <div className="rest-left-section">
           <div className="rest-estimate-header">
-            <h1 className="rest-text-wrapper">코트아드메리어1박 + 우붓 포시즌2박 + 세인트레지스 오션풀빌라 3박</h1>
+            <h1 className="rest-text-wrapper">
+              {selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || '상품명'}
+            </h1>
           </div>
 
           <div className="rest-hotel-list-section">
             <h1 className="rest-text-wrapper-2">호텔구성</h1>
             <div className="rest-hotel-items">
-              {hotelItems.map((hotel) => (
+              {hotelItems.length > 0 ? hotelItems.map((hotel) => (
                 <div key={hotel.id} className="rest-hotel-item">
                   <img className="rest-hotel-image" alt={hotel.name} src={hotel.image} />
-                  <div className="rest-hotel-info">
+                  <div className="rest-hotel-info" style={{ padding: '10px' }}>
                     <div className="rest-hotel-name-rating">
-                      <div className="rest-p p-3">
-                        <div className="rest-text-wrapper p-4">{hotel.name}</div>
+                      <div className="rest-p">
+                        <div className="rest-text-wrapper" style={{ fontSize: '20px' }}>{hotel.name}</div>
                       </div>
                       <div className="rest-text-wrapper-7">{hotel.rating}</div>
                     </div>
-                    <div className={hotel.id === 1 ? "p p-instance" : "p p-2"}>
-                      <div className="rest-text-wrapper design-component-instance-node">{hotel.roomType}</div>
+                    <div className={hotel.id === 1 ? "p p-instance" : "p"}>
+                      <div className="rest-text-wrapper design-component-instance-node"  style={{ fontSize: '18px' }}>{hotel.roomType}</div>
                     </div>
-                    <div className={hotel.id === 1 ? "p p-10" : "p p-12"}>
-                      <div className="rest-text-wrapper p-11">{hotel.nights}</div>
+                    <div className="p">
+                      <div className="rest-text-wrapper"  style={{ fontSize: '18px' }}>{hotel.nights}</div>
                     </div>
-                    <div className={hotel.id === 1 ? "p p-7" : "p p-9"}>
-                      <div className="rest-text-wrapper p-8">{hotel.description}</div>
+                    <div className="p">
+                      <div className="rest-text-wrapper"  style={{ fontSize: '18px' }}>{hotel.description}</div>
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="rest-hotel-item">
+                  <div className="rest-text-wrapper">담긴 호텔 정보가 없습니다.</div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -169,7 +258,15 @@ export default function RestEstimatePage() {
             <h1 className="rest-text-wrapper-2">일정표</h1>
 
             <div className="rest-schedule-tab-content-left">
-             <ScheduleRederBox id={stateProps.id} />
+              {selectedScheduleData.selectedSchedule ? (
+                // 저장된 일정이 있으면 해당 일정만 표시
+                <ScheduleRederBox 
+                  id={selectedScheduleData.selectedSchedule?.id || stateProps?.id} 
+                  scheduleInfo={selectedScheduleData.selectedSchedule}
+                />
+              ) : (
+                <ScheduleRederBox id={stateProps?.id} />
+              )}
             </div>
           </div>
         </div>
@@ -187,14 +284,14 @@ export default function RestEstimatePage() {
 
 
                 {section.type === 'multiline' || section.type === 'simple' && (
-                  <div className="rest-p p-28">
+                  <div className="rest-p">
                     <div className="rest-form-value">{section.value}</div>
                   </div>
                 )}
 
                 {section.type === 'airline' && section.flights && (
                   <div className="rest-flight-info-wrapper">
-                    {section.flights.map((flight, index) => (
+                    {section.flights.map((flight: any, index: number) => (
                       <p key={index} className="rest-flight-info">
                         <span className="rest-text-wrapper-24">{flight.airline} </span>
                         <span className="rest-text-wrapper-25">{flight.flightNumber}</span>
@@ -208,13 +305,13 @@ export default function RestEstimatePage() {
 
                 {section.type === 'hotel' && section.hotels && (
                   <div className="rest-hotel-info-wrapper">
-                    {section.hotels.map((hotel, index) => (
-                      <div key={index} className={index === 0 ? "p p-23" : index === 1 ? "p p-24" : "p p-25"}>
-                        <div className="rest-text-wrapper p-18">{hotel.name}</div>
+                    {section.hotels.map((hotel: any, index: number) => (
+                      <div key={index} className="p">
+                        <div className="rest-text-wrapper">{hotel.name}</div>
                       </div>
                     ))}
                     <div className="rest-hotel-nights">
-                      {section.hotels.map((hotel, index) => (
+                      {section.hotels.map((hotel: any, index: number) => (
                         <div key={index} className="rest-hotel-night">
                           {hotel.nights}
                         </div>
@@ -230,27 +327,35 @@ export default function RestEstimatePage() {
             <div className="rest-summary-item">
               <div className="rest-text-wrapper-11">기본요금 (1인)</div>
               <p className="rest-price-element">
-                <span className="rest-span"> 2,600,000원</span>
+                <span className="rest-span" style={{ fontSize: '18px' }} >
+                  {selectedHotelData.priceInfo?.pricePerPerson 
+                    ? `${selectedHotelData.priceInfo.pricePerPerson.toLocaleString()}원`
+                    : '원'}
+                </span>
               </p>
             </div>
-
-            <div className="rest-summary-item">
-              <div className="rest-text-wrapper-12">변경요금</div>
-              <p className="rest-price-element">
-                <span className="rest-span"> + 150,000원</span>
-              </p>
-            </div>
-
+ 
             <img className="rest-vector-5" alt="Vector" src="/img/vector-336.svg" />
 
             <div className="rest-summary-item total">
               <div className="rest-text-wrapper-13">총요금</div>
-              <div className="rest-text-wrapper-18">5,200,000원</div>
+              <div
+                className="rest-text-wrapper-18"
+                style={{ fontSize: '22px', fontWeight: 800 }}
+              >
+                {selectedHotelData.priceInfo?.totalPrice 
+                  ? `${selectedHotelData.priceInfo.totalPrice.toLocaleString()}원`
+                  : selectedScheduleData.totalPrice 
+                    ? `${selectedScheduleData.totalPrice.toLocaleString()}원`
+                    : '5,200,000원'}
+              </div>
             </div>
 
             <div className="rest-summary-footer">
               <div className="rest-text-wrapper-16">항공료불포함</div>
-              <div className="rest-text-wrapper-19">성인 2</div>
+              <div className="rest-text-wrapper-19">
+                성인 {selectedHotelData.priceInfo?.guestCount || selectedScheduleData.guestCount || 2}
+              </div>
             </div>
 
             <div className="rest-summary-actions">
@@ -260,7 +365,7 @@ export default function RestEstimatePage() {
               </div>
               <div className="rest-action-button action-button-primary">
                 <div className="rest-rectangle-10" />
-                <div className="rest-text-wrapper-9">상품 선택하기</div>
+                <div className="rest-text-wrapper-9" style={{ color: '#fff' }}>상품 선택하기</div>
               </div>
             </div>
           </div>

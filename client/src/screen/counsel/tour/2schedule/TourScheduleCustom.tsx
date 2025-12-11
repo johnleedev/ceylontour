@@ -28,16 +28,24 @@ import rectangle677 from '../../../lastimages/counselrest/hotel/detail/rectangle
 import vector105 from '../../../lastimages/counselrest/hotel/detail/vector-105.svg';
 import reviewimage from '../../../lastimages/counselrest/hotel/detail/review.png';
 import RatingBoard from '../../../common/RatingBoard';
+import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
+import { useSetRecoilState } from 'recoil';
+import { recoilSelectedScheduleData } from '../../../../RecoilStore';
+
+// 일정표 우측 패널 카드용 이미지 (투어 전용)
+import scheduleImg1 from '../../../lastimages/counseltour/schedule/image1.png';
+import scheduleImg2 from '../../../lastimages/counseltour/schedule/image2.png';
+import scheduleImg3 from '../../../lastimages/counseltour/schedule/image3.png';
+import scheduleImg4 from '../../../lastimages/counseltour/schedule/image4.png';
 
 
 export default function TourScheduleCustom() {
   const navigate = useNavigate();
   const location = useLocation();
-  // const stateProps = location.state;
-
+  const stateProps = location.state;
 
   const [hotelInfo, setHotelInfo] = React.useState<any | null>(null);
   const [imageAllView, setImageAllView] = React.useState<any[]>([]);
@@ -45,6 +53,7 @@ export default function TourScheduleCustom() {
   const [imageEtcView, setImageEtcView] = React.useState<any[]>([]);
   const [roomTypes, setRoomTypes] = React.useState<any[]>([]);
   const [products, setProducts] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
 
 
   // 선택된 나라의 관련 여행상품(일정) 조회
@@ -82,20 +91,50 @@ export default function TourScheduleCustom() {
   const [activeRightTab, setActiveRightTab] = React.useState<'benefit' | 'schedule'>('schedule');
   const [showRightPanel, setShowRightPanel] = React.useState(false);
   const [selectedMainImageIndex, setSelectedMainImageIndex] = React.useState(0);
+  const [selectedCity, setSelectedCity] = React.useState<string>('');
+  const [summaryMainTab, setSummaryMainTab] = React.useState<
+    '가이드투어' | '입장/체험' | '공연/경기' | '식사/카페' | '스냅촬영' | '쇼핑'
+  >('가이드투어');
+  const [selectedSchedule, setSelectedSchedule] = React.useState<any | null>(null);
+  const [selectedScheduleIndex, setSelectedScheduleIndex] = React.useState<number>(0);
+  const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
+
+  // stateProps에서 선택된 도시 목록 추출
+  useEffect(() => {
+    if (stateProps?.selectedCities && stateProps.selectedCities.length > 0) {
+      setSelectedCity(stateProps.selectedCities[0]);
+    }
+  }, [stateProps]);
 
   useEffect(() => {
+    console.log('TourScheduleCustom stateProps:', stateProps);
     
-  }, []);
+    // stateProps에서 호텔 정보가 있으면 설정
+    if (stateProps?.hotelInfo) {
+      setHotelInfo(stateProps.hotelInfo);
+      setLoading(false);
+    } else {
+      // 호텔 정보가 없어도 페이지는 렌더링하도록
+      setLoading(false);
+    }
+  }, [stateProps]);
 
   // 탭 변경 시 선택된 메인 이미지를 첫번째로 리셋
   useEffect(() => {
     // setSelectedMainImageIndex(0);
   }, [activeTab]);
 
-  // 데이터가 로드되지 않았다면 상세 내용을 렌더링하지 않음
-  if (!hotelInfo) {
-    return null;
+  // 로딩 중일 때는 기본 레이아웃 표시
+  if (loading) {
+    return (
+      <div className="TourScheduleCustom">
+        <div className="loading-message">로딩 중...</div>
+      </div>
+    );
   }
+
+  // 호텔 정보가 없어도 기본 레이아웃은 표시
+  // hotelInfo가 null일 수 있으므로 옵셔널 체이닝 사용
 
   // MORNING 섹션의 베네핏 옵션 데이터
   const morningBenefitOptions = [
@@ -234,10 +273,11 @@ export default function TourScheduleCustom() {
                 onClick={() => navigate(-1)}
               />
               <div className="custom-title">
-                <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
+                <div className="text-title">{hotelInfo?.hotelNameKo || '일정 커스터마이징'}</div>
                 <div className="text-subtitle">
-                  {hotelInfo?.hotelNameEn || ''}
+                  {hotelInfo?.hotelNameEn || (stateProps?.selectedCities?.join(', ') || '')}
                 </div>
+                {hotelInfo && (
                 <RatingBoard
                   rating={
                     hotelInfo && (hotelInfo.tripAdviser || hotelInfo.customerScore)
@@ -245,11 +285,20 @@ export default function TourScheduleCustom() {
                       : 0
                   }
                 />
+                )}
 
                 <div className="text-location">
+                  {hotelInfo ? (
+                    <>
                   <p>{hotelInfo?.nation || ''}</p>
                   <IoIosArrowForward />
                   <p>{hotelInfo?.city || ''}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>선택된 도시: {stateProps?.selectedCities?.join(', ') || '없음'}</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -530,9 +579,9 @@ export default function TourScheduleCustom() {
           </div>
         </div>
 
-        {/* 오른쪽 영역: 실론투어 베네핏 및 하루 일정 */}
+        {/* 오른쪽 영역: 일정표 요약 카드 (TourScheduleRecommend와 동일) */}
         {showRightPanel && (
-          <div className="right-section">
+          <div className="right-section" style={{flexDirection:'column'}}>
             {/* 닫기 버튼 */}
             <button
               type="button"
@@ -541,114 +590,157 @@ export default function TourScheduleCustom() {
             >
               <IoMdClose />
             </button>
-
-            {/* 탭 컨테이너 */}
-            <div className="right-tab-container">
-              <div className="right-tab-left">
+            <div className="schedule-right-section">
+              <div className="city-tab-buttons">
+                {stateProps?.selectedCities?.map((city: string) => (
                 <button
-                  type="button"
-                  className={`right-tab-button right-tab-schedule ${activeRightTab === 'schedule' ? 'active' : ''}`}
-                  onClick={() => setActiveRightTab('schedule')}
+                    key={city}
+                    className={`city-tab-btn ${selectedCity === city ? 'active' : ''}`}
+                    onClick={() => setSelectedCity(city)}
                 >
-                  이호텔에서의 하루
+                    {city}
                 </button>
-                <button
-                  type="button"
-                  className={`right-tab-button right-tab-benefit ${activeRightTab === 'benefit' ? 'active' : ''}`}
-                  onClick={() => setActiveRightTab('benefit')}
+                ))}
+              </div>
+              {/* TourScheduleRecommend 일정표 탭 우측 요약 카드와 동일한 구조 */}
+              <div className="right-tab-content schedule-summary-content">
+                <div className="summary-card">
+                  <div className="summary-header">
+                    <div className="summary-main-tabs">
+                      {['가이드투어','입장/체험','공연/경기','식사/카페','스냅촬영','쇼핑'].map(label => (
+                        <button
+                          key={label}
+                          className={`summary-main-tab ${summaryMainTab === label ? 'active' : ''}`}
+                          onClick={() => setSummaryMainTab(label as typeof summaryMainTab)}
                 >
-                  실론투어 베네핏
+                          {label}
                 </button>
+                      ))}
               </div>
             </div>
 
-            {/* 탭 컨텐츠 */}
-            <div className="right-tab-content">
-              {activeRightTab === 'benefit' && (
-                <div className="benefit-card-section">
-                  {/* 실론투어 베네핏 탭은 현재 별도 콘텐츠 없음 */}
+                  <div className="summary-grid">
+                    <div className="summary-item">
+                      <img className="summary-item-image" alt="익스커션 1" src={scheduleImg1} />
+                      <div className="summary-item-content">
+                        <p className="summary-item-title">
+                          단독차량 투어 파리 완전 개인일정 차량 가이드
+                        </p>
+                        <div className="summary-item-rating">★ 5.0</div>
+                        <div className="summary-item-price-row">
+                          <span className="summary-item-price">50,000 원</span>
+                          <span className="summary-item-unit">/1인</span>
+                        </div>
                 </div>
-              )}
-
-              {activeRightTab === 'schedule' && (
-                <div className="daily-schedule-section">
-                  {/* MORNING 섹션 */}
-                  <div className="schedule-time-block morning-block">
-                    <div className="time-header">
-                      <span className="time-label">MORNING</span>
-                      <span className="time-range">— 아침 루틴 (08:00~11:00)</span>
                     </div>
 
-                    {/* 실론투어 베네핏 옵션 */}
-                    <div className="benefit-options">
-                      {morningBenefitOptions.map((option, index) => (
-                        <React.Fragment key={index}>
-                          <div className={`benefit-option ${option.type}-option`}>
-                            <div className="option-label">{option.label}</div>
-                            <img 
-                              className="option-image" 
-                              alt={option.optionImageAlt} 
-                              src={option.optionImage} 
-                            />
-                            <div className="option-content">
-                              <div className="option-title">{option.firstTitle}</div>
+                    <div className="summary-item">
+                      <img className="summary-item-image" alt="익스커션 2" src={scheduleImg2} />
+                      <div className="summary-item-content">
+                        <p className="summary-item-title">파리시내 및 근교 맞춤투어 VIP가이드</p>
+                        <div className="summary-item-rating">★ 5.0</div>
+                        <div className="summary-item-price-row">
+                          <span className="summary-item-price">50,000 원</span>
+                          <span className="summary-item-unit">/1인</span>
                             </div>
-                            <img 
-                              className="schedule-image" 
-                              alt={option.scheduleImageAlt} 
-                              src={option.scheduleImage} 
-                            />
-                            <div className="option-content">
-                              <div className="option-title">{option.secondTitle}</div>
                             </div>
                           </div>
 
-                          {index === 0 && (
-                            <div className="tip-box">
-                              <div className="tip-icon">
-                                <img alt="Tip" src={vector105} />
+                    <div className="summary-item">
+                      <img className="summary-item-image" alt="익스커션 3" src={scheduleImg3} />
+                      <div className="summary-item-content">
+                        <p className="summary-item-title">
+                          단독 프라이빗투어, 공항픽업+야경투어
+                        </p>
+                        <div className="summary-item-rating">★ 5.0</div>
+                        <div className="summary-item-price-row">
+                          <span className="summary-item-price">50,000 원</span>
+                          <span className="summary-item-unit">/1인</span>
+                        </div>
+                      </div>
                               </div>
-                              <div className="tip-content">
-                                <span className="tip-label">TIP</span>
-                                <p className="tip-text">
-                                  &quot;점심 이후 바로 스파 이동 → 동선 최소화&quot;
-                                </p>
+
+                    <div className="summary-item">
+                      <img className="summary-item-image" alt="익스커션 4" src={scheduleImg4} />
+                      <div className="summary-item-content">
+                        <p className="summary-item-title">
+                          단독차량 투어 파리 완전 개인일정 차량 가이드
+                        </p>
+                        <div className="summary-item-rating">★ 5.0</div>
+                        <div className="summary-item-price-row">
+                          <span className="summary-item-price">50,000 원</span>
+                          <span className="summary-item-unit">/1인</span>
                               </div>
                             </div>
-                          )}
-                        </React.Fragment>
-                      ))}
                     </div>
                   </div>
 
-                  {/* LUNCH 섹션 */}
-                  <div className="schedule-time-block lunch-block">
-                    <div className="time-header">
-                      <span className="time-label">LUNCH</span>
-                      <span className="time-range">— 점심 (11:30~13:30)</span>
+                  <div className="summary-footer">
+                    <div className="summary-footer-top">선택된 세부일정 제목</div>
+                    <div className="summary-footer-bottom">
+                      <div className="summary-footer-left">
+                        <div className="summary-footer-field">날짜</div>
+                        <div className="summary-footer-field">선택상품</div>
+                        <div className="summary-footer-field price-field">￦ 50,000 /1인</div>
+                        <div className="summary-footer-field">- 2명 +</div>
                     </div>
-
-                    {/* 핵심 경험 섹션 */}
-                    <div className="experience-section">
-                      <div className="experience-label">핵심 경험</div>
-                      <div className="experience-images">
-                        {experienceItems.map((item, index) => (
-                          <React.Fragment key={index}>
-                            <img 
-                              className="experience-image" 
-                              alt={item.imageAlt} 
-                              src={item.image} 
-                            />
-                            <div className="experience-item">
-                              <div className="experience-title">{item.title}</div>
-                            </div>
-                          </React.Fragment>
-                        ))}
+                      <div className="summary-footer-right">
+                        <div className="summary-total-label">총요금</div>
+                        <div className="summary-total-price">￦100,000</div>
                       </div>
+                    </div>
+                    <div className="cost-schedule-btn-wrapper">
+                      <button
+                        className="cost-schedule-btn"
+                        onClick={() => {
+                          if (!selectedSchedule) {
+                            alert('항공편을 선택해주세요.');
+                            return;
+                          }
+
+                          // 선택된 항공편의 일정 정보 추출
+                          const airlineData = selectedSchedule.airlineData;
+                          const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
+
+                          setSelectedScheduleData({
+                            productInfo: {
+                              id: stateProps?.id,
+                              productName: stateProps?.productName,
+                              scheduleSort: stateProps?.scheduleSort,
+                              costType: stateProps?.costType,
+                              tourPeriodData: stateProps?.tourPeriodData,
+                              includeNote: stateProps?.includeNote,
+                              notIncludeNote: stateProps?.notIncludeNote,
+                              productScheduleData: stateProps?.productScheduleData
+                            },
+                            scheduleDetails: {
+                              airlineData: airlineData,
+                              scheduleList: [selectedSchedule],
+                              selectedIndex: selectedScheduleIndex
+                            },
+                            selectedSchedule: selectedSchedule,
+                            selectedItems: [],
+                            totalPrice: 100000,
+                            guestCount: 2
+                          });
+                          alert('일정이 담겼습니다.');
+                        }}
+                      >
+                        일정담기
+                      </button>
+                      <button
+                        className="cost-schedule-btn"
+                        onClick={() => {
+                          navigate('/counsel/tour/hotel', { state: stateProps });
+                          window.scrollTo(0, 0);
+                        }}
+                      >
+                        호텔바로가기
+                      </button>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}

@@ -10,6 +10,7 @@ import { useRecoilValue } from 'recoil';
 import { recoilExchangeRate } from '../../RecoilStore';
 import { fetchScheduleDetailDataExternal } from './ScheduleDetailRedering';
 import { GoDotFill } from "react-icons/go";
+import AirlineData from '../AirlineData';
 
 interface ModalScheduleDetailProps {
     airlineData: {
@@ -83,6 +84,7 @@ interface ModalScheduleDetailProps {
 interface ScheduleRederBoxProps {
   id?: string | null;
   scheduleInfo?: any;
+  onSelectedScheduleChange?: (selectedSchedule: ModalScheduleDetailProps | null, selectedIndex: number) => void;
 }
   
 
@@ -127,9 +129,19 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
   };
   
   useEffect(() => {
+    // scheduleInfo prop이 전달되면 해당 일정만 사용
+    if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
+      setScheduleList([props.scheduleInfo]);
+      setSelectedScheduleIndex(0);
+      setLoading(false);
+      // 선택된 일정 변경 알림
+      if (props.onSelectedScheduleChange) {
+        props.onSelectedScheduleChange(props.scheduleInfo, 0);
+      }
+    } else {
     fetchScheduleData();
-
-  }, []);
+    }
+  }, [props.scheduleInfo]);
 
 
   
@@ -308,6 +320,14 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
   );  
   const [selectedScheduleIndex, setSelectedScheduleIndex] = useState<number>(0);
 
+  // 선택된 일정 변경 시 부모 컴포넌트에 알림
+  useEffect(() => {
+    if (props.onSelectedScheduleChange && scheduleList.length > 0) {
+      const selectedSchedule = scheduleList[selectedScheduleIndex] || null;
+      props.onSelectedScheduleChange(selectedSchedule, selectedScheduleIndex);
+    }
+  }, [selectedScheduleIndex, scheduleList, props]);
+
 
 
   const datmealOptions = [
@@ -461,37 +481,61 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
               <div className="schedule-header__tabs">
                 {
                   scheduleList.map((schedule, scheduleIndex) => {
+                    // 첫 번째 날짜에서 항공편 정보 추출
+                    const firstDay = schedule.scheduleDetailData && schedule.scheduleDetailData.length > 0 
+                      ? schedule.scheduleDetailData[0] 
+                      : null;
+                    const airlineItem = firstDay?.scheduleDetail?.find((item: any) => item.sort === 'airline' && item.airlineData);
+                    
+                    if (!airlineItem || !airlineItem.airlineData) {
+                      // 항공편 정보가 없는 경우
                     return (
                       <div
                         key={scheduleIndex}
-                        className={
-                          selectedScheduleIndex === scheduleIndex
-                            ? 'schedule-header__tab schedule-header__tab--active'
-                            : 'schedule-header__tab'
-                        }
-                      >
-                        {
-                          schedule.airlineData.sort === '' 
-                          ? (
-                            <p className="schedule-header__tab__empty">항공편없음</p>
-                          )
-                          : (
-                           <>
-                            <p>{schedule.airlineData.sort === 'direct' ? '직항' : '경유'}</p>
-                            <div className="schedule-header__tab__codes">
-                              {schedule.airlineData.airlineCode && schedule.airlineData.airlineCode.length > 0 
-                                ? schedule.airlineData.airlineCode.map((code, idx) => (
-                                    <p key={idx} className="schedule-header__tab__code">{code}</p>
-                                  ))
-                                : <p className="schedule-header__tab__empty">#</p>
-                              }
+                          className={`schedule-flight__item__wrapper ${selectedScheduleIndex === scheduleIndex ? 'schedule-flight__item__wrapper--active' : ''}`}
+                          onClick={() => setSelectedScheduleIndex(scheduleIndex)}
+                        >
+                          <div className="schedule-airline__wrapper">
+                            <span>항공편없음</span>
                             </div>
-                           </>
-                          )
+                        </div>
+                      );
                         }
+
+                    const airlineData = airlineItem.airlineData;
+                    const airlineWord = airlineData.airlineCode?.slice(0, 2) || '';
+                    const airlineWordCopy = (airlineWord === '5J' || airlineWord === '7C') ? `A${airlineWord}` : airlineWord;
+                    const airlineImage = airlineWordCopy ? AirlineData[airlineWordCopy as keyof typeof AirlineData] : null;
+
+                    return (
+                      <div
+                        key={scheduleIndex}
+                        className={`schedule-flight__item__wrapper ${selectedScheduleIndex === scheduleIndex ? 'schedule-flight__item__wrapper--active' : ''}`}
+                        onClick={() => setSelectedScheduleIndex(scheduleIndex)}
+                      >
+                        <div className="schedule-airline__wrapper">
+                          {airlineImage && <img src={airlineImage} alt="airline" />}
+                          <span>{airlineData.airlineName || '-'}</span>
                       </div>
-                    )
-                })}
+                        <div className="schedule-flight__schedule__wrapper">
+                          <div className="schedule-flight__schedule_row">
+                            <span>{getCityNameByCode(airlineData.depart)}</span>
+                            <span>출발</span>
+                            <span>({airlineData.departTime?.slice(0, 2) || ''}:{airlineData.departTime?.slice(2, 4) || ''})</span>
+                            <span>-</span>
+                            <span>{getCityNameByCode(airlineData.arrive)}</span>
+                            <span>도착</span>
+                            <span>({airlineData.arriveTime?.slice(0, 2) || ''}:{airlineData.arriveTime?.slice(2, 4) || ''})</span>
+                          </div>
+                        </div>
+                        <div className="schedule-flight__fare-text">
+                          <span className="schedule-fare-label">{schedule.airlineData.sort === 'direct' ? '직항' : '경유'}</span>
+                          <span className="schedule-fare-amount">{airlineData.airlineCode || ''}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                }
               </div>
             </div>
 
