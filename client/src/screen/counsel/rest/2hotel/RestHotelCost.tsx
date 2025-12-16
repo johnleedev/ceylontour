@@ -19,10 +19,10 @@ import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { recoilSelectedHotelData, recoilCustomerInfoFormData, recoilExchangeRate } from '../../../../RecoilStore';
-import PriceHotelSelected from '../hotelPriceManage/PriceHotelSelected';
-import HotelPriceInfo_Poolvilla from '../hotelPriceManage/HotelPriceInfo_Poolvilla';
-import HotelPriceInfo_PerDay from '../hotelPriceManage/HotelPriceInfo_PerDay';
-import HotelPriceInfo_MinimunStay from '../hotelPriceManage/HotelPriceInfo_MinimunStay';
+
+import NewHotelPrice_Poolvilla from '../hotelPriceManage/NewHotelPrice_Poolvilla';
+import NewHotelPrice_PerDay from '../hotelPriceManage/NewHotelPrice_PerDay';
+import NewHotelPrice_MinimunStay from '../hotelPriceManage/NewHotelPrice_MinimunStay';
 import { format } from 'date-fns';
 import axios from 'axios';
 
@@ -31,6 +31,7 @@ export default function RestHotelCost() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
+  console.log('stateProps', stateProps);
   
   const setSelectedHotelData = useSetRecoilState(recoilSelectedHotelData);
   const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
@@ -56,16 +57,29 @@ export default function RestHotelCost() {
 
   // 호텔별 요금 관리 관련 상태
   const [hotelPriceStep, setHotelPriceStep] = React.useState<1 | 2>(1);
-  const [selectedHotelForType, setSelectedHotelForType] = React.useState<{ [key: string]: any | null }>({
-    '호텔': null,
-    '리조트': null,
-    '풀빌라': null
-  });
+  const [selectedHotels, setSelectedHotels] = React.useState<Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>>([]);
+  const [hotel1Cost, setHotel1Cost] = React.useState<any>(null);
+  const [hotel2Cost, setHotel2Cost] = React.useState<any>(null);
+  const [hotel3Cost, setHotel3Cost] = React.useState<any>(null);
+  const [hotel4Cost, setHotel4Cost] = React.useState<any>(null);
+  const [isLoadingCost, setIsLoadingCost] = React.useState(false);
+  const today = customerInfo.reserveDate || format(new Date(), 'yyyy-MM-dd');
+  
+  // 기존 호텔별 상태 (하위 호환성을 위해 유지)
   const [hotelHotelCost, setHotelHotelCost] = React.useState<any>(null);
   const [resortHotelCost, setResortHotelCost] = React.useState<any>(null);
   const [poolVillaHotelCost, setPoolVillaHotelCost] = React.useState<any>(null);
-  const [isLoadingCost, setIsLoadingCost] = React.useState(false);
-  const today = customerInfo.reserveDate || format(new Date(), 'yyyy-MM-dd');
+  
+  // 랜드사 수수료/네고 정보 상태
+  const [landCommissionTotal, setLandCommissionTotal] = React.useState<number>(0);
+  const [landDiscountDefaultTotal, setLandDiscountDefaultTotal] = React.useState<number>(0);
+  const [landDiscountSpecialTotal, setLandDiscountSpecialTotal] = React.useState<number>(0);
+  const [landCurrency, setLandCurrency] = React.useState<string>('₩');
+  
+  // 호텔 변경 관련 상태
+  const [allHotels, setAllHotels] = React.useState<any[]>([]);
+  const [showHotelSelectModal, setShowHotelSelectModal] = React.useState(false);
+  const [selectedCardIndex, setSelectedCardIndex] = React.useState<number | null>(null);
 
 
   const btnSolids = [
@@ -114,7 +128,15 @@ export default function RestHotelCost() {
   // 카드의 호텔 타입에 따라 해당하는 룸타입 목록 가져오기
   const getRoomTypesForCard = (card: any): string[] => {
     const hotelSort = card.badge; // '호텔', '리조트', '풀빌라'
+    const cardIndex = card.id - 1; // card.id는 1부터 시작, 배열 인덱스는 0부터
     
+    // 새로운 구조에서 인덱스별로 찾기
+    const hotelCosts = [hotel1Cost, hotel2Cost, hotel3Cost, hotel4Cost];
+    if (cardIndex >= 0 && cardIndex < hotelCosts.length && hotelCosts[cardIndex] && hotelCosts[cardIndex].costInput) {
+      return extractRoomTypes(hotelCosts[cardIndex].costInput);
+    }
+    
+    // 하위 호환성을 위해 기존 방식도 지원
     if (hotelSort === '호텔' && hotelHotelCost && hotelHotelCost.costInput) {
       return extractRoomTypes(hotelHotelCost.costInput);
     } else if (hotelSort === '리조트' && resortHotelCost && resortHotelCost.costInput) {
@@ -155,6 +177,14 @@ export default function RestHotelCost() {
     
     return null;
   };
+
+  // 오른쪽 패널의 선택값을 NewHotelPrice_Poolvilla에 전달하기 위한 외부 선택값
+  const poolVillaCardForExternal = scheduleCards.find(card => card.badge === '풀빌라');
+  const externalPoolVillaRoomType =
+    poolVillaCardForExternal
+      ? (selectedRoomTypes[poolVillaCardForExternal.id] || (getRoomTypesForCard(poolVillaCardForExternal)[0] || ''))
+      : '';
+  const externalPoolVillaPeriodType = getPeriodType() || '';
 
   // 풀빌라 카드에서 선택된 룸타입 가져오기
   const getSelectedPoolVillaRoomType = (): string | null => {
@@ -378,6 +408,263 @@ export default function RestHotelCost() {
     }
   }, [customerInfo.travelPeriod, periodText]);
 
+  // 랜드사 수수료/네고 정보 가져오기
+  const fetchLandCommission = React.useCallback(async () => {
+    console.log('🔍 fetchLandCommission 호출:', {
+      landCompany: productInfo?.landCompany,
+      city: stateProps.city,
+      productInfo: productInfo
+    });
+    
+   
+    try {
+      const url = `${AdminURL}/landcompany/getlandcompanyone/${stateProps.city}/${productInfo.landCompany}`;
+      console.log('📡 API 호출:', url);
+      
+      const res = await axios.get(url);
+      console.log('📥 API 응답:', res.data);
+      
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const lc = res.data[0];
+        console.log('✅ 랜드사 정보:', lc);
+        
+        const currency = lc.applyCurrency || '₩';
+        setLandCurrency(currency || '₩');
+        
+        let commissionParsed: any[] = [];
+        let discountDefaultParsed: any[] = [];
+        let discountSpecialParsed: any[] = [];
+        let commissionTotal = 0;
+        let discountDefaultTotal = 0;
+        let discountSpecialTotal = 0;
+        
+        try {
+          commissionParsed = typeof lc.commission === 'string' ? JSON.parse(lc.commission) : (Array.isArray(lc.commission) ? lc.commission : []);
+          console.log('💰 commissionParsed:', commissionParsed);
+        } catch (e) {
+          console.error('❌ commission 파싱 오류:', e, '원본:', lc.commission);
+          commissionParsed = [];
+        }
+        
+        try {
+          discountDefaultParsed = typeof lc.discountDefault === 'string' ? JSON.parse(lc.discountDefault) : (Array.isArray(lc.discountDefault) ? lc.discountDefault : []);
+          console.log('💸 discountDefaultParsed:', discountDefaultParsed);
+        } catch (e) {
+          console.error('❌ discountDefault 파싱 오류:', e, '원본:', lc.discountDefault);
+          discountDefaultParsed = [];
+        }
+        
+        try {
+          discountSpecialParsed = typeof lc.discountSpecial === 'string' ? JSON.parse(lc.discountSpecial) : (Array.isArray(lc.discountSpecial) ? lc.discountSpecial : []);
+          console.log('🎁 discountSpecialParsed:', discountSpecialParsed);
+        } catch (e) {
+          console.error('❌ discountSpecial 파싱 오류:', e, '원본:', lc.discountSpecial);
+          discountSpecialParsed = [];
+        }
+        
+        if (Array.isArray(commissionParsed) && commissionParsed.length > 0) {
+          commissionParsed.forEach((item: any) => {
+            const chargeNum = parseInt(String(item.charge || '').replace(/,/g, ''), 10);
+            console.log('  - 수수료 항목:', item, 'chargeNum:', chargeNum);
+            if (!isNaN(chargeNum)) commissionTotal += chargeNum;
+          });
+        }
+        console.log('💰 최종 commissionTotal:', commissionTotal);
+        setLandCommissionTotal(commissionTotal);
+        
+        if (Array.isArray(discountDefaultParsed) && discountDefaultParsed.length > 0) {
+          discountDefaultParsed.forEach((item: any) => {
+            const chargeNum = parseInt(String(item.charge || '').replace(/,/g, ''), 10);
+            console.log('  - 기본 네고 항목:', item, 'chargeNum:', chargeNum);
+            if (!isNaN(chargeNum)) discountDefaultTotal += chargeNum;
+          });
+        }
+        console.log('💸 최종 discountDefaultTotal:', discountDefaultTotal);
+        setLandDiscountDefaultTotal(discountDefaultTotal);
+        
+        if (Array.isArray(discountSpecialParsed) && discountSpecialParsed.length > 0) {
+          discountSpecialParsed.forEach((item: any) => {
+            const chargeNum = parseInt(String(item.charge || '').replace(/,/g, ''), 10);
+            console.log('  - 특별 네고 항목:', item, 'chargeNum:', chargeNum);
+            if (!isNaN(chargeNum)) discountSpecialTotal += chargeNum;
+          });
+        }
+        console.log('🎁 최종 discountSpecialTotal:', discountSpecialTotal);
+        setLandDiscountSpecialTotal(discountSpecialTotal);
+        
+        console.log('✅ 랜드사 수수료 정보 설정 완료:', {
+          commissionTotal,
+          discountDefaultTotal,
+          discountSpecialTotal,
+          currency
+        });
+      } else {
+        console.warn('⚠️ 랜드사 정보가 없거나 배열이 아님:', res.data);
+        setLandCommissionTotal(0);
+        setLandDiscountDefaultTotal(0);
+        setLandDiscountSpecialTotal(0);
+        setLandCurrency('₩');
+      }
+    } catch (e) {
+      console.error('❌ 랜드사 수수료 정보 가져오기 오류:', e);
+      setLandCommissionTotal(0);
+      setLandDiscountDefaultTotal(0);
+      setLandDiscountSpecialTotal(0);
+      setLandCurrency('₩');
+    }
+  }, [productInfo?.landCompany, productInfo?.city]);
+
+  // 호텔 리스트 가져오기
+  const fetchAllHotels = React.useCallback(async () => {
+    try {
+      let hotels: any[] = [];
+      
+      if (productInfo?.city || stateProps?.city) {
+        const city = productInfo?.city || stateProps?.city;
+        const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${city}`);
+        if (res.data && res.data !== false) {
+          hotels = Array.isArray(res.data) ? res.data : [res.data];
+        }
+      } else {
+        const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
+        if (res.data && res.data !== false) {
+          hotels = Array.isArray(res.data) ? res.data : [res.data];
+        }
+      }
+      
+      setAllHotels(hotels);
+    } catch (error) {
+      console.error('호텔 리스트 가져오기 오류:', error);
+      setAllHotels([]);
+    }
+  }, [productInfo?.city, stateProps?.city]);
+
+  // productInfo가 로드되면 랜드사 수수료 정보 가져오기 및 호텔 리스트 가져오기
+  useEffect(() => {
+    if (productInfo) {
+      console.log('🔄 productInfo 변경됨, fetchLandCommission 호출');
+      fetchLandCommission();
+      fetchAllHotels();
+    }
+  }, [productInfo, fetchLandCommission, fetchAllHotels]);
+
+  // 랜드사 수수료 상태 변경 디버깅
+  useEffect(() => {
+    console.log('📊 랜드사 수수료 상태 업데이트:', {
+      landCommissionTotal,
+      landDiscountDefaultTotal,
+      landDiscountSpecialTotal,
+      landCurrency
+    });
+  }, [landCommissionTotal, landDiscountDefaultTotal, landDiscountSpecialTotal, landCurrency]);
+
+  // 호텔 변경 핸들러
+  const handleHotelChange = (cardIndex: number) => {
+    setSelectedCardIndex(cardIndex);
+    setShowHotelSelectModal(true);
+  };
+
+  // 호텔 선택 완료 핸들러
+  const handleHotelSelect = async (selectedHotel: any) => {
+    if (selectedCardIndex === null) return;
+    
+    const card = scheduleCards.find(c => c.id === selectedCardIndex);
+    if (!card) return;
+    
+    console.log('🏨 호텔 선택:', {
+      selectedCardIndex,
+      card,
+      selectedHotel,
+      currentSelectedHotels: selectedHotels
+    });
+    
+    // selectedHotels 업데이트
+    // card.id - 1을 인덱스로 사용하되, productScheduleData의 순서와 일치하도록 처리
+    const targetIndex = card.id - 1;
+    const updatedSelectedHotels = [...selectedHotels];
+    
+    // 인덱스로 먼저 찾기
+    let hotelIndex = updatedSelectedHotels.findIndex(sh => sh.index === targetIndex);
+    
+    // 인덱스로 찾지 못하면 hotelSort와 badge로 찾기
+    if (hotelIndex < 0) {
+      hotelIndex = updatedSelectedHotels.findIndex(sh => sh.hotelSort === card.badge);
+    }
+    
+    console.log('🔍 호텔 인덱스 찾기:', {
+      hotelIndex,
+      cardId: card.id,
+      targetIndex: targetIndex,
+      cardBadge: card.badge,
+      selectedHotels: selectedHotels.map(sh => ({ index: sh.index, hotelSort: sh.hotelSort, hotelName: sh.hotel?.hotelNameKo }))
+    });
+    
+    if (hotelIndex >= 0) {
+      // 기존 항목 업데이트
+      updatedSelectedHotels[hotelIndex] = {
+        ...updatedSelectedHotels[hotelIndex],
+        hotel: selectedHotel,
+        index: targetIndex // 인덱스도 업데이트
+      };
+    } else {
+      // 새로운 항목 추가
+      updatedSelectedHotels.push({
+        index: targetIndex,
+        hotelSort: card.badge,
+        dayNight: card.nights?.replace('박', ''),
+        hotel: selectedHotel
+      });
+    }
+    
+    // 인덱스 순서대로 정렬
+    updatedSelectedHotels.sort((a, b) => a.index - b.index);
+    
+    console.log('✅ 업데이트된 selectedHotels:', updatedSelectedHotels.map(sh => ({
+      index: sh.index,
+      hotelSort: sh.hotelSort,
+      hotelName: sh.hotel?.hotelNameKo
+    })));
+    
+    // scheduleCards 즉시 업데이트 (호텔명 변경)
+    const updatedCards = scheduleCards.map(c => 
+      c.id === card.id ? { ...c, title: selectedHotel.hotelNameKo || c.title } : c
+    );
+    setScheduleCards(updatedCards);
+    
+    // selectedHotels 업데이트
+    setSelectedHotels(updatedSelectedHotels);
+    
+    // 모달 닫기
+    setShowHotelSelectModal(false);
+    setSelectedCardIndex(null);
+    
+    // 요금 정보 다시 가져오기 (이것이 hotel1Cost, hotel2Cost 등을 업데이트함)
+    console.log('📡 요금 정보 다시 가져오기 시작...');
+    await fetchSelectedHotelsCosts(updatedSelectedHotels);
+    console.log('✅ 요금 정보 가져오기 완료');
+    
+    // 룸타입 초기화 (새 호텔의 룸타입에 맞춰) - 요금 정보 로드 후 실행
+    setTimeout(() => {
+      const newSelectedRoomTypes: { [key: number]: string } = {};
+      updatedCards.forEach((c) => {
+        const roomTypes = getRoomTypesForCard(c);
+        if (roomTypes.length > 0) {
+          // 기존 선택값이 새 호텔에 유효한지 확인
+          const currentRoomType = selectedRoomTypes[c.id];
+          if (currentRoomType && roomTypes.includes(currentRoomType)) {
+            newSelectedRoomTypes[c.id] = currentRoomType;
+          } else {
+            newSelectedRoomTypes[c.id] = roomTypes[0];
+          }
+        }
+      });
+      
+      if (Object.keys(newSelectedRoomTypes).length > 0) {
+        setSelectedRoomTypes(prev => ({ ...prev, ...newSelectedRoomTypes }));
+      }
+    }, 500); // 요금 정보 로드 후 실행
+  };
+
   // productScheduleData에서 필요한 호텔 타입 추출
   const getRequiredHotelTypes = React.useCallback(() => {
     const hotelTypes = new Set<string>();
@@ -409,25 +696,32 @@ export default function RestHotelCost() {
     return Array.from(hotelTypes);
   }, [productInfo?.productScheduleData, productInfo?.costType]);
 
+  // fetchSelectedHotelsCosts 함수를 useRef로 저장 (stale closure 방지)
+  const fetchSelectedHotelsCostsRef = React.useRef<((selectedHotelsList?: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>) => Promise<void>) | null>(null);
+
   // 선택된 호텔들의 요금 정보 가져오기
-  const fetchSelectedHotelsCosts = React.useCallback(async (selectedHotelsForType?: { [key: string]: any | null }) => {
+  const fetchSelectedHotelsCosts = React.useCallback(async (selectedHotelsList?: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>) => {
     setIsLoadingCost(true);
     try {
-      const requiredHotelTypes = getRequiredHotelTypes();
-      const hotelsToFetch: { type: string; hotel: any }[] = [];
-      const hotels = selectedHotelsForType || selectedHotelForType;
+      const hotelsToFetch = selectedHotelsList || selectedHotels;
       
-      requiredHotelTypes.forEach(type => {
-        if (hotels[type]) {
-          hotelsToFetch.push({
-            type,
-            hotel: hotels[type]!
-          });
-        }
+      console.log('📋 fetchSelectedHotelsCosts 호출:', {
+        hotelsToFetch: hotelsToFetch.map(h => ({
+          index: h.index,
+          hotelSort: h.hotelSort,
+          hotelName: h.hotel?.hotelNameKo,
+          hotelId: h.hotel?.id
+        }))
       });
       
-      const costPromises = hotelsToFetch.map(async ({ type, hotel }) => {
+      const costPromises = hotelsToFetch.map(async ({ index, hotel }) => {
+        if (!hotel) {
+          console.log(`⚠️ 호텔 ${index} 없음`);
+          return { index, hotel: null, costInput: [] };
+        }
+        
         try {
+          console.log(`📡 호텔 ${index} 요금 정보 가져오기:`, hotel.hotelNameKo, hotel.id);
           const costInputRes = await axios.post(`${AdminURL}/hotel/gethotelcostbyfilters`, {
             postId: hotel.id,
             dateStart: '',
@@ -440,15 +734,20 @@ export default function RestHotelCost() {
             ? (Array.isArray(costInputRes.data) ? costInputRes.data : [costInputRes.data])
             : [];
           
+          console.log(`✅ 호텔 ${index} 요금 정보 가져오기 완료:`, {
+            hotelName: hotel.hotelNameKo,
+            costInputCount: costInputData.length
+          });
+          
           return {
-            type,
+            index,
             hotel,
             costInput: costInputData
           };
         } catch (error) {
-          console.error(`${type} 호텔 요금 정보 가져오기 오류:`, error);
+          console.error(`❌ 호텔 ${index + 1} 요금 정보 가져오기 오류:`, error);
           return {
-            type,
+            index,
             hotel,
             costInput: []
           };
@@ -457,133 +756,195 @@ export default function RestHotelCost() {
       
       const costs = await Promise.all(costPromises);
       
-      // 상태 초기화
-      setHotelHotelCost(null);
-      setResortHotelCost(null);
-      setPoolVillaHotelCost(null);
+      console.log('💰 모든 호텔 요금 정보 가져오기 완료:', costs.map(c => ({
+        index: c.index,
+        hotelName: c.hotel?.hotelNameKo,
+        costInputCount: c.costInput?.length || 0
+      })));
       
-      // 호텔, 리조트, 풀빌라별로 분리하여 상태 업데이트
-      costs.forEach(({ type, hotel, costInput }) => {
-        if (type === '호텔') {
-          setHotelHotelCost({
-            hotel,
-            costInput
-          });
-        } else if (type === '리조트') {
-          setResortHotelCost({
-            hotel,
-            costInput
-          });
-        } else if (type === '풀빌라') {
-          setPoolVillaHotelCost({
-            hotel,
-            costInput
-          });
+      // 상태를 한 번에 업데이트 (배치 업데이트)
+      const hotelCosts: { [key: number]: any } = {};
+      let newHotelHotelCost: any = null;
+      let newResortHotelCost: any = null;
+      let newPoolVillaHotelCost: any = null;
+      
+      costs.forEach(({ index, hotel, costInput }) => {
+        const hotelCostData = hotel ? {
+          hotel,
+          costInput
+        } : null;
+        
+        if (hotelCostData) {
+          hotelCosts[index] = hotelCostData;
+          console.log(`🔧 호텔 요금 정보 설정: index=${index}, hotelName=${hotel?.hotelNameKo}, hotelId=${hotel?.id}`);
+        }
+        
+        // 하위 호환성을 위해 타입별로도 설정
+        if (hotel) {
+          const hotelType = hotel.hotelType || hotel.hotelSort;
+          if (hotelType === '호텔') {
+            newHotelHotelCost = hotelCostData;
+          } else if (hotelType === '리조트') {
+            newResortHotelCost = hotelCostData;
+          } else if (hotelType === '풀빌라') {
+            newPoolVillaHotelCost = hotelCostData;
+          }
         }
       });
+      
+      console.log('📊 업데이트할 호텔 요금 정보:', {
+        hotelCosts: Object.keys(hotelCosts).map(k => ({
+          index: parseInt(k),
+          hotelName: hotelCosts[parseInt(k)]?.hotel?.hotelNameKo
+        })),
+        newResortHotelCost: newResortHotelCost?.hotel?.hotelNameKo,
+        newPoolVillaHotelCost: newPoolVillaHotelCost?.hotel?.hotelNameKo
+      });
+      
+      // 인덱스별로 호텔 요금 정보 설정 (직접 업데이트)
+      // React의 상태 업데이트는 배치 처리되므로 순서대로 호출해도 문제 없음
+      setHotel1Cost(hotelCosts[0] || null);
+      setHotel2Cost(hotelCosts[1] || null);
+      setHotel3Cost(hotelCosts[2] || null);
+      setHotel4Cost(hotelCosts[3] || null);
+      setHotelHotelCost(newHotelHotelCost);
+      setResortHotelCost(newResortHotelCost);
+      setPoolVillaHotelCost(newPoolVillaHotelCost);
+      
+      console.log('✅ 모든 호텔 요금 정보 상태 업데이트 완료:', {
+        hotel1Cost: hotelCosts[0]?.hotel?.hotelNameKo || 'null',
+        hotel2Cost: hotelCosts[1]?.hotel?.hotelNameKo || 'null',
+        hotel3Cost: hotelCosts[2]?.hotel?.hotelNameKo || 'null',
+        hotel4Cost: hotelCosts[3]?.hotel?.hotelNameKo || 'null',
+        resortHotelCost: newResortHotelCost?.hotel?.hotelNameKo || 'null',
+        poolVillaHotelCost: newPoolVillaHotelCost?.hotel?.hotelNameKo || 'null'
+      });
+      
+      console.log('🎉 모든 호텔 요금 정보 설정 완료');
     } catch (error) {
-      console.error('호텔 요금 정보 가져오기 오류:', error);
+      console.error('❌ 호텔 요금 정보 가져오기 오류:', error);
     } finally {
       setIsLoadingCost(false);
     }
-  }, [getRequiredHotelTypes, today, productInfo]);
+  }, [today, productInfo]); // selectedHotels 의존성 제거 (파라미터로 받고 있음)
+
+  // fetchSelectedHotelsCosts 함수를 ref에 저장
+  React.useEffect(() => {
+    fetchSelectedHotelsCostsRef.current = fetchSelectedHotelsCosts;
+  }, [fetchSelectedHotelsCosts]);
+
+  // 초기화 완료 플래그 (한 번만 실행되도록)
+  const initializationRef = React.useRef(false);
 
   // 페이지 로드 시 자동으로 호텔 선택 및 요금 정보 가져오기
   useEffect(() => {
     if (!hotelInfo || !productInfo) return;
+    if (initializationRef.current) return; // 이미 초기화되었으면 실행하지 않음
 
     const initializeHotels = async () => {
-      const requiredHotelTypes = getRequiredHotelTypes();
-      if (requiredHotelTypes.length === 0) return;
+      initializationRef.current = true; // 초기화 시작 표시
+      
+      // stateProps에서 전달받은 selectedHotels가 있으면 우선 사용
+      if (stateProps?.selectedHotels && Array.isArray(stateProps.selectedHotels) && stateProps.selectedHotels.length > 0) {
+        const hasSelectedHotel = stateProps.selectedHotels.some((item: { index: number; hotelSort: string; dayNight?: string; hotel: any | null }) => item.hotel !== null);
+        if (hasSelectedHotel) {
+          setSelectedHotels(stateProps.selectedHotels);
+          // costType에 따라 바로 2단계로 이동
+          setHotelPriceStep(2);
+          if (fetchSelectedHotelsCostsRef.current) {
+            await fetchSelectedHotelsCostsRef.current(stateProps.selectedHotels);
+          }
+          return;
+        }
+      }
 
-      const initialSelectedHotels: { [key: string]: any | null } = {
-        '호텔': null,
-        '리조트': null,
-        '풀빌라': null
-      };
+      // productScheduleData에서 스케줄 정보 추출
+      let scheduleItems: Array<{ index: number; hotelSort: string; dayNight?: string }> = [];
+      if (productInfo.productScheduleData) {
+        try {
+          const scheduleData = JSON.parse(productInfo.productScheduleData);
+          if (Array.isArray(scheduleData) && scheduleData.length > 0) {
+            scheduleItems = scheduleData.slice(0, 4).map((item: any, index: number) => ({
+              index,
+              hotelSort: item.hotelSort || '',
+              dayNight: item.dayNight
+            }));
+          }
+        } catch (e) {
+          console.error('productScheduleData 파싱 오류:', e);
+        }
+      }
+      
+      // 미니멈스테이인 경우 리조트/호텔 추가
+      if (productInfo.costType === '미니멈스테이' && scheduleItems.length === 0) {
+        scheduleItems = [{
+          index: 0,
+          hotelSort: '리조트',
+          dayNight: '3'
+        }];
+      }
+
+      if (scheduleItems.length === 0) return;
+
+      const initialSelectedHotels: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }> = 
+        scheduleItems.map(item => ({ ...item, hotel: null }));
 
       const hotelSort = hotelInfo.hotelSort;
       const hotelType = hotelInfo.hotelType;
 
-      // 현재 호텔이 풀빌라인 경우 자동 선택
-      if ((hotelSort === '풀빌라' || hotelType === '풀빌라') && requiredHotelTypes.includes('풀빌라')) {
-        initialSelectedHotels['풀빌라'] = hotelInfo;
-      }
-      // 현재 호텔이 호텔/리조트인 경우 자동 선택
-      else if ((hotelSort === '호텔' || hotelType === '호텔') && requiredHotelTypes.includes('호텔')) {
-        initialSelectedHotels['호텔'] = hotelInfo;
-      }
-      else if ((hotelSort === '리조트' || hotelType === '리조트') && requiredHotelTypes.includes('리조트')) {
-        initialSelectedHotels['리조트'] = hotelInfo;
-      }
-
-      // 리조트가 필요하고 아직 선택되지 않은 경우 랜덤으로 선택
-      if (requiredHotelTypes.includes('리조트') && !initialSelectedHotels['리조트']) {
-        try {
-          let hotels: any[] = [];
-          
-          if (productInfo.city) {
-            const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${productInfo.city}`);
-            if (res.data && res.data !== false) {
-              hotels = Array.isArray(res.data) ? res.data : [res.data];
-            }
-          } else {
-            const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
-            if (res.data && res.data !== false) {
-              hotels = Array.isArray(res.data) ? res.data : [res.data];
-            }
-          }
-
-          const resortHotels = hotels.filter((hotel: any) => 
-            (hotel.hotelType === '리조트' || hotel.hotelSort === '리조트')
-          );
-
-          if (resortHotels.length > 0) {
-            const randomResort = resortHotels[Math.floor(Math.random() * resortHotels.length)];
-            initialSelectedHotels['리조트'] = randomResort;
-          }
-        } catch (error) {
-          console.error('리조트 호텔 가져오기 오류:', error);
+      // 현재 호텔을 적절한 인덱스에 자동 선택
+      for (let i = 0; i < scheduleItems.length; i++) {
+        const item = scheduleItems[i];
+        if ((hotelSort === item.hotelSort || hotelType === item.hotelSort) && !initialSelectedHotels[i].hotel) {
+          initialSelectedHotels[i].hotel = hotelInfo;
+          break;
         }
       }
 
-      // 풀빌라가 필요하고 아직 선택되지 않은 경우 랜덤으로 선택 (미니멈스테이 등)
-      if (requiredHotelTypes.includes('풀빌라') && !initialSelectedHotels['풀빌라']) {
-        try {
-          let hotels: any[] = [];
-          
-          if (productInfo.city) {
-            const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${productInfo.city}`);
-            if (res.data && res.data !== false) {
-              hotels = Array.isArray(res.data) ? res.data : [res.data];
-            }
-          } else {
-            const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
-            if (res.data && res.data !== false) {
-              hotels = Array.isArray(res.data) ? res.data : [res.data];
-            }
+      // 나머지 호텔들을 랜덤으로 선택
+      try {
+        let hotels: any[] = [];
+        
+        if (productInfo.city) {
+          const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${productInfo.city}`);
+          if (res.data && res.data !== false) {
+            hotels = Array.isArray(res.data) ? res.data : [res.data];
           }
-
-          const poolVillaHotels = hotels.filter((hotel: any) => 
-            (hotel.hotelType === '풀빌라' || hotel.hotelSort === '풀빌라')
-          );
-
-          if (poolVillaHotels.length > 0) {
-            const randomPoolVilla = poolVillaHotels[Math.floor(Math.random() * poolVillaHotels.length)];
-            initialSelectedHotels['풀빌라'] = randomPoolVilla;
+        } else {
+          const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
+          if (res.data && res.data !== false) {
+            hotels = Array.isArray(res.data) ? res.data : [res.data];
           }
-        } catch (error) {
-          console.error('풀빌라 호텔 가져오기 오류:', error);
         }
+
+        for (let i = 0; i < initialSelectedHotels.length; i++) {
+          if (!initialSelectedHotels[i].hotel) {
+            const requiredType = initialSelectedHotels[i].hotelSort;
+            const matchingHotels = hotels.filter((hotel: any) => {
+              const hotelType = hotel.hotelType || hotel.hotelSort;
+              return hotelType === requiredType || 
+                     (hotel.hotelType && hotel.hotelType.split(' ').includes(requiredType));
+            });
+
+            if (matchingHotels.length > 0) {
+              const randomHotel = matchingHotels[Math.floor(Math.random() * matchingHotels.length)];
+              initialSelectedHotels[i].hotel = randomHotel;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('호텔 가져오기 오류:', error);
       }
 
       // 선택된 호텔이 있으면 요금 정보 가져오기 및 바로 2단계로 이동
-      const hasSelectedHotel = Object.values(initialSelectedHotels).some(hotel => hotel !== null);
+      const hasSelectedHotel = initialSelectedHotels.some(item => item.hotel !== null);
       if (hasSelectedHotel) {
-        setSelectedHotelForType(initialSelectedHotels);
+        setSelectedHotels(initialSelectedHotels);
         // costType에 따라 바로 2단계로 이동
         setHotelPriceStep(2);
-        await fetchSelectedHotelsCosts(initialSelectedHotels);
+        if (fetchSelectedHotelsCostsRef.current) {
+          await fetchSelectedHotelsCostsRef.current(initialSelectedHotels);
+        }
         
         // 요금 정보가 로드된 후 각 카드의 첫 번째 룸타입 자동 선택
         // 이 부분은 fetchSelectedHotelsCosts가 완료된 후 실행되므로
@@ -592,17 +953,17 @@ export default function RestHotelCost() {
     };
 
     initializeHotels();
-  }, [hotelInfo, productInfo, getRequiredHotelTypes, fetchSelectedHotelsCosts]);
+  }, [hotelInfo, productInfo, stateProps]); // fetchSelectedHotelsCosts 의존성 제거
 
-  // selectedHotelForType이 업데이트되면 scheduleCards의 호텔명 및 날짜 업데이트
+  // selectedHotels가 업데이트되면 scheduleCards의 호텔명 및 날짜 업데이트
   useEffect(() => {
-    // 미니멈스테이인 경우 productScheduleData가 없어도 풀빌라 카드를 생성해야 함
-    if (productInfo?.costType !== '미니멈스테이' && (!productInfo?.productScheduleData || Object.values(selectedHotelForType).every(hotel => hotel === null))) {
+    // 미니멈스테이인 경우 productScheduleData가 없어도 리조트/호텔 카드를 생성해야 함
+    if (productInfo?.costType !== '미니멈스테이' && (!productInfo?.productScheduleData || selectedHotels.length === 0)) {
       return;
     }
     
     // 미니멈스테이인 경우 리조트나 호텔이 선택되어 있지 않으면 return
-    if (productInfo?.costType === '미니멈스테이' && !selectedHotelForType['리조트'] && !selectedHotelForType['호텔']) {
+    if (productInfo?.costType === '미니멈스테이' && !selectedHotels.some(sh => sh.hotel && (sh.hotelSort === '리조트' || sh.hotelSort === '호텔'))) {
       return;
     }
 
@@ -632,11 +993,11 @@ export default function RestHotelCost() {
           
           const hotelDayText = startDate ? formatDate(startDate) : '1일차';
           // 리조트 우선, 없으면 호텔
-          const hotelType = selectedHotelForType['리조트'] ? '리조트' : '호텔';
-          const hotelInfo = selectedHotelForType['리조트'] || selectedHotelForType['호텔'];
-          const hotelName = hotelInfo?.hotelNameKo || hotelType;
+          const selectedHotel = selectedHotels.find(sh => sh.hotel && (sh.hotelSort === '리조트' || sh.hotelSort === '호텔'));
+          const hotelType = selectedHotel?.hotelSort || '리조트';
+          const hotelName = selectedHotel?.hotel?.hotelNameKo || hotelType;
           
-          if (hotelInfo) {
+          if (selectedHotel?.hotel) {
             setScheduleCards([{
               id: 1,
               day: hotelDayText,
@@ -675,9 +1036,10 @@ export default function RestHotelCost() {
         const hotelSort = s.sort || s.hotelSort || '';
         let hotelName = s.roomTypeName || hotelSort || '';
         
-        // selectedHotelForType에서 해당 타입의 호텔명 가져오기
-        if (selectedHotelForType[hotelSort]) {
-          hotelName = selectedHotelForType[hotelSort].hotelNameKo || hotelName;
+        // selectedHotels에서 해당 인덱스의 호텔명 가져오기
+        const selectedHotel = selectedHotels.find(sh => sh.index === idx);
+        if (selectedHotel?.hotel) {
+          hotelName = selectedHotel.hotel.hotelNameKo || hotelName;
         }
         
         // 날짜 계산
@@ -706,7 +1068,7 @@ export default function RestHotelCost() {
       setScheduleCards(updatedCards);
 
       // 각 카드의 첫 번째 룸타입 자동 선택 및 초기 nights 값 설정 (룸타입 정보가 로드된 후에만 실행)
-      if (hotelHotelCost || resortHotelCost || poolVillaHotelCost) {
+      if (hotel1Cost || hotel2Cost || hotel3Cost || hotel4Cost || hotelHotelCost || resortHotelCost || poolVillaHotelCost) {
         const newSelectedRoomTypes: { [key: number]: string } = {};
         const newSelectedNights: { [key: number]: number } = {};
         updatedCards.forEach((card) => {
@@ -755,12 +1117,12 @@ export default function RestHotelCost() {
     } catch (e) {
       console.error('scheduleCards 업데이트 오류:', e);
     }
-  }, [selectedHotelForType, productInfo?.productScheduleData, customerInfo.travelPeriod, hotelHotelCost, resortHotelCost, poolVillaHotelCost]);
+  }, [selectedHotels, productInfo?.productScheduleData, customerInfo.travelPeriod, hotel1Cost, hotel2Cost, hotel3Cost, hotel4Cost, hotelHotelCost, resortHotelCost, poolVillaHotelCost]);
 
   // 룸타입 정보가 로드되면 각 카드의 첫 번째 룸타입 자동 선택 및 nights 초기화
   useEffect(() => {
     if (scheduleCards.length === 0) return;
-    if (!hotelHotelCost && !resortHotelCost && !poolVillaHotelCost) return;
+    if (!hotel1Cost && !hotel2Cost && !hotel3Cost && !hotel4Cost && !hotelHotelCost && !resortHotelCost && !poolVillaHotelCost) return;
 
     const newSelectedRoomTypes: { [key: number]: string } = {};
     const newSelectedNights: { [key: number]: number } = {};
@@ -795,550 +1157,50 @@ export default function RestHotelCost() {
         return updated;
       });
     }
-  }, [scheduleCards, hotelHotelCost, resortHotelCost, poolVillaHotelCost]);
+  }, [scheduleCards, hotel1Cost, hotel2Cost, hotel3Cost, hotel4Cost, hotelHotelCost, resortHotelCost, poolVillaHotelCost]);
 
-  // 룸타입 또는 박수 변경 시 요금 재계산 (팩요금인 경우)
-  useEffect(() => {
-    if (productInfo?.costType !== '팩요금' || !poolVillaHotelCost || !poolVillaHotelCost.costInput) {
-      console.log('요금 계산 조건 불만족 (팩요금):', {
-        costType: productInfo?.costType,
-        hasPoolVillaCost: !!poolVillaHotelCost,
-        hasCostInput: !!(poolVillaHotelCost?.costInput)
-      });
-      return;
-    }
-    if (scheduleCards.length === 0) {
-      console.log('scheduleCards가 비어있음');
-      return;
-    }
-    
-    // 풀빌라 카드 찾기
-    const poolVillaCard = scheduleCards.find(card => card.badge === '풀빌라');
-    if (!poolVillaCard) {
-      console.log('풀빌라 카드를 찾을 수 없음');
-      return;
-    }
-    
-    // 풀빌라 룸타입 확인 (기본값도 확인)
-    const availableRoomTypes = getRoomTypesForCard(poolVillaCard);
-    const selectedPoolVillaRoomType = selectedRoomTypes[poolVillaCard.id] || availableRoomTypes[0];
-    if (!selectedPoolVillaRoomType) {
-      console.log('풀빌라 룸타입이 선택되지 않음', {
-        selectedRoomTypes,
-        poolVillaCardId: poolVillaCard.id,
-        availableRoomTypes
-      });
-      return;
-    }
-    
-    // 기간타입 결정
-    let resortNights = 0;
-    let poolVillaNights = 0;
-    
-    scheduleCards.forEach((card) => {
-      const nights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
-      if (card.badge === '리조트') {
-        resortNights += nights;
-      } else if (card.badge === '풀빌라') {
-        poolVillaNights += nights;
-      }
-    });
-    
-    console.log('기간타입 계산:', {
-      resortNights,
-      poolVillaNights,
-      selectedNights,
-      scheduleCards: scheduleCards.map(c => ({ id: c.id, badge: c.badge, nights: c.nights }))
-    });
-    
-    // 기간타입 결정
-    let periodType: string | null = null;
-    if (resortNights === 2 && poolVillaNights === 2) {
-      periodType = '2+2';
-    } else if (resortNights === 1 && poolVillaNights === 3) {
-      periodType = '1+3';
-    } else if (resortNights === 0 && poolVillaNights === 3) {
-      periodType = '3';
-    } else if (resortNights === 0 && poolVillaNights === 4) {
-      periodType = '4';
-    }
-    
-    if (!periodType) {
-      console.log('기간타입을 결정할 수 없음:', { resortNights, poolVillaNights });
-      return;
-    }
-    
-    console.log('요금 계산 시작:', {
-      selectedPoolVillaRoomType,
-      periodType,
-      costInputLength: poolVillaHotelCost.costInput.length
-    });
-    
-    // 요금 계산 (HotelPriceInfo_Poolvilla의 검색 로직과 동일)
-    let calculatedPrice = 0;
-    for (const cost of poolVillaHotelCost.costInput) {
-      try {
-        const inputDefault = cost.inputDefault ? (typeof cost.inputDefault === 'string' ? JSON.parse(cost.inputDefault) : cost.inputDefault) : null;
-        if (inputDefault && inputDefault.costByRoomType && Array.isArray(inputDefault.costByRoomType)) {
-          const matchingRoom = inputDefault.costByRoomType.find((rt: any) => {
-            if (rt.roomType !== selectedPoolVillaRoomType) return false;
-            
-            // 기간타입에 맞는 요금이 있는지 확인
-            if (periodType === '2+2' && rt.twoTwoDayCost) return true;
-            if (periodType === '1+3' && rt.oneThreeDayCost) return true;
-            if (periodType === '3' && rt.threeDayCost && rt.threeDayCost !== '') return true;
-            if (periodType === '4' && rt.fourDayCost) return true;
-            
-            return false;
-          });
-          
-          if (matchingRoom) {
-            // 기간타입에 맞는 요금 가져오기
-            let priceStr = '';
-            if (periodType === '2+2' && matchingRoom.twoTwoDayCost) {
-              priceStr = String(matchingRoom.twoTwoDayCost);
-            } else if (periodType === '1+3' && matchingRoom.oneThreeDayCost) {
-              priceStr = String(matchingRoom.oneThreeDayCost);
-            } else if (periodType === '3' && matchingRoom.threeDayCost && matchingRoom.threeDayCost !== '') {
-              priceStr = String(matchingRoom.threeDayCost);
-            } else if (periodType === '4' && matchingRoom.fourDayCost) {
-              priceStr = String(matchingRoom.fourDayCost);
-            }
-            
-            console.log('✅ 매칭된 룸타입 요금 발견!');
-            console.log('  - 기간타입:', periodType);
-            console.log('  - 요금 문자열:', priceStr);
-            console.log('  - 매칭된 룸타입 정보:', matchingRoom);
-            
-            // 문자열에서 숫자 추출 (쉼표 제거 후 숫자로 변환)
-            const priceNum = parseInt(priceStr.replace(/,/g, ''), 10);
-            if (!isNaN(priceNum)) {
-              calculatedPrice = priceNum;
-              console.log('💰 최종 계산된 요금:', calculatedPrice.toLocaleString(), '원');
-              break; // 첫 번째 매칭 항목 사용
-            } else {
-              console.warn('⚠️ 요금 문자열을 숫자로 변환 실패:', priceStr);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('요금 계산 오류:', e);
-      }
-    }
-    
-    if (calculatedPrice > 0) {
-      console.log('✅ 요금 업데이트 성공:', calculatedPrice.toLocaleString(), '원');
-      console.log('=== 요금 계산 완료 ===');
-      setPricePerPerson(calculatedPrice);
-    } else {
-      console.warn('❌ 요금을 찾을 수 없음 - 매칭되는 요금 정보가 없습니다.');
-      console.log('=== 요금 계산 실패 ===');
-    }
-  }, [
-    JSON.stringify(selectedRoomTypes), 
-    JSON.stringify(selectedNights), 
-    scheduleCards, 
-    poolVillaHotelCost, 
-    productInfo?.costType, 
-    hotelHotelCost, 
-    resortHotelCost
-  ]);
 
-  // 룸타입 또는 박수 변경 시 요금 재계산 (미니멈스테이인 경우)
-  useEffect(() => {
-    if (productInfo?.costType !== '미니멈스테이') {
-      return;
+  // productScheduleData를 파싱하여 호텔명 생성 (RestHotelDetail.tsx 참조)
+  const getProductNameFromSchedule = React.useCallback((): string => {
+    if (!productInfo?.productScheduleData) {
+      // productScheduleData가 없으면 기존 방식 사용
+      return productInfo?.productName || '';
     }
-    
-    // 미니멈스테이는 리조트 우선, 없으면 호텔에서 요금을 가져옴
-    const minimumStayHotelCost = resortHotelCost || hotelHotelCost;
-    if (!minimumStayHotelCost || !minimumStayHotelCost.costInput) {
-      console.log('요금 계산 조건 불만족 (미니멈스테이):', {
-        costType: productInfo?.costType,
-        hasMinimumStayCost: !!minimumStayHotelCost,
-        hasCostInput: !!(minimumStayHotelCost?.costInput),
-        hasResortCost: !!resortHotelCost,
-        hasHotelCost: !!hotelHotelCost
-      });
-      return;
-    }
-    
-    if (scheduleCards.length === 0) {
-      console.log('scheduleCards가 비어있음 (미니멈스테이)');
-      return;
-    }
-    
-    // 리조트 또는 호텔 카드 찾기 (리조트 우선)
-    const hotelCard = scheduleCards.find(card => card.badge === '리조트') || scheduleCards.find(card => card.badge === '호텔');
-    if (!hotelCard) {
-      console.log('리조트/호텔 카드를 찾을 수 없음 (미니멈스테이)');
-      return;
-    }
-    
-    // 리조트/호텔 룸타입 확인 (기본값도 확인)
-    const availableRoomTypes = getRoomTypesForCard(hotelCard);
-    const selectedHotelRoomType = selectedRoomTypes[hotelCard.id] || availableRoomTypes[0];
-    if (!selectedHotelRoomType) {
-      console.log('리조트/호텔 룸타입이 선택되지 않음 (미니멈스테이)', {
-        selectedRoomTypes,
-        hotelCardId: hotelCard.id,
-        availableRoomTypes
-      });
-      return;
-    }
-    
-    // 리조트/호텔 박수 확인
-    const hotelNights = selectedNights[hotelCard.id] || extractNightsNumber(hotelCard.nights || '');
-    if (hotelNights <= 0) {
-      console.log('리조트/호텔 박수가 0 이하 (미니멈스테이):', hotelNights);
-      return;
-    }
-    
-    // 기간타입 결정 (1박, 2박, 3박, 4박, 5박, 6박, 1박추가)
-    let periodType: string | null = null;
-    if (hotelNights === 1) {
-      periodType = '1박';
-    } else if (hotelNights === 2) {
-      periodType = '2박';
-    } else if (hotelNights === 3) {
-      periodType = '3박';
-    } else if (hotelNights === 4) {
-      periodType = '4박';
-    } else if (hotelNights === 5) {
-      periodType = '5박';
-    } else if (hotelNights === 6) {
-      periodType = '6박';
-    } else if (hotelNights > 6) {
-      // 6박 초과인 경우 6박 + 1박추가 형태로 계산할 수도 있지만, 일단 6박으로 처리
-      periodType = '6박';
-    }
-    
-    if (!periodType) {
-      console.log('기간타입을 결정할 수 없음 (미니멈스테이):', { hotelNights });
-      return;
-    }
-    
-    console.log('=== 미니멈스테이 요금 계산 시작 ===');
-    console.log('선택된 리조트/호텔 룸타입:', selectedHotelRoomType);
-    console.log('기간타입:', periodType);
-    console.log('리조트/호텔 박수:', hotelNights);
-    console.log('요금 정보 개수:', minimumStayHotelCost.costInput.length);
-    
-    // 요금 계산 (HotelPriceInfo_MinimunStay의 검색 로직과 동일)
-    let calculatedPrice = 0;
-    for (const cost of minimumStayHotelCost.costInput) {
-      try {
-        const inputDefault = cost.inputDefault ? (typeof cost.inputDefault === 'string' ? JSON.parse(cost.inputDefault) : cost.inputDefault) : null;
-        if (inputDefault && inputDefault.costByRoomType && Array.isArray(inputDefault.costByRoomType)) {
-          const matchingRoom = inputDefault.costByRoomType.find((rt: any) => {
-            if (rt.roomType !== selectedHotelRoomType) return false;
-            
-            // 기간타입에 맞는 요금이 있는지 확인
-            if (periodType === '1박' && rt.oneNightCost && rt.oneNightCost !== '') return true;
-            if (periodType === '2박' && rt.twoNightCost && rt.twoNightCost !== '') return true;
-            if (periodType === '3박' && rt.threeNightCost && rt.threeNightCost !== '') return true;
-            if (periodType === '4박' && rt.fourNightCost && rt.fourNightCost !== '') return true;
-            if (periodType === '5박' && rt.fiveNightCost && rt.fiveNightCost !== '') return true;
-            if (periodType === '6박' && rt.sixNightCost && rt.sixNightCost !== '') return true;
-            
-            return false;
-          });
-          
-          if (matchingRoom) {
-            // 기간타입에 맞는 요금 가져오기
-            let priceStr = '';
-            if (periodType === '1박' && matchingRoom.oneNightCost && matchingRoom.oneNightCost !== '') {
-              priceStr = String(matchingRoom.oneNightCost);
-            } else if (periodType === '2박' && matchingRoom.twoNightCost && matchingRoom.twoNightCost !== '') {
-              priceStr = String(matchingRoom.twoNightCost);
-            } else if (periodType === '3박' && matchingRoom.threeNightCost && matchingRoom.threeNightCost !== '') {
-              priceStr = String(matchingRoom.threeNightCost);
-            } else if (periodType === '4박' && matchingRoom.fourNightCost && matchingRoom.fourNightCost !== '') {
-              priceStr = String(matchingRoom.fourNightCost);
-            } else if (periodType === '5박' && matchingRoom.fiveNightCost && matchingRoom.fiveNightCost !== '') {
-              priceStr = String(matchingRoom.fiveNightCost);
-            } else if (periodType === '6박' && matchingRoom.sixNightCost && matchingRoom.sixNightCost !== '') {
-              priceStr = String(matchingRoom.sixNightCost);
-            }
-            
-            console.log('✅ 매칭된 룸타입 요금 발견! (미니멈스테이)');
-            console.log('  - 기간타입:', periodType);
-            console.log('  - 요금 문자열:', priceStr);
-            console.log('  - 매칭된 룸타입 정보:', matchingRoom);
-            
-            // 통화 정보 찾기: matchingRoom -> inputDefault -> cost 순서로 확인
-            let currency = matchingRoom.currency || '';
-            if (!currency && inputDefault && typeof inputDefault === 'object' && !Array.isArray(inputDefault)) {
-              currency = inputDefault.currency || '';
-            }
-            if (!currency && cost && typeof cost === 'object') {
-              currency = cost.currency || '';
-            }
-            
-            // 통화 정보가 없으면 기본적으로 달러로 가정 (환율 적용)
-            const isUSD = currency === '$' || currency === 'USD' || currency === 'US$' || currency === '';
-            // 환율을 숫자로 변환 (문자열일 수 있음)
-            const exchangeRateValue = exchangeRate?.USDsend_KRW_tts 
-              ? (typeof exchangeRate.USDsend_KRW_tts === 'string' 
-                  ? parseFloat(String(exchangeRate.USDsend_KRW_tts).replace(/,/g, '')) 
-                  : Number(exchangeRate.USDsend_KRW_tts))
-              : 0;
-            
-            // 문자열에서 숫자 추출 (쉼표 제거 후 숫자로 변환)
-            let priceNum = parseFloat(priceStr.replace(/,/g, ''));
-            if (!isNaN(priceNum)) {
-              // 달러인 경우 원화로 변환
-              if (isUSD && exchangeRateValue > 0 && !isNaN(exchangeRateValue)) {
-                priceNum = priceNum * exchangeRateValue;
-              }
-              calculatedPrice = Math.round(priceNum);
-              console.log('💰 최종 계산된 요금 (미니멈스테이):', calculatedPrice.toLocaleString(), '원');
-              console.log('  - 원래 요금:', priceStr, currency || 'USD');
-              console.log('  - 환율:', exchangeRateValue);
-              console.log('  - 환율 적용 여부:', isUSD);
-              break; // 첫 번째 매칭 항목 사용
-            } else {
-              console.warn('⚠️ 요금 문자열을 숫자로 변환 실패 (미니멈스테이):', priceStr);
-            }
-          }
-        }
-      } catch (e) {
-        console.error('요금 계산 오류 (미니멈스테이):', e);
-      }
-    }
-    
-    if (calculatedPrice > 0) {
-      console.log('✅ 요금 업데이트 성공 (미니멈스테이):', calculatedPrice.toLocaleString(), '원');
-      console.log('=== 미니멈스테이 요금 계산 완료 ===');
-      setPricePerPerson(calculatedPrice);
-    } else {
-      console.warn('❌ 요금을 찾을 수 없음 (미니멈스테이) - 매칭되는 요금 정보가 없습니다.');
-      console.log('=== 미니멈스테이 요금 계산 실패 ===');
-    }
-  }, [
-    JSON.stringify(selectedRoomTypes), 
-    JSON.stringify(selectedNights), 
-    scheduleCards, 
-    productInfo?.costType, 
-    hotelHotelCost, 
-    resortHotelCost,
-    exchangeRate
-  ]);
 
-  // 룸타입 또는 박수 변경 시 요금 재계산 (박당인 경우)
-  useEffect(() => {
-    if (productInfo?.costType !== '박당') {
-      return;
-    }
-    
-    // 박당은 풀빌라 우선, 없으면 선투숙(리조트/호텔)에서 요금을 가져옴
-    const perDayHotelCost = poolVillaHotelCost || resortHotelCost || hotelHotelCost;
-    if (!perDayHotelCost || !perDayHotelCost.costInput) {
-      console.log('요금 계산 조건 불만족 (박당):', {
-        costType: productInfo?.costType,
-        hasPerDayCost: !!perDayHotelCost,
-        hasCostInput: !!(perDayHotelCost?.costInput)
-      });
-      return;
-    }
-    
-    if (scheduleCards.length === 0) {
-      console.log('scheduleCards가 비어있음 (박당)');
-      return;
-    }
-    
-    // 풀빌라 카드 우선, 없으면 리조트/호텔 카드
-    const hotelCard = scheduleCards.find(card => card.badge === '풀빌라') 
-      || scheduleCards.find(card => card.badge === '리조트') 
-      || scheduleCards.find(card => card.badge === '호텔');
-    if (!hotelCard) {
-      console.log('호텔 카드를 찾을 수 없음 (박당)');
-      return;
-    }
-    
-    // 호텔 룸타입 확인 (기본값도 확인)
-    const availableRoomTypes = getRoomTypesForCard(hotelCard);
-    const selectedHotelRoomType = selectedRoomTypes[hotelCard.id] || availableRoomTypes[0];
-    if (!selectedHotelRoomType) {
-      console.log('호텔 룸타입이 선택되지 않음 (박당)', {
-        selectedRoomTypes,
-        hotelCardId: hotelCard.id,
-        availableRoomTypes
-      });
-      return;
-    }
-    
-    // 박수 확인
-    const hotelNights = selectedNights[hotelCard.id] || extractNightsNumber(hotelCard.nights || '');
-    if (hotelNights <= 0) {
-      console.log('호텔 박수가 0 이하 (박당):', hotelNights);
-      return;
-    }
-    
-    // Recoil에서 예약일자와 여행기간 가져오기
-    const reserveDate = customerInfo.reserveDate || today;
-    let searchDateStart = '';
-    let searchDateEnd = '';
-    
-    if (customerInfo.travelPeriod) {
-      const travelPeriod = customerInfo.travelPeriod.trim();
-      if (travelPeriod.includes('~')) {
-        const parts = travelPeriod.split('~').map(part => part.trim());
-        if (parts.length === 2) {
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (dateRegex.test(parts[0]) && dateRegex.test(parts[1])) {
-            searchDateStart = parts[0];
-            searchDateEnd = parts[1];
-          }
-        }
-      } else {
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (dateRegex.test(travelPeriod)) {
-          searchDateStart = travelPeriod;
-          searchDateEnd = travelPeriod;
-        }
+    try {
+      const scheduleData = JSON.parse(productInfo.productScheduleData);
+      if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+        return productInfo?.productName || '';
       }
-    }
-    
-    if (!searchDateStart || !searchDateEnd) {
-      console.log('여행기간이 유효하지 않음 (박당)');
-      return;
-    }
-    
-    console.log('=== 박당 요금 계산 시작 ===');
-    console.log('선택된 호텔 룸타입:', selectedHotelRoomType);
-    console.log('호텔 박수:', hotelNights);
-    console.log('예약일자:', reserveDate);
-    console.log('검색 기간:', searchDateStart, '~', searchDateEnd);
-    console.log('요금 정보 개수:', perDayHotelCost.costInput.length);
-    
-    // 요금 계산 (HotelPriceInfo_PerDay의 검색 로직과 동일)
-    let calculatedPrice = 0;
-    for (const cost of perDayHotelCost.costInput) {
-      try {
-        // 예약일자 확인 (reserveDate와 cost.reserveDate 비교)
-        // 여기서는 cost.reservePeriod를 확인하여 예약기간 내에 있는지 확인
-        let matchesDate = true;
-        if (searchDateStart && searchDateEnd) {
-          try {
-            const inputDefault = cost.inputDefault ? (typeof cost.inputDefault === 'string' ? JSON.parse(cost.inputDefault) : cost.inputDefault) : null;
-            if (inputDefault && inputDefault.period && Array.isArray(inputDefault.period) && inputDefault.period.length > 0) {
-              let hasMatchingPeriod = false;
-              const searchStartDate = new Date(searchDateStart);
-              const searchEndDate = new Date(searchDateEnd);
-              
-              for (const periodItem of inputDefault.period) {
-                if (periodItem.start && periodItem.end) {
-                  const periodStartDate = new Date(periodItem.start);
-                  const periodEndDate = new Date(periodItem.end);
-                  
-                  if (!isNaN(searchStartDate.getTime()) && !isNaN(searchEndDate.getTime()) && 
-                      !isNaN(periodStartDate.getTime()) && !isNaN(periodEndDate.getTime())) {
-                    const overlaps = !(searchStartDate.getTime() > periodEndDate.getTime() || searchEndDate.getTime() < periodStartDate.getTime());
-                    if (overlaps) {
-                      hasMatchingPeriod = true;
-                      break;
-                    }
-                  }
-                }
-              }
-              
-              if (!hasMatchingPeriod) {
-                matchesDate = false;
-              }
-            }
-          } catch (e) {
-            // ignore
-          }
+
+      const parts: string[] = [];
+      
+      for (let i = 0; i < scheduleData.length; i++) {
+        const item = scheduleData[i];
+        const hotelSort = item.hotelSort || '';
+        const dayNight = item.dayNight || '';
+        const nights = dayNight ? `${dayNight}박` : '';
+
+        // selectedHotels에서 해당 인덱스의 호텔명 가져오기
+        const selectedHotel = selectedHotels.find(sh => sh.index === i);
+        let hotelName = hotelSort; // 기본값은 hotelSort
+
+        if (selectedHotel?.hotel?.hotelNameKo) {
+          hotelName = selectedHotel.hotel.hotelNameKo;
         }
-        
-        if (!matchesDate) continue;
-        
-        const inputDefault = cost.inputDefault ? (typeof cost.inputDefault === 'string' ? JSON.parse(cost.inputDefault) : cost.inputDefault) : null;
-        if (inputDefault && inputDefault.costByRoomType && Array.isArray(inputDefault.costByRoomType)) {
-          const matchingRoom = inputDefault.costByRoomType.find((rt: any) => {
-            if (rt.roomType !== selectedHotelRoomType) return false;
-            // 박당 요금 구조: dayStayCost(1박), dayStayCostAll(합계), dayPersonCost(1인)
-            return rt.dayStayCost || rt.dayStayCostAll || rt.dayPersonCost;
-          });
-          
-          if (matchingRoom) {
-            // 통화 정보 찾기
-            let currency = matchingRoom.currency || '';
-            if (!currency && inputDefault && typeof inputDefault === 'object' && !Array.isArray(inputDefault)) {
-              currency = inputDefault.currency || '';
-            }
-            if (!currency && cost && typeof cost === 'object') {
-              currency = cost.currency || '';
-            }
-            
-            // 통화 정보가 없으면 기본적으로 달러로 가정 (환율 적용)
-            const isUSD = currency === '$' || currency === 'USD' || currency === 'US$' || currency === '';
-            const exchangeRateValue = exchangeRate?.USDsend_KRW_tts 
-              ? (typeof exchangeRate.USDsend_KRW_tts === 'string' 
-                  ? parseFloat(String(exchangeRate.USDsend_KRW_tts).replace(/,/g, '')) 
-                  : Number(exchangeRate.USDsend_KRW_tts))
-              : 0;
-            
-            // 요금 계산: 합계(dayStayCostAll) 우선, 없으면 1박당 * 박수, 또는 1인당 * 박수 * 인원수
-            let priceNum = 0;
-            
-            if (matchingRoom.dayStayCostAll && matchingRoom.dayStayCostAll !== '') {
-              // 합계가 있으면 합계 사용
-              priceNum = parseFloat(String(matchingRoom.dayStayCostAll).replace(/,/g, ''));
-            } else if (matchingRoom.dayStayCost && matchingRoom.dayStayCost !== '') {
-              // 1박당 요금 * 박수
-              const dayStayCost = parseFloat(String(matchingRoom.dayStayCost).replace(/,/g, ''));
-              priceNum = dayStayCost * hotelNights;
-            } else if (matchingRoom.dayPersonCost && matchingRoom.dayPersonCost !== '') {
-              // 1인당 요금 * 박수 * 인원수
-              const dayPersonCost = parseFloat(String(matchingRoom.dayPersonCost).replace(/,/g, ''));
-              priceNum = dayPersonCost * hotelNights * guestCount;
-            }
-            
-            if (!isNaN(priceNum) && priceNum > 0) {
-              // 달러인 경우 원화로 변환
-              if (isUSD && exchangeRateValue > 0 && !isNaN(exchangeRateValue)) {
-                priceNum = priceNum * exchangeRateValue;
-              }
-              calculatedPrice = Math.round(priceNum);
-              console.log('✅ 매칭된 룸타입 요금 발견! (박당)');
-              console.log('  - 룸타입:', selectedHotelRoomType);
-              console.log('  - 박수:', hotelNights);
-              console.log('  - 원래 요금:', priceNum / (isUSD && exchangeRateValue > 0 ? exchangeRateValue : 1), currency || 'USD');
-              console.log('  - 환율:', exchangeRateValue);
-              console.log('💰 최종 계산된 요금 (박당):', calculatedPrice.toLocaleString(), '원');
-              break; // 첫 번째 매칭 항목 사용
-            }
-          }
-        }
-      } catch (e) {
-        console.error('요금 계산 오류 (박당):', e);
+
+        parts.push(`${hotelName}${nights ? ` ${nights}` : ''}`);
       }
+
+      return parts.join(' + ');
+    } catch (e) {
+      console.error('productScheduleData 파싱 오류:', e);
+      return productInfo?.productName || '';
     }
-    
-    if (calculatedPrice > 0) {
-      console.log('✅ 요금 업데이트 성공 (박당):', calculatedPrice.toLocaleString(), '원');
-      console.log('=== 박당 요금 계산 완료 ===');
-      setPricePerPerson(calculatedPrice);
-    } else {
-      console.warn('❌ 요금을 찾을 수 없음 (박당) - 매칭되는 요금 정보가 없습니다.');
-      console.log('=== 박당 요금 계산 실패 ===');
-      setPricePerPerson(0);
-    }
-  }, [
-    JSON.stringify(selectedRoomTypes), 
-    JSON.stringify(selectedNights), 
-    scheduleCards, 
-    productInfo?.costType, 
-    hotelHotelCost, 
-    resortHotelCost,
-    poolVillaHotelCost,
-    exchangeRate,
-    customerInfo.reserveDate,
-    customerInfo.travelPeriod,
-    guestCount
-  ]);
+  }, [productInfo?.productScheduleData, productInfo?.productName, selectedHotels]);
+
+  // 최종 1인요금 (각 요금 컴포넌트에서 계산된 판매가를 그대로 사용)
+  const finalPricePerPerson = pricePerPerson;
 
   // 데이터가 로드되지 않았다면 상세 내용을 렌더링하지 않음
   if (!hotelInfo || !productInfo) {
@@ -1416,14 +1278,73 @@ export default function RestHotelCost() {
               padding: '20px',
               borderRadius: '8px'
             }}>
-             
+              {/* 랜드사 요금 정보 표시 */}
+              {productInfo?.landCompany && productInfo.landCompany !== '전체' && (
+                <div style={{
+                  marginBottom: '20px',
+                  padding: '16px',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  backgroundColor: '#f8f9fa'
+                }}>
+                  <h4 style={{
+                    margin: '0 0 12px 0',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: '#333',
+                    paddingBottom: '8px',
+                    borderBottom: '1px solid #ddd'
+                  }}>
+                    랜드사 요금 정보 {productInfo.landCompany && `(${productInfo.landCompany})`}
+                  </h4>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    fontSize: '14px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ color: '#666', fontWeight: 500 }}>랜드사 수수료:</span>
+                      <span style={{ fontWeight: 600, color: '#333' }}>
+                        {landCurrency}{(landCommissionTotal || 0).toLocaleString('ko-KR')}{landCurrency === '₩' ? '원' : ''}
+                      </span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ color: '#666', fontWeight: 500 }}>기본 네고:</span>
+                      <span style={{ fontWeight: 600, color: '#28a745' }}>
+                        -{landCurrency}{(landDiscountDefaultTotal || 0).toLocaleString('ko-KR')}{landCurrency === '₩' ? '원' : ''}
+                      </span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ color: '#666', fontWeight: 500 }}>특별 네고:</span>
+                      <span style={{ fontWeight: 600, color: '#28a745' }}>
+                        -{landCurrency}{(landDiscountSpecialTotal || 0).toLocaleString('ko-KR')}{landCurrency === '₩' ? '원' : ''}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* costType에 따라 바로 해당 컴포넌트 표시 */}
               {productInfo?.costType === '팩요금' ? (
-                <HotelPriceInfo_Poolvilla
-                  hotelHotelCost={hotelHotelCost}
-                  resortHotelCost={resortHotelCost}
-                  poolVillaHotelCost={poolVillaHotelCost}
+                <NewHotelPrice_Poolvilla
+                  key={`poolvilla-${hotel1Cost?.hotel?.id || 'null'}-${hotel2Cost?.hotel?.id || 'null'}-${hotel3Cost?.hotel?.id || 'null'}-${hotel4Cost?.hotel?.id || 'null'}`}
+                  hotel1Cost={hotel1Cost}
+                  hotel2Cost={hotel2Cost}
+                  hotel3Cost={hotel3Cost}
+                  hotel4Cost={hotel4Cost}
                   isLoadingCost={isLoadingCost}
                   priceModalData={{
                     productName: productInfo?.productName || '',
@@ -1434,12 +1355,24 @@ export default function RestHotelCost() {
                   }}
                   onBack={() => {}}
                   today={today}
+                  landCommissionTotal={landCommissionTotal}
+                  landDiscountDefaultTotal={landDiscountDefaultTotal}
+                  landDiscountSpecialTotal={landDiscountSpecialTotal}
+                  landCurrency={landCurrency}
+                  // 오른쪽 패널에서 선택한 룸타입/박수(팩요금용)를 전달
+                  externalRoomType={externalPoolVillaRoomType}
+                  externalPeriodType={externalPoolVillaPeriodType}
+                  onPriceUpdate={(price: number) => {
+                    console.log('💰 팩요금 가격 업데이트:', price);
+                    setPricePerPerson(price);
+                  }}
                 />
               ) : productInfo?.costType === '미니멈스테이' ? (
-                <HotelPriceInfo_MinimunStay
-                  hotelHotelCost={hotelHotelCost}
-                  resortHotelCost={resortHotelCost}
-                  poolVillaHotelCost={poolVillaHotelCost}
+                <NewHotelPrice_MinimunStay
+                  hotel1Cost={hotel1Cost}
+                  hotel2Cost={hotel2Cost}
+                  hotel3Cost={hotel3Cost}
+                  hotel4Cost={hotel4Cost}
                   isLoadingCost={isLoadingCost}
                   priceModalData={{
                     productName: productInfo?.productName || '',
@@ -1450,12 +1383,21 @@ export default function RestHotelCost() {
                   }}
                   onBack={() => {}}
                   today={today}
+                  landCommissionTotal={landCommissionTotal}
+                  landDiscountDefaultTotal={landDiscountDefaultTotal}
+                  landDiscountSpecialTotal={landDiscountSpecialTotal}
+                  landCurrency={landCurrency}
+                  onPriceUpdate={(price: number) => {
+                    console.log('💰 미니멈스테이 가격 업데이트:', price);
+                    setPricePerPerson(price);
+                  }}
                 />
               ) : productInfo?.costType === '박당' ? (
-                <HotelPriceInfo_PerDay
-                  hotelHotelCost={hotelHotelCost}
-                  resortHotelCost={resortHotelCost}
-                  poolVillaHotelCost={poolVillaHotelCost}
+                <NewHotelPrice_PerDay
+                  hotel1Cost={hotel1Cost}
+                  hotel2Cost={hotel2Cost}
+                  hotel3Cost={hotel3Cost}
+                  hotel4Cost={hotel4Cost}
                   isLoadingCost={isLoadingCost}
                   priceModalData={{
                     productName: productInfo?.productName || '',
@@ -1466,6 +1408,14 @@ export default function RestHotelCost() {
                   }}
                   onBack={() => {}}
                   today={today}
+                  landCommissionTotal={landCommissionTotal}
+                  landDiscountDefaultTotal={landDiscountDefaultTotal}
+                  landDiscountSpecialTotal={landDiscountSpecialTotal}
+                  landCurrency={landCurrency}
+                  onPriceUpdate={(price: number) => {
+                    console.log('💰 박당 가격 업데이트:', price);
+                    setPricePerPerson(price);
+                  }}
                 />
               )   
               : (
@@ -1738,7 +1688,7 @@ export default function RestHotelCost() {
                     {productInfo?.scheduleSort || productInfo?.costType || '패키지'}
                   </div>
                   <div className="cost-product-name">
-                    {productInfo?.productName || ''} - 
+                    {getProductNameFromSchedule()} - 
                     {periodText && (
                       <span className="product-period">&nbsp;{periodText}</span>
                     )}
@@ -1797,7 +1747,25 @@ export default function RestHotelCost() {
                   <div key={card.id} className="cost-hotel-card">
                     <div className="cost-card-date">{card.day}</div>
                     <div className="cost-card-header">
-                      <div className={`cost-card-badge`}>{card.badge}</div>
+                      <div 
+                        className={`cost-card-badge`}
+                        onClick={() => handleHotelChange(card.id)}
+                        style={{
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '0.8';
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        {card.badge}
+                      </div>
                       <div className="cost-card-title">{card.title}</div>
                     </div>
                     <div className="cost-card-content">
@@ -1907,19 +1875,19 @@ export default function RestHotelCost() {
                 </div>
                 <div className="cost-price-row">
                   <div className="cost-price-label">
-                    {pricePerPerson > 0 ? (
-                      `${pricePerPerson.toLocaleString()}원`
+                    {finalPricePerPerson > 0 ? (
+                      `${finalPricePerPerson.toLocaleString()}원`
                     ) : (
                       <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
                     )}
                   </div>
-                  {pricePerPerson > 0 && <div className="cost-price-unit">/1인</div>}
+                  {finalPricePerPerson > 0 && <div className="cost-price-unit">/1인</div>}
                 </div>
                 <div className="cost-price-row">
                   <div className="cost-price-label">총요금</div>
                   <div className="cost-price-total">
-                    {pricePerPerson > 0 ? (
-                      `₩${(pricePerPerson * guestCount).toLocaleString()}`
+                    {finalPricePerPerson > 0 ? (
+                      `₩${(finalPricePerPerson * guestCount).toLocaleString()}`
                     ) : (
                       <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
                     )}
@@ -1991,6 +1959,147 @@ export default function RestHotelCost() {
         </div>
         
       </div>
+      
+      {/* 호텔 선택 모달 */}
+      {showHotelSelectModal && selectedCardIndex !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}
+        onClick={() => {
+          setShowHotelSelectModal(false);
+          setSelectedCardIndex(null);
+        }}
+        >
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            padding: '30px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setShowHotelSelectModal(false);
+                setSelectedCardIndex(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#999',
+                padding: '0',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            
+            <h2 style={{
+              margin: '0 0 20px 0',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              호텔 변경
+            </h2>
+            
+            {(() => {
+              const card = scheduleCards.find(c => c.id === selectedCardIndex);
+              if (!card) return null;
+              
+              // 해당 타입의 호텔만 필터링
+              const filteredHotels = allHotels.filter((hotel: any) => {
+                const hotelType = hotel.hotelType || hotel.hotelSort;
+                return hotelType === card.badge || 
+                       (hotel.hotelType && hotel.hotelType.split(' ').includes(card.badge));
+              });
+              
+              return (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  {filteredHotels.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                      해당 타입의 호텔이 없습니다.
+                    </div>
+                  ) : (
+                    filteredHotels.map((hotel: any) => (
+                      <div
+                        key={hotel.id}
+                        onClick={() => handleHotelSelect(hotel)}
+                        style={{
+                          padding: '15px',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          backgroundColor: '#fff'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f5f5f5';
+                          e.currentTarget.style.borderColor = '#5fb7ef';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#fff';
+                          e.currentTarget.style.borderColor = '#e0e0e0';
+                        }}
+                      >
+                        <div style={{
+                          fontWeight: 'bold',
+                          fontSize: '16px',
+                          color: '#333',
+                          marginBottom: '5px'
+                        }}>
+                          {hotel.hotelNameKo}
+                        </div>
+                        {hotel.hotelNameEn && (
+                          <div style={{
+                            fontSize: '14px',
+                            color: '#666',
+                            marginBottom: '5px'
+                          }}>
+                            {hotel.hotelNameEn}
+                          </div>
+                        )}
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#999'
+                        }}>
+                          {hotel.city || ''} {hotel.nation || ''}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

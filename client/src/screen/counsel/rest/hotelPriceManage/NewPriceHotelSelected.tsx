@@ -33,28 +33,28 @@ interface HotelItem {
 	}[];
 }
 
-interface PriceHotelSelectedProps {
-	priceModalData: PriceModalDataProps | null;
-	initialSelectedHotels?: { [key: string]: HotelItem | null };
-	onNext: (selectedHotels: { [key: string]: HotelItem | null }) => void;
+interface SelectedHotelItem {
+	index: number;
+	hotelSort: string;
+	dayNight?: string;
+	hotel: HotelItem | null;
 }
 
-export default function PriceHotelSelected({ priceModalData, initialSelectedHotels, onNext }: PriceHotelSelectedProps) {
-	const [allHotels, setAllHotels] = useState<HotelItem[]>([]);
-	const [filteredHotelList, setFilteredHotelList] = useState<HotelItem[]>([]);
-	const [isLoadingHotels, setIsLoadingHotels] = useState(false);
-	const [selectedHotelType, setSelectedHotelType] = useState<'호텔' | '리조트' | '풀빌라' | null>(null);
-	const [showHotelList, setShowHotelList] = useState(false);
-	const [selectedHotelForType, setSelectedHotelForType] = useState<{ [key: string]: HotelItem | null }>(
-		initialSelectedHotels || {
-			'호텔': null,
-			'리조트': null,
-			'풀빌라': null
-		}
-	);
+interface PriceHotelSelectedProps {
+	priceModalData: PriceModalDataProps | null;
+	onNext: (selectedHotels: SelectedHotelItem[]) => void;
+}
 
-	// productScheduleData에서 필요한 호텔 타입 추출
-	const getRequiredHotelTypes = () => {
+export default function PriceHotelSelected({ priceModalData, onNext }: PriceHotelSelectedProps) {
+	const [allHotels, setAllHotels] = useState<HotelItem[]>([]);
+	const [filteredHotelLists, setFilteredHotelLists] = useState<{ [index: number]: HotelItem[] }>({});
+	const [isLoadingHotels, setIsLoadingHotels] = useState(false);
+	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+	const [showHotelList, setShowHotelList] = useState(false);
+	const [selectedHotels, setSelectedHotels] = useState<SelectedHotelItem[]>([]);
+
+	// productScheduleData에서 순서대로 호텔 정보 추출 (중복 허용)
+	const getScheduleItems = (): Array<{ index: number; hotelSort: string; dayNight?: string }> => {
 		if (!priceModalData?.productScheduleData) return [];
 		
 		try {
@@ -62,15 +62,12 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 			if (!Array.isArray(scheduleData) || scheduleData.length === 0) return [];
 			
 			// productScheduleData는 [{ hotelSort: '리조트', dayNight: '3' }, { hotelSort: '풀빌라', dayNight: '2' }] 형태의 배열
-			// 모든 hotelSort 값을 수집 (중복 제거)
-			const hotelTypes = new Set<string>();
-			for (const item of scheduleData) {
-				if (item.hotelSort && typeof item.hotelSort === 'string') {
-					hotelTypes.add(item.hotelSort);
-				}
-			}
-			
-			return Array.from(hotelTypes);
+			// 순서대로 반환 (최대 4개, 중복 허용)
+			return scheduleData.slice(0, 4).map((item: any, index: number) => ({
+				index,
+				hotelSort: item.hotelSort || '',
+				dayNight: item.dayNight
+			}));
 		} catch (e) {
 			console.error('productScheduleData 파싱 오류:', e);
 			return [];
@@ -87,94 +84,67 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 			
 			// 도시가 있으면 해당 도시의 호텔만 가져오기
 			if (priceModalData.tourLocation) {
-				const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${priceModalData.tourLocation}`);
+				const res = await axios.get(`${AdminURL }/hotel/gethotelcity/${priceModalData.tourLocation}`);
 				if (res.data && res.data !== false) {
-					// 배열인지 확인하고, 배열이 아니면 배열로 변환
-					hotels = Array.isArray(res.data) ? res.data : [res.data];
+					hotels = res.data;
 				}
 			} else {
 				// 도시가 없으면 전체 호텔 가져오기
-				const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
+				const res = await axios.get(`${AdminURL }/hotel/gethotelsall`);
 				if (res.data && res.data !== false) {
-					// 배열인지 확인하고, 배열이 아니면 배열로 변환
-					hotels = Array.isArray(res.data) ? res.data : [res.data];
+					hotels = res.data;
 				}
 			}
 
 			setAllHotels(hotels);
-			setFilteredHotelList([]);
-			
-			// 리조트가 필요하고 아직 선택되지 않은 경우 랜덤으로 선택
-			const requiredTypes = getRequiredHotelTypes();
-			if (requiredTypes.includes('리조트') && !selectedHotelForType['리조트']) {
-				const resortHotels = hotels.filter((hotel: HotelItem) => 
-					hotel.hotelType === '리조트' || hotel.hotelSort === '리조트'
-				);
-				
-				if (resortHotels.length > 0) {
-					// 랜덤으로 하나 선택
-					const randomResort = resortHotels[Math.floor(Math.random() * resortHotels.length)];
-					setSelectedHotelForType(prev => ({
-						...prev,
-						'리조트': randomResort
-					}));
-				}
-			}
+			setFilteredHotelLists({});
 		} catch (error) {
 			console.error('호텔 리스트 가져오기 오류:', error);
 			setAllHotels([]);
-			setFilteredHotelList([]);
+			setFilteredHotelLists({});
 		} finally {
 			setIsLoadingHotels(false);
 		}
 	};
 
-	// 호텔 타입별 필터링
-	const handleHotelTypeClick = (type: '호텔' | '리조트' | '풀빌라') => {
-		setSelectedHotelType(type);
+	// 호텔 타입별 필터링 (각 인덱스별로 별도의 리스트 관리)
+	const handleHotelTypeClick = (index: number, hotelSort: string) => {
+		setSelectedIndex(index);
 		setShowHotelList(true);
 		
-		// allHotels가 배열인지 확인
-		if (!Array.isArray(allHotels)) {
-			console.error('allHotels is not an array:', allHotels);
-			setFilteredHotelList([]);
-			return;
+		// 해당 인덱스에 대한 필터링된 리스트가 없으면 생성
+		if (!filteredHotelLists[index]) {
+			const filtered = allHotels.filter((hotel: HotelItem) => {
+				if (!hotel.hotelType) return false;
+				// hotelType이 '리조트 풀빌라'처럼 공백으로 구분된 문자열일 수 있으므로 포함 여부 확인
+				const hotelTypes = hotel.hotelType.split(' ').filter(Boolean);
+				return hotelTypes.includes(hotelSort);
+			});
+			
+			setFilteredHotelLists(prev => ({
+				...prev,
+				[index]: filtered
+			}));
 		}
-		
-		const filtered = allHotels.filter((hotel: HotelItem) => {
-			return hotel.hotelType === type;
-		});
-		
-		setFilteredHotelList(filtered);
 	};
 
-	// 모달이 열릴 때 호텔 리스트 로딩 및 초기 선택된 호텔 설정
+	// 모달이 열릴 때 호텔 리스트 로딩
 	useEffect(() => {
 		if (priceModalData) {
-			setSelectedHotelType(null);
+			setSelectedIndex(null);
 			setShowHotelList(false);
-			setFilteredHotelList([]);
-			
-			// initialSelectedHotels가 있으면 사용하고, 없으면 초기값으로 설정
-			if (initialSelectedHotels) {
-				setSelectedHotelForType(initialSelectedHotels);
-			} else {
-				setSelectedHotelForType({
-					'호텔': null,
-					'리조트': null,
-					'풀빌라': null
-				});
-			}
-			
+			setFilteredHotelLists({});
+			const scheduleItems = getScheduleItems();
+			setSelectedHotels(scheduleItems.map(item => ({ ...item, hotel: null })));
 			fetchHotels();
 		}
-	}, [priceModalData, initialSelectedHotels]);
+	}, [priceModalData]);
 
-	const requiredHotelTypes = getRequiredHotelTypes();
+	const scheduleItems = getScheduleItems();
 
 	const handleNext = () => {
 		// 선택된 호텔이 있는지 확인
-		const hasSelectedHotel = requiredHotelTypes.some(type => selectedHotelForType[type]);
+		const hasSelectedHotel = selectedHotels.some(item => item.hotel !== null);
 		
 		if (!hasSelectedHotel) {
 			alert('호텔을 선택해주세요.');
@@ -182,7 +152,7 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 		}
 		
 		// 부모 컴포넌트로 선택된 호텔 정보 전달
-		onNext(selectedHotelForType);
+		onNext(selectedHotels);
 	};
 
 	return (
@@ -208,98 +178,105 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 				marginBottom: '20px',
 				flexWrap: 'wrap'
 			}}>
-				{/* 동적으로 호텔 타입별 입력창 생성 */}
-				{requiredHotelTypes.map((hotelType) => (
-					<div key={hotelType} style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '10px',
-						flex: 1,
-						minWidth: '300px'
-					}}>
-						<span style={{
-							fontSize: '16px',
-							color: '#666',
-							fontWeight: '500',
-							whiteSpace: 'nowrap',
-							width: '80px'
+				{/* productScheduleData 순서대로 호텔 선택창 생성 (중복 허용) */}
+				{scheduleItems.map((item) => {
+					const selectedHotel = selectedHotels.find(sh => sh.index === item.index)?.hotel;
+					return (
+						<div key={item.index} style={{
+							display: 'flex',
+							alignItems: 'center',
+							gap: '10px',
+							flexWrap: 'nowrap'
 						}}>
-							{hotelType}:
-						</span>
-						<button
-							onClick={() => handleHotelTypeClick(hotelType as '호텔' | '리조트' | '풀빌라')}
-							style={{
-								padding: '8px 16px',
-								borderRadius: '4px',
-								border: `1px solid ${selectedHotelType === hotelType ? '#5fb7ef' : '#ddd'}`,
-								backgroundColor: selectedHotelType === hotelType ? '#5fb7ef' : '#fff',
-								color: selectedHotelType === hotelType ? '#fff' : '#333',
-								cursor: 'pointer',
+							<span style={{
 								fontSize: '16px',
-								fontWeight: selectedHotelType === hotelType ? '600' : '400',
-								transition: 'all 0.2s',
+								color: '#666',
+								fontWeight: '500',
 								whiteSpace: 'nowrap'
-							}}
-						>
-							{hotelType}
-						</button>
-						{selectedHotelForType[hotelType] ? (
-							<div style={{
-								display: 'flex',
-								alignItems: 'center',
-								gap: '8px',
-								padding: '8px 12px',
-								border: '1px solid #5fb7ef',
-								borderRadius: '4px',
-								backgroundColor: '#e3f2fd',
-								flex: 1,
-								minWidth: '200px'
 							}}>
-								<span style={{
+								{item.hotelSort} {item.index + 1}:
+							</span>
+							<button
+								onClick={() => handleHotelTypeClick(item.index, item.hotelSort)}
+								style={{
+									padding: '8px 16px',
+									borderRadius: '4px',
+									border: `1px solid ${selectedIndex === item.index ? '#5fb7ef' : '#ddd'}`,
+									backgroundColor: selectedIndex === item.index ? '#5fb7ef' : '#fff',
+									color: selectedIndex === item.index ? '#fff' : '#333',
+									cursor: 'pointer',
 									fontSize: '16px',
-									color: '#333',
-									fontWeight: '500'
+									fontWeight: selectedIndex === item.index ? '600' : '400',
+									transition: 'all 0.2s',
+									whiteSpace: 'nowrap'
+								}}
+							>
+								{item.hotelSort}
+							</button>
+							{selectedHotel ? (
+								<div style={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: '8px',
+									padding: '8px 12px',
+									border: '1px solid #5fb7ef',
+									borderRadius: '4px',
+									backgroundColor: '#e3f2fd',
+									minWidth: '200px',
+									maxWidth: '250px'
 								}}>
-									{selectedHotelForType[hotelType]?.hotelNameKo}
-								</span>
-								<button
-									onClick={(e) => {
-										e.stopPropagation();
-										setSelectedHotelForType(prev => ({ ...prev, [hotelType]: null }));
-									}}
-									style={{
-										background: 'none',
-										border: 'none',
-										color: '#dc3545',
-										cursor: 'pointer',
+									<span style={{
 										fontSize: '16px',
-										padding: '0',
-										width: '20px',
-										height: '20px',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center'
-									}}
-								>
-									×
-								</button>
-							</div>
-						) : (
-							<div style={{
-								flex: 1,
-								padding: '8px 12px',
-								border: '1px solid #ddd',
-								borderRadius: '4px',
-								backgroundColor: '#f8f9fa',
-								color: '#999',
-								fontSize: '16px',
-								minWidth: '200px'
-							}}>
-								호텔을 선택하세요
-							</div>
-						)}
-					</div>
-				))}
+										color: '#333',
+										fontWeight: '500',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap'
+									}}>
+										{selectedHotel.hotelNameKo}
+									</span>
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											setSelectedHotels(prev => 
+												prev.map(sh => sh.index === item.index ? { ...sh, hotel: null } : sh)
+											);
+										}}
+										style={{
+											background: 'none',
+											border: 'none',
+											color: '#dc3545',
+											cursor: 'pointer',
+											fontSize: '16px',
+											padding: '0',
+											width: '20px',
+											height: '20px',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											flexShrink: 0
+										}}
+									>
+										×
+									</button>
+								</div>
+							) : (
+								<div style={{
+									padding: '8px 12px',
+									border: '1px solid #ddd',
+									borderRadius: '4px',
+									backgroundColor: '#f8f9fa',
+									color: '#999',
+									fontSize: '16px',
+									minWidth: '200px',
+									maxWidth: '250px'
+								}}>
+									호텔을 선택하세요
+								</div>
+							)}
+						</div>
+					);
+				})}
 				
 				{/* 다음 버튼 */}
 				<button
@@ -313,15 +290,16 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 						cursor: 'pointer',
 						fontSize: '16px',
 						fontWeight: '600',
-						whiteSpace: 'nowrap'
+						whiteSpace: 'nowrap',
+						marginLeft: 'auto'
 					}}
 				>
 					다음
 				</button>
 			</div>
 			
-			{/* 호텔 리스트 표시 */}
-			{showHotelList && (
+			{/* 호텔 리스트 표시 (선택된 인덱스에 해당하는 리스트만 표시) */}
+			{showHotelList && selectedIndex !== null && (
 				<div style={{
 					marginTop: '20px',
 					border: '1px solid #e0e0e0',
@@ -333,7 +311,7 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 						<div style={{padding: '20px', textAlign: 'center', color: '#666'}}>
 							호텔 리스트를 불러오는 중...
 						</div>
-					) : filteredHotelList.length === 0 ? (
+					) : !filteredHotelLists[selectedIndex] || filteredHotelLists[selectedIndex].length === 0 ? (
 						<div style={{padding: '20px', textAlign: 'center', color: '#999'}}>
 							선택한 타입의 호텔이 없습니다.
 						</div>
@@ -349,8 +327,8 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 								</tr>
 							</thead>
 							<tbody>
-								{filteredHotelList.map((hotel: HotelItem, index: number) => {
-									const isSelected = selectedHotelType && selectedHotelForType[selectedHotelType]?.id === hotel.id;
+								{filteredHotelLists[selectedIndex].map((hotel: HotelItem, index: number) => {
+									const isSelected = selectedHotels.find(sh => sh.index === selectedIndex)?.hotel?.id === hotel.id;
 									return (
 									<tr key={hotel.id} style={{
 										backgroundColor: isSelected ? '#e3f2fd' : (index % 2 === 0 ? '#fff' : '#f8f9fa'),
@@ -370,14 +348,11 @@ export default function PriceHotelSelected({ priceModalData, initialSelectedHote
 									}}
 									onClick={() => {
 										// 호텔 선택
-										if (selectedHotelType) {
-											setSelectedHotelForType(prev => ({
-												...prev,
-												[selectedHotelType]: hotel
-											}));
-											setShowHotelList(false);
-											setSelectedHotelType(null);
-										}
+										setSelectedHotels(prev => 
+											prev.map(sh => sh.index === selectedIndex ? { ...sh, hotel } : sh)
+										);
+										setShowHotelList(false);
+										setSelectedIndex(null);
 									}}
 									>
 										<td style={{padding: '10px', border: '1px solid #e0e0e0', textAlign: 'center', fontSize: '16px'}}>{hotel.id}</td>

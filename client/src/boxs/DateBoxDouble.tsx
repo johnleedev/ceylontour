@@ -3,7 +3,7 @@ import  "react-datepicker/dist/react-datepicker.css" ;
 import {ko} from "date-fns/locale";
 import { FaRegCalendarAlt } from "react-icons/fa";
 import './Boxs.scss'
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 
 interface DateBoxDoubleProps {
@@ -18,6 +18,22 @@ export const DateBoxDouble : React.FC<DateBoxDoubleProps> = ({dateStart, dateEnd
 
   const [startDate, setStartDate] = useState(dateStart);
   const [endDate, setEndDate] = useState(dateEnd);
+
+  // dateStart와 dateEnd prop이 변경될 때 내부 상태 업데이트
+  useEffect(() => {
+    if (dateStart) {
+      const newStartDate = dateStart instanceof Date ? dateStart : new Date(dateStart);
+      setStartDate(newStartDate);
+    } else {
+      setStartDate(null);
+    }
+    if (dateEnd) {
+      const newEndDate = dateEnd instanceof Date ? dateEnd : new Date(dateEnd);
+      setEndDate(newEndDate);
+    } else {
+      setEndDate(null);
+    }
+  }, [dateStart, dateEnd]);
 
   const handleSelectDateChange = ( event : any) => {
 

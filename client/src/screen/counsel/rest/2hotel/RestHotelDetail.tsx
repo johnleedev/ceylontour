@@ -46,6 +46,230 @@ export default function RestHotelDetail() {
   const [roomTypes, setRoomTypes] = React.useState<any[]>([]);
   const [products, setProducts] = React.useState<any[]>([]);
 
+  console.log('stateProps', stateProps);
+
+
+  // 호텔 리스트 가져오기 (NewPriceHotelSelected.tsx 참조)
+  const fetchHotels = async () => {
+    try {
+      let hotels: any[] = [];
+      
+      // 도시가 있으면 해당 도시의 호텔만 가져오기
+      if (stateProps?.city) {
+        const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${stateProps.city}`);
+        if (res.data && res.data !== false) {
+          hotels = Array.isArray(res.data) ? res.data : [res.data];
+        }
+      } else {
+        // 도시가 없으면 전체 호텔 가져오기
+        const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
+        if (res.data && res.data !== false) {
+          hotels = Array.isArray(res.data) ? res.data : [res.data];
+        }
+      }
+
+      setAllHotels(hotels);
+    } catch (error) {
+      console.error('호텔 리스트 가져오기 오류:', error);
+      setAllHotels([]);
+    }
+  };
+
+  // productScheduleData를 파싱하여 선택된 호텔 정보 생성 (RestHotelCost.tsx로 전달용)
+  const getSelectedHotelsFromSchedule = (product: any): Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }> => {
+    if (!product.productScheduleData) {
+      return [];
+    }
+
+    try {
+      const scheduleData = JSON.parse(product.productScheduleData);
+      if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+        return [];
+      }
+
+      const currentHotelType = stateProps?.hotelInfo?.hotelType || stateProps?.hotelInfo?.hotelSort;
+      const currentHotel = stateProps?.hotelInfo;
+
+      // '리조트 + 풀빌라' 조합인지 확인
+      const isResortPoolVilla = scheduleData.length >= 2 && 
+        ((scheduleData[0].hotelSort === '리조트' && scheduleData[1].hotelSort === '풀빌라') ||
+         (scheduleData[0].hotelSort === '풀빌라' && scheduleData[1].hotelSort === '리조트'));
+
+      const selectedHotels: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }> = [];
+      
+      for (let i = 0; i < scheduleData.length && i < 4; i++) {
+        const item = scheduleData[i];
+        const hotelSort = item.hotelSort || '';
+        const dayNight = item.dayNight || '';
+
+        let selectedHotel: any | null = null;
+
+        // 현재 페이지의 호텔 정보와 일치하면 현재 호텔 사용
+        if (currentHotelType === hotelSort && currentHotel) {
+          selectedHotel = currentHotel;
+        } else if (isResortPoolVilla && currentHotelType === '풀빌라' && hotelSort === '리조트') {
+          // '리조트 + 풀빌라' 조합이고 현재 호텔이 '풀빌라'인 경우, '리조트'를 자동으로 선택
+          const matchingHotels = allHotels.filter((hotel: any) => {
+            const hotelType = hotel.hotelType || hotel.hotelSort;
+            return hotelType === '리조트' || 
+                   (hotel.hotelType && hotel.hotelType.split(' ').includes('리조트'));
+          });
+
+          if (matchingHotels.length > 0) {
+            selectedHotel = matchingHotels[0];
+          }
+        } else {
+          // 그렇지 않으면 해당 타입의 호텔을 찾아서 첫 번째 호텔 사용
+          const matchingHotels = allHotels.filter((hotel: any) => {
+            const hotelType = hotel.hotelType || hotel.hotelSort;
+            return hotelType === hotelSort || 
+                   (hotel.hotelType && hotel.hotelType.split(' ').includes(hotelSort));
+          });
+
+          if (matchingHotels.length > 0) {
+            selectedHotel = matchingHotels[0];
+          }
+        }
+
+        selectedHotels.push({
+          index: i,
+          hotelSort: hotelSort,
+          dayNight: dayNight,
+          hotel: selectedHotel
+        });
+      }
+
+      return selectedHotels;
+    } catch (e) {
+      console.error('productScheduleData 파싱 오류:', e);
+      return [];
+    }
+  };
+
+  // productScheduleData를 파싱하여 호텔명 생성
+  const getProductNameFromSchedule = (product: any): string => {
+    if (!product.productScheduleData) {
+      // productScheduleData가 없으면 기존 방식 사용
+      return product.productName || product.scheduleName || product.hotelNameKo || '';
+    }
+
+    try {
+      const scheduleData = JSON.parse(product.productScheduleData);
+      if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+        return product.productName || product.scheduleName || product.hotelNameKo || '';
+      }
+
+      const currentHotelType = stateProps?.hotelInfo?.hotelType || stateProps?.hotelInfo?.hotelSort;
+      const currentHotel = stateProps?.hotelInfo;
+
+      // '리조트 + 풀빌라' 조합인지 확인
+      const isResortPoolVilla = scheduleData.length >= 2 && 
+        ((scheduleData[0].hotelSort === '리조트' && scheduleData[1].hotelSort === '풀빌라') ||
+         (scheduleData[0].hotelSort === '풀빌라' && scheduleData[1].hotelSort === '리조트'));
+
+      // 이미 사용된 호텔 ID를 추적 (중복 방지)
+      const usedHotelIds = new Set<string | number>();
+      // 현재 페이지의 호텔이 사용될 인덱스 (마지막에 해당하는 항목)
+      let currentHotelUsedIndex: number | null = null;
+
+      // 먼저 뒤에서부터 순회하여 현재 페이지의 호텔과 일치하는 마지막 항목 찾기
+      for (let i = scheduleData.length - 1; i >= 0; i--) {
+        const item = scheduleData[i];
+        const hotelSort = item.hotelSort || '';
+        
+        if (currentHotelType === hotelSort && currentHotel && currentHotelUsedIndex === null) {
+          currentHotelUsedIndex = i;
+          if (currentHotel.id !== null && currentHotel.id !== undefined) {
+            usedHotelIds.add(currentHotel.id);
+          }
+          break;
+        }
+      }
+
+      // 호텔 ID별로 박수를 합산하기 위한 맵 (같은 호텔 객체인 경우에만 합산)
+      const hotelNightsMap: { [key: string]: { hotelName: string; nights: number } } = {};
+      
+      for (let i = 0; i < scheduleData.length; i++) {
+        const item = scheduleData[i];
+        const hotelSort = item.hotelSort || '';
+        const dayNight = item.dayNight || '';
+        
+        // 박수 추출 (예: "2박" -> 2)
+        const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
+
+        let hotelName = hotelSort; // 기본값은 hotelSort
+        let hotelId: string | number | null = null;
+
+        // 현재 페이지의 호텔이 사용될 인덱스이고, 타입이 일치하면 현재 호텔 사용
+        if (i === currentHotelUsedIndex && currentHotelType === hotelSort && currentHotel) {
+          hotelName = currentHotel.hotelNameKo || hotelSort;
+          hotelId = currentHotel.id;
+        } else if (isResortPoolVilla && currentHotelType === '풀빌라' && hotelSort === '리조트') {
+          // '리조트 + 풀빌라' 조합이고 현재 호텔이 '풀빌라'인 경우, '리조트'를 자동으로 선택
+          const matchingHotels = allHotels.filter((hotel: any) => {
+            const hotelType = hotel.hotelType || hotel.hotelSort;
+            return (hotelType === '리조트' || 
+                   (hotel.hotelType && hotel.hotelType.split(' ').includes('리조트'))) &&
+                   !usedHotelIds.has(hotel.id); // 이미 사용된 호텔 제외
+          });
+
+          if (matchingHotels.length > 0) {
+            hotelName = matchingHotels[0].hotelNameKo || hotelSort;
+            hotelId = matchingHotels[0].id;
+            if (hotelId !== null) {
+              usedHotelIds.add(hotelId);
+            }
+          }
+        } else {
+          // 그렇지 않으면 해당 타입의 호텔을 찾되, 이미 사용된 호텔은 제외
+          const matchingHotels = allHotels.filter((hotel: any) => {
+            const hotelType = hotel.hotelType || hotel.hotelSort;
+            return (hotelType === hotelSort || 
+                   (hotel.hotelType && hotel.hotelType.split(' ').includes(hotelSort))) &&
+                   !usedHotelIds.has(hotel.id); // 이미 사용된 호텔 제외
+          });
+
+          if (matchingHotels.length > 0) {
+            hotelName = matchingHotels[0].hotelNameKo || hotelSort;
+            hotelId = matchingHotels[0].id;
+            if (hotelId !== null) {
+              usedHotelIds.add(hotelId);
+            }
+          }
+        }
+
+        // 호텔 ID를 키로 사용 (같은 호텔 객체인 경우에만 합산)
+        // 호텔 ID가 없으면 인덱스를 포함하여 구분
+        const key = hotelId !== null ? `hotel_${hotelId}` : `item_${i}`;
+
+        if (hotelNightsMap[key]) {
+          // 같은 호텔 객체인 경우 박수 합산
+          hotelNightsMap[key].nights += nights;
+        } else {
+          // 다른 호텔 객체이거나 호텔 ID가 없는 경우 새로 추가
+          hotelNightsMap[key] = {
+            hotelName: hotelName,
+            nights: nights
+          };
+        }
+      }
+
+      // 맵을 배열로 변환하여 "호텔명 박수" 형태로 조합
+      const parts: string[] = [];
+      for (const { hotelName, nights } of Object.values(hotelNightsMap)) {
+        if (nights > 0) {
+          parts.push(`${hotelName} ${nights}박`);
+        } else {
+          parts.push(hotelName);
+        }
+      }
+
+      return parts.join(' + ');
+    } catch (e) {
+      console.error('productScheduleData 파싱 오류:', e);
+      return product.productName || product.scheduleName || product.hotelNameKo || '';
+    }
+  };
 
   // 선택된 나라의 관련 여행상품(일정) 조회
   const fetchNationProducts = async (nationCopy:string) => {
@@ -82,9 +306,11 @@ export default function RestHotelDetail() {
   const [activeRightTab, setActiveRightTab] = React.useState<'benefit' | 'schedule'>('schedule');
   const [showRightPanel, setShowRightPanel] = React.useState(false);
   const [selectedMainImageIndex, setSelectedMainImageIndex] = React.useState(0);
+  const [allHotels, setAllHotels] = React.useState<any[]>([]);
 
   useEffect(() => {
     fetchNationProducts(stateProps.nation);
+    fetchHotels();
     setHotelInfo(stateProps.hotelInfo);
     const imageCopy = JSON.parse(stateProps.hotelInfo.imageNamesAllView);
     setImageAllView(imageCopy);
@@ -481,25 +707,8 @@ export default function RestHotelDetail() {
                         product.headerText ||
                         `${product.nation || stateProps.nation || ''} 추천상품`;
                       
-                      // 상품명
-                      const productName =
-                        product.productName ||
-                        product.scheduleName ||
-                        product.hotelNameKo ||
-                        '';
-                      
-                      // 기간 정보 (tourPeriodData 파싱)
-                      let periodText = '';
-                      if (product.tourPeriodData) {
-                        try {
-                          const periodData = JSON.parse(product.tourPeriodData);
-                          const night = periodData.periodNight || '';
-                          const day = periodData.periodDay || '';
-                          periodText = `${night} ${day}`.trim();
-                        } catch (e) {
-                          periodText = '';
-                        }
-                      }
+                      // 상품명 (productScheduleData 기반으로 생성)
+                      const productName = getProductNameFromSchedule(product);
 
                       const badgeType = product.badgeType || 'recommend';
                       const badgeText = product.badgeText || '추천상품';
@@ -509,11 +718,15 @@ export default function RestHotelDetail() {
                           key={product.id}
                           className="product-item"
                           onClick={() => {
+                            // productScheduleData를 기반으로 선택된 호텔 정보 생성
+                            const selectedHotels = getSelectedHotelsFromSchedule(product);
+                            
                             navigate('/counsel/rest/hotelcost', { 
                               state: {
                                 hotelInfo: hotelInfo,
                                 productInfo: product,
-                                city: stateProps?.city
+                                city: stateProps?.city,
+                                selectedHotels: selectedHotels
                               }
                             });
                             window.scrollTo(0, 0);
@@ -524,10 +737,7 @@ export default function RestHotelDetail() {
                           </div>
                           <div className="product-content">
                             <p className="product-name">
-                              {productName} -
-                              {periodText && (
-                                <span className="product-period">&nbsp;{periodText}</span>
-                              )}
+                              {productName}
                             </p>
                             <div className="product-badge-wrapper">
                               <div className={`product-badge badge-${badgeType}`}>

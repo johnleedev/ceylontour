@@ -11,6 +11,10 @@ import { recoilExchangeRate } from '../../RecoilStore';
 import { fetchScheduleDetailDataExternal } from './ScheduleDetailRedering';
 import { GoDotFill } from "react-icons/go";
 import AirlineData from '../AirlineData';
+import trainIcon from '../images/common/train.png';
+import busIcon from '../images/common/bus.png';
+import shipIcon from '../images/common/ship.png';
+import location1Icon from '../images/common/location1.png';
 
 interface ModalScheduleDetailProps {
     airlineData: {
@@ -568,18 +572,22 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
                                                 <div
                                                   className="schedule-location__icon-button"
                                                 >
-                                                  {(loctionItem.locationIcon || loctionItem.sort) === 'airline' ? (
-                                                    <span className="schedule-location__icon schedule-location__icon--airline">✈</span>
-                                                  ) : (loctionItem.locationIcon || loctionItem.sort) === 'train' ? (
-                                                    <span className="schedule-location__icon schedule-location__icon--train">🚂</span>
-                                                  ) : (loctionItem.locationIcon || loctionItem.sort) === 'bus' ? (
-                                                    <span className="schedule-location__icon schedule-location__icon--bus">🚌</span>
-                                                  ) : (loctionItem.locationIcon || loctionItem.sort) === 'ship' ? (
-                                                    <span className="schedule-location__icon schedule-location__icon--ship">🚢</span>
+                                                   {(loctionItem.locationIcon || loctionItem.st) === 'airline' ? (
+                                                    <span style={{color: '#ff6b6b', fontSize: '30px', fontWeight: 'bold'}}>✈</span>
+                                                  ) : (loctionItem.locationIcon || loctionItem.st) === 'train' ? (
+                                                    <img src={trainIcon} alt="train" style={{width: '24px', height: '24px', objectFit: 'contain'}}/>
+                                                  ) : (loctionItem.locationIcon || loctionItem.st) === 'bus' ? (
+                                                    <img src={busIcon} alt="bus" style={{width: '24px', height: '24px', objectFit: 'contain'}}/>
+                                                  ) : (loctionItem.locationIcon || loctionItem.st) === 'ship' ? (
+                                                    <img src={shipIcon} alt="ship" style={{width: '24px', height: '24px', objectFit: 'contain'}}/>
                                                   ) : loctionItem.locationIcon === 'dot' ? (
                                                     <GoDotFill className="schedule-white-dot__icon"/>
+                                                  ) : loctionItem.locationIcon === 'black' ? (
+                                                    <div className="schedule-absolute__wrapper">
+                                                      <GoDotFill className="schedule-dot__icon" fontSize={16}/>
+                                                    </div>
                                                   ) : (
-                                                    <ImLocation color='#5fb7ef' size={20}/>
+                                                    <img src={location1Icon} alt="location" style={{width: '40px', height: '40px', objectFit: 'contain'}}/>
                                                   )}
                                                 </div>
                                                 
