@@ -5,14 +5,9 @@ import { IoIosArrowBack } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate, useLocation } from 'react-router-dom';
 import rectangle78 from '../../../lastimages/counselrest/hotel/detail/rectangle-78.png';
-import rectangle565 from '../../../lastimages/counselrest/hotel/detail/rectangle-565.png';
 import rectangle76 from '../../../lastimages/counselrest/hotel/detail/rectangle-76.png';
-import rectangle582 from '../../../lastimages/counselrest/hotel/detail/rectangle-582.png';
-import rectangle584 from '../../../lastimages/counselrest/hotel/detail/rectangle-584.png';
-import rectangle581 from '../../../lastimages/counselrest/hotel/detail/rectangle-581.png';
 import rectangle665 from '../../../lastimages/counselrest/hotel/detail/rectangle-665.png';
 import rectangle664 from '../../../lastimages/counselrest/hotel/detail/rectangle-664.png';
-import rectangle585 from '../../../lastimages/counselrest/hotel/detail/rectangle-585.png';
 import rectangle663 from '../../../lastimages/counselrest/hotel/detail/rectangle-663.png';
 import rectangle580 from '../../../lastimages/counselrest/hotel/detail/rectangle-580.png';
 import rectangle662 from '../../../lastimages/counselrest/hotel/detail/rectangle-662.png';
@@ -46,9 +41,6 @@ export default function RestHotelDetail() {
   const [roomTypes, setRoomTypes] = React.useState<any[]>([]);
   const [products, setProducts] = React.useState<any[]>([]);
 
-  console.log('stateProps', stateProps);
-
-
   // 호텔 리스트 가져오기 (NewPriceHotelSelected.tsx 참조)
   const fetchHotels = async () => {
     try {
@@ -75,25 +67,135 @@ export default function RestHotelDetail() {
     }
   };
 
+
   // productScheduleData를 파싱하여 선택된 호텔 정보 생성 (RestHotelCost.tsx로 전달용)
-  const getSelectedHotelsFromSchedule = (product: any): Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }> => {
+  const getSelectedHotelsFromSchedule = async (product: any): Promise<Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>> => {
+    const currentHotelType = stateProps?.hotelInfo?.hotelType || stateProps?.hotelInfo?.hotelSort;
+    const currentHotel = stateProps?.hotelInfo;
+
+    // 미니멈스테이인 경우 productScheduleData가 없어도 현재 호텔을 선택
     if (!product.productScheduleData) {
+      if (product.costType === '미니멈스테이' && currentHotel) {
+        // 현재 호텔의 타입이 리조트나 호텔인 경우에만 선택
+        const hotelSort = currentHotelType || '리조트';
+        if (hotelSort === '리조트' || hotelSort === '호텔') {
+          // 이미지 데이터가 없으면 allHotels에서 다시 찾기
+          let hotelWithImages = currentHotel;
+          if (currentHotel.id) {
+            const hasImages = currentHotel.imageNamesAllView && 
+                             currentHotel.imageNamesAllView !== '[]' && 
+                             currentHotel.imageNamesAllView !== '';
+            
+            if (!hasImages) {
+              let hotelWithFullData = allHotels.find((h: any) => h.id === currentHotel.id);
+              
+              // allHotels에도 이미지 데이터가 없으면 API로 전체 호텔 데이터 가져오기
+              if ((!hotelWithFullData || !hotelWithFullData.imageNamesAllView || hotelWithFullData.imageNamesAllView === '[]') && 
+                  currentHotel.hotelNameKo && stateProps?.city) {
+                try {
+                  const hotelName = encodeURIComponent(currentHotel.hotelNameKo);
+                  const city = encodeURIComponent(stateProps.city);
+                  const res = await axios.get(`${AdminURL}/hotel/gethoteldata/${city}/${hotelName}`);
+                  if (res.data && res.data !== false) {
+                    const hotelData = Array.isArray(res.data) ? res.data[0] : res.data;
+                    if (hotelData && hotelData.imageNamesAllView && hotelData.imageNamesAllView !== '[]') {
+                      hotelWithFullData = hotelData;
+                    }
+                  }
+                } catch (error) {
+                  console.error('호텔 데이터 가져오기 오류:', error);
+                }
+              }
+              
+              if (hotelWithFullData && hotelWithFullData.imageNamesAllView && hotelWithFullData.imageNamesAllView !== '[]') {
+                hotelWithImages = hotelWithFullData;
+              }
+            }
+          }
+
+          hotelWithImages = {
+            ...hotelWithImages,
+            imageNamesAllView: hotelWithImages.imageNamesAllView || '[]',
+            imageNamesRoomView: hotelWithImages.imageNamesRoomView || '[]',
+            imageNamesEtcView: hotelWithImages.imageNamesEtcView || '[]',
+            hotelRoomTypes: hotelWithImages.hotelRoomTypes || '[]'
+          };
+
+          return [{
+            index: 0,
+            hotelSort: hotelSort,
+            dayNight: '3',
+            hotel: hotelWithImages
+          }];
+        }
+      }
       return [];
     }
 
     try {
       const scheduleData = JSON.parse(product.productScheduleData);
       if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+        // 미니멈스테이인 경우 빈 배열이어도 현재 호텔을 선택
+        if (product.costType === '미니멈스테이' && currentHotel) {
+          const hotelSort = currentHotelType || '리조트';
+          if (hotelSort === '리조트' || hotelSort === '호텔') {
+            // 이미지 데이터가 없으면 allHotels에서 다시 찾기
+            let hotelWithImages = currentHotel;
+            if (currentHotel.id) {
+              const hasImages = currentHotel.imageNamesAllView && 
+                               currentHotel.imageNamesAllView !== '[]' && 
+                               currentHotel.imageNamesAllView !== '';
+              
+              if (!hasImages) {
+                const hotelWithFullData = allHotels.find((h: any) => h.id === currentHotel.id);
+                if (hotelWithFullData && hotelWithFullData.imageNamesAllView && hotelWithFullData.imageNamesAllView !== '[]') {
+                  hotelWithImages = hotelWithFullData;
+                }
+              }
+            }
+
+            hotelWithImages = {
+              ...hotelWithImages,
+              imageNamesAllView: hotelWithImages.imageNamesAllView || '[]',
+              imageNamesRoomView: hotelWithImages.imageNamesRoomView || '[]',
+              imageNamesEtcView: hotelWithImages.imageNamesEtcView || '[]',
+              hotelRoomTypes: hotelWithImages.hotelRoomTypes || '[]'
+            };
+
+            return [{
+              index: 0,
+              hotelSort: hotelSort,
+              dayNight: '3',
+              hotel: hotelWithImages
+            }];
+          }
+        }
         return [];
       }
-
-      const currentHotelType = stateProps?.hotelInfo?.hotelType || stateProps?.hotelInfo?.hotelSort;
-      const currentHotel = stateProps?.hotelInfo;
 
       // '리조트 + 풀빌라' 조합인지 확인
       const isResortPoolVilla = scheduleData.length >= 2 && 
         ((scheduleData[0].hotelSort === '리조트' && scheduleData[1].hotelSort === '풀빌라') ||
          (scheduleData[0].hotelSort === '풀빌라' && scheduleData[1].hotelSort === '리조트'));
+
+      // 이미 사용된 호텔 ID를 추적 (중복 방지)
+      const usedHotelIds = new Set<string | number>();
+      // 현재 페이지의 호텔이 사용될 인덱스 (마지막에 해당하는 항목)
+      let currentHotelUsedIndex: number | null = null;
+
+      // 먼저 뒤에서부터 순회하여 현재 페이지의 호텔과 일치하는 마지막 항목 찾기
+      for (let i = scheduleData.length - 1; i >= 0; i--) {
+        const item = scheduleData[i];
+        const hotelSort = item.hotelSort || '';
+        
+        if (currentHotelType === hotelSort && currentHotel && currentHotelUsedIndex === null) {
+          currentHotelUsedIndex = i;
+          if (currentHotel.id !== null && currentHotel.id !== undefined) {
+            usedHotelIds.add(currentHotel.id);
+          }
+          break;
+        }
+      }
 
       const selectedHotels: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }> = [];
       
@@ -104,44 +206,154 @@ export default function RestHotelDetail() {
 
         let selectedHotel: any | null = null;
 
-        // 현재 페이지의 호텔 정보와 일치하면 현재 호텔 사용
-        if (currentHotelType === hotelSort && currentHotel) {
+        // 현재 페이지의 호텔이 사용될 인덱스이고, 타입이 일치하면 현재 호텔 사용
+        if (i === currentHotelUsedIndex && currentHotelType === hotelSort && currentHotel) {
           selectedHotel = currentHotel;
         } else if (isResortPoolVilla && currentHotelType === '풀빌라' && hotelSort === '리조트') {
           // '리조트 + 풀빌라' 조합이고 현재 호텔이 '풀빌라'인 경우, '리조트'를 자동으로 선택
           const matchingHotels = allHotels.filter((hotel: any) => {
             const hotelType = hotel.hotelType || hotel.hotelSort;
-            return hotelType === '리조트' || 
-                   (hotel.hotelType && hotel.hotelType.split(' ').includes('리조트'));
+            return (hotelType === '리조트' || 
+                   (hotel.hotelType && hotel.hotelType.split(' ').includes('리조트'))) &&
+                   !usedHotelIds.has(hotel.id); // 이미 사용된 호텔 제외
           });
 
           if (matchingHotels.length > 0) {
             selectedHotel = matchingHotels[0];
+            if (selectedHotel.id !== null && selectedHotel.id !== undefined) {
+              usedHotelIds.add(selectedHotel.id);
+            }
           }
         } else {
-          // 그렇지 않으면 해당 타입의 호텔을 찾아서 첫 번째 호텔 사용
+          // 그렇지 않으면 해당 타입의 호텔을 찾되, 이미 사용된 호텔은 제외
           const matchingHotels = allHotels.filter((hotel: any) => {
             const hotelType = hotel.hotelType || hotel.hotelSort;
-            return hotelType === hotelSort || 
-                   (hotel.hotelType && hotel.hotelType.split(' ').includes(hotelSort));
+            return (hotelType === hotelSort || 
+                   (hotel.hotelType && hotel.hotelType.split(' ').includes(hotelSort))) &&
+                   !usedHotelIds.has(hotel.id); // 이미 사용된 호텔 제외
           });
 
           if (matchingHotels.length > 0) {
             selectedHotel = matchingHotels[0];
+            if (selectedHotel.id !== null && selectedHotel.id !== undefined) {
+              usedHotelIds.add(selectedHotel.id);
+            }
           }
+        }
+
+        // 호텔 객체에 이미지 데이터가 포함되어 있는지 확인
+        let hotelWithImages = selectedHotel;
+        
+        if (selectedHotel && selectedHotel.id) {
+          // 이미지 데이터가 없거나 빈 배열인 경우 allHotels에서 다시 찾기
+          const hasImages = selectedHotel.imageNamesAllView && 
+                           selectedHotel.imageNamesAllView !== '[]' && 
+                           selectedHotel.imageNamesAllView !== '';
+          
+          if (!hasImages) {
+            // allHotels에서 해당 호텔 ID로 다시 찾기
+            let hotelWithFullData = allHotels.find((h: any) => h.id === selectedHotel.id);
+            
+            // allHotels에도 이미지 데이터가 없으면 API로 전체 호텔 데이터 가져오기
+            if ((!hotelWithFullData || !hotelWithFullData.imageNamesAllView || hotelWithFullData.imageNamesAllView === '[]') && 
+                selectedHotel.hotelNameKo && stateProps?.city) {
+              try {
+                const hotelName = encodeURIComponent(selectedHotel.hotelNameKo);
+                const city = encodeURIComponent(stateProps.city);
+                const res = await axios.get(`${AdminURL}/hotel/gethoteldata/${city}/${hotelName}`);
+                if (res.data && res.data !== false) {
+                  const hotelData = Array.isArray(res.data) ? res.data[0] : res.data;
+                  if (hotelData && hotelData.imageNamesAllView && hotelData.imageNamesAllView !== '[]') {
+                    hotelWithFullData = hotelData;
+                  }
+                }
+              } catch (error) {
+                console.error('호텔 데이터 가져오기 오류:', error);
+              }
+            }
+            
+            if (hotelWithFullData && hotelWithFullData.imageNamesAllView && hotelWithFullData.imageNamesAllView !== '[]') {
+              hotelWithImages = hotelWithFullData;
+            }
+          }
+        }
+
+        // 이미지 데이터가 없으면 기본값 설정
+        if (hotelWithImages) {
+          hotelWithImages = {
+            ...hotelWithImages,
+            imageNamesAllView: hotelWithImages.imageNamesAllView || '[]',
+            imageNamesRoomView: hotelWithImages.imageNamesRoomView || '[]',
+            imageNamesEtcView: hotelWithImages.imageNamesEtcView || '[]',
+            hotelRoomTypes: hotelWithImages.hotelRoomTypes || '[]'
+          };
         }
 
         selectedHotels.push({
           index: i,
           hotelSort: hotelSort,
           dayNight: dayNight,
-          hotel: selectedHotel
+          hotel: hotelWithImages
         });
       }
 
       return selectedHotels;
     } catch (e) {
       console.error('productScheduleData 파싱 오류:', e);
+      // 미니멈스테이인 경우 파싱 오류가 발생해도 현재 호텔을 선택
+      if (product.costType === '미니멈스테이' && currentHotel) {
+        const hotelSort = currentHotelType || '리조트';
+        if (hotelSort === '리조트' || hotelSort === '호텔') {
+          // 이미지 데이터가 없으면 allHotels에서 다시 찾기
+          let hotelWithImages = currentHotel;
+          if (currentHotel.id) {
+            const hasImages = currentHotel.imageNamesAllView && 
+                             currentHotel.imageNamesAllView !== '[]' && 
+                             currentHotel.imageNamesAllView !== '';
+            
+            if (!hasImages) {
+              let hotelWithFullData = allHotels.find((h: any) => h.id === currentHotel.id);
+              
+              // allHotels에도 이미지 데이터가 없으면 API로 전체 호텔 데이터 가져오기
+              if ((!hotelWithFullData || !hotelWithFullData.imageNamesAllView || hotelWithFullData.imageNamesAllView === '[]') && 
+                  currentHotel.hotelNameKo && stateProps?.city) {
+                try {
+                  const hotelName = encodeURIComponent(currentHotel.hotelNameKo);
+                  const city = encodeURIComponent(stateProps.city);
+                  const res = await axios.get(`${AdminURL}/hotel/gethoteldata/${city}/${hotelName}`);
+                  if (res.data && res.data !== false) {
+                    const hotelData = Array.isArray(res.data) ? res.data[0] : res.data;
+                    if (hotelData && hotelData.imageNamesAllView && hotelData.imageNamesAllView !== '[]') {
+                      hotelWithFullData = hotelData;
+                    }
+                  }
+                } catch (error) {
+                  console.error('호텔 데이터 가져오기 오류:', error);
+                }
+              }
+              
+              if (hotelWithFullData && hotelWithFullData.imageNamesAllView && hotelWithFullData.imageNamesAllView !== '[]') {
+                hotelWithImages = hotelWithFullData;
+              }
+            }
+          }
+
+          hotelWithImages = {
+            ...hotelWithImages,
+            imageNamesAllView: hotelWithImages.imageNamesAllView || '[]',
+            imageNamesRoomView: hotelWithImages.imageNamesRoomView || '[]',
+            imageNamesEtcView: hotelWithImages.imageNamesEtcView || '[]',
+            hotelRoomTypes: hotelWithImages.hotelRoomTypes || '[]'
+          };
+
+          return [{
+            index: 0,
+            hotelSort: hotelSort,
+            dayNight: '3',
+            hotel: hotelWithImages
+          }];
+        }
+      }
       return [];
     }
   };
@@ -277,7 +489,6 @@ export default function RestHotelDetail() {
       const response = await axios.post(`${AdminURL}/ceylontour/getcityschedule`, { city: stateProps.city });
       if (response.data) {
         const copy = [...response.data];
-        console.log('copy', copy);
         setProducts(copy);
       } else {
         setProducts([]);
@@ -717,9 +928,9 @@ export default function RestHotelDetail() {
                         <div
                           key={product.id}
                           className="product-item"
-                          onClick={() => {
+                          onClick={async () => {
                             // productScheduleData를 기반으로 선택된 호텔 정보 생성
-                            const selectedHotels = getSelectedHotelsFromSchedule(product);
+                            const selectedHotels = await getSelectedHotelsFromSchedule(product);
                             
                             navigate('/counsel/rest/hotelcost', { 
                               state: {
@@ -730,6 +941,7 @@ export default function RestHotelDetail() {
                               }
                             });
                             window.scrollTo(0, 0);
+
                           }}
                         >
                           <div className="product-header">

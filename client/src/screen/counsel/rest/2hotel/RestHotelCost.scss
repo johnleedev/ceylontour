@@ -178,6 +178,59 @@
   
     
   
+    // 호텔 탭 컨테이너 (리조트 + 풀빌라 조합)
+    .right-tab-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #fff;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      margin-top: 0;
+      border-bottom: 2px solid #ccc;
+
+      .right-tab-left {
+        display: flex;
+        width: 100%;
+        gap: 0;
+        align-items: center;
+      }
+
+      .right-tab-button {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        position: relative;
+        color: #333;
+        font-size: 15px;
+        font-weight: 400;
+        padding: 8px 0;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        flex: 1;
+        text-align: center;
+
+        &:hover {
+          font-weight: bold;
+        }
+
+        &.active {
+          font-weight: bold;
+
+          &::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #333;
+          }
+        }
+      }
+    }
+
     .room-container-wrapper {
       display: flex;
       justify-content: space-between;
