@@ -77,15 +77,14 @@
   
       // 왼쪽 영역: 기존 내용
       .left-section {
-        flex: 1;
+        flex: 6;
         padding: 20px;
         box-sizing: border-box;
       }
   
       // 오른쪽 영역: 비워둠
       .right-section {
-        flex: 1;
-        max-width: 670px;
+        flex: 4;
         padding: 0 20px 20px 20px;
         box-sizing: border-box;
         position: relative;

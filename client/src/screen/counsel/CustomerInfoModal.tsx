@@ -306,16 +306,44 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
                   dateStart={travelDateStart}
                   dateEnd={travelDateEnd}
                   setSelectStartDate={(dateStr: string) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      travelDateStart: dateStr
-                    }));
+                    if (dateStr) {
+                      setTravelDateStart(new Date(dateStr));
+                      // travelPeriod 업데이트
+                      const currentEnd = travelDateEnd ? 
+                        travelDateEnd.toISOString().split('T')[0] : 
+                        dateStr;
+                      if (dateStr === currentEnd) {
+                        setFormData(prev => ({
+                          ...prev,
+                          travelPeriod: dateStr
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          travelPeriod: `${dateStr} ~ ${currentEnd}`
+                        }));
+                      }
+                    }
                   }}
                   setSelectEndDate={(dateStr: string) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      travelDateEnd: dateStr
-                    }));
+                    if (dateStr) {
+                      setTravelDateEnd(new Date(dateStr));
+                      // travelPeriod 업데이트
+                      const currentStart = travelDateStart ? 
+                        travelDateStart.toISOString().split('T')[0] : 
+                        dateStr;
+                      if (currentStart === dateStr) {
+                        setFormData(prev => ({
+                          ...prev,
+                          travelPeriod: dateStr
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          travelPeriod: `${currentStart} ~ ${dateStr}`
+                        }));
+                      }
+                    }
                   }}
                 />
               </div>

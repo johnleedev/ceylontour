@@ -27,6 +27,7 @@ const SchedulePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
+  console.log('stateProps', stateProps);
    
   
   const [mainTab, setMainTab] = useState<string>('일정미리보기');
@@ -132,15 +133,32 @@ const SchedulePage: React.FC = () => {
     }
   }, [selectedCity]);
 
-  // 하이라이트 탭 카드 데이터 (RestSchedulePage와 동일한 구조)
-  const highlightItems = [
-    { id: 1, title: '포토스팟에서 인생샷', image: rectangle675 },
-    { id: 2, title: '일출보기 투어', image: rectangle676 },
-    { id: 3, title: '우붓 명소 맞춤 투어', image: rectangle677 },
-    { id: 4, title: '포토스팟에서 인생샷', image: rectangle675 },
-    { id: 5, title: '일출보기 투어', image: rectangle676 },
-    { id: 6, title: '우붓 명소 맞춤 투어', image: rectangle677 },
-  ];
+  // 하이라이트 탭 카드 데이터 (도시별로 다른 이미지/타이틀을 보여주기 위한 매핑)
+  const highlightItemsByCity: Record<string, { id: number; title: string; image: string }[]> = {
+    파리: [
+      { id: 1, title: '에펠탑 & 세느강 투어', image: rectangle675 },
+      { id: 2, title: '루브르 박물관 투어', image: rectangle676 },
+      { id: 3, title: '몽마르트 언덕 야경', image: rectangle677 },
+    ],
+    니스: [
+      { id: 4, title: '프롬나드 데장글레 산책', image: rectangle676 },
+      { id: 5, title: '에즈/모나코 일일 투어', image: rectangle677 },
+    ],
+    루베른: [
+      { id: 6, title: '카펠교 & 구시가지 도보투어', image: rectangle675 },
+      { id: 7, title: '필라투스/리기산 익스커션', image: rectangle676 },
+    ],
+    인터라겐: [
+      { id: 8, title: '융프라우요흐 알프스 체험', image: rectangle677 },
+      { id: 9, title: '하더쿨름 전망대', image: rectangle675 },
+    ],
+  };
+
+  // 선택된 도시 기준 하이라이트 카드 목록
+  const highlightItemsForSelectedCity = React.useMemo(() => {
+    if (!selectedCity) return [];
+    return highlightItemsByCity[selectedCity] || [];
+  }, [selectedCity]);
 
 
 
@@ -159,6 +177,7 @@ const SchedulePage: React.FC = () => {
         </button>
       )}
 
+
       {/* 메인 컨텐츠 */}
       <div className={`schedule-main ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
         {/* 좌측 패널 - 일정 선택 */}
@@ -166,7 +185,7 @@ const SchedulePage: React.FC = () => {
           <div className="panel-content">
             {/* 패널 헤더 */}
             <div className="panel-header">
-              <h2>{productName}</h2>
+              <h2>{stateProps?.productName} - {stateProps?.tourPeriodData?.periodNight} {stateProps?.tourPeriodData?.periodDay}</h2>
             </div>
 
             <div></div>
@@ -274,33 +293,20 @@ const SchedulePage: React.FC = () => {
               <IoMdClose />
             </button>
             <div className="panel-content">
-              {/* 도시 탭 버튼들 (기존 내용) */}
-              <div className="city-tab-buttons">
-                <button 
-                  className={`city-tab-btn ${selectedCity === '파리' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('파리')}
-                >
-                  파리
-                </button>
-                <button 
-                  className={`city-tab-btn ${selectedCity === '니스' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('니스')}
-                >
-                  니스
-                </button>
-                <button 
-                  className={`city-tab-btn ${selectedCity === '루베른' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('루베른')}
-                >
-                  루베른
-                </button>
-                <button 
-                  className={`city-tab-btn ${selectedCity === '인터라겐' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('인터라겐')}
-                >
-                  인터라겐
-                </button>
-              </div>
+              {/* 도시 탭 버튼들 - 좌측과 동일하게 동적 생성 */}
+              {cities.length > 0 && (
+                <div className="city-tab-buttons">
+                  {cities.map((city: string) => (
+                    <button
+                      key={city}
+                      className={`city-tab-btn ${selectedCity === city ? 'active' : ''}`}
+                      onClick={() => setSelectedCity(city)}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* 탭 컨테이너 (기존: 포함일정 / 선택일정) */}
               <div className="right-tab-container">
@@ -322,17 +328,21 @@ const SchedulePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 탭 컨텐츠 (기존 내용) */}
+              {/* 탭 컨텐츠 (도시별 포함일정/하이라이트) */}
               <div className="right-tab-content">
                 {activeRightTab === 'included' && (
                   <div className="highlight-grid">
-                    {highlightItems.map((item) => (
-                      <div key={item.id} className="highlight-card">
-                        <div className="highlight-image-wrap">
-                          <img src={item.image} alt={item.title} />
+                    {highlightItemsForSelectedCity.length > 0 ? (
+                      highlightItemsForSelectedCity.map((item) => (
+                        <div key={item.id} className="highlight-card">
+                          <div className="highlight-image-wrap">
+                            <img src={item.image} alt={item.title} />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="preview-no-image">이미지가 없습니다</div>
+                    )}
                   </div>
                 )}
 
@@ -376,32 +386,19 @@ const SchedulePage: React.FC = () => {
               <IoMdClose />
             </button>
             <div className="schedule-right-section">
-              <div className="city-tab-buttons">
-                <button 
-                  className={`city-tab-btn ${selectedCity === '파리' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('파리')}
-                >
-                  파리
-                </button>
-                <button 
-                  className={`city-tab-btn ${selectedCity === '니스' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('니스')}
-                >
-                  니스
-                </button>
-                <button 
-                  className={`city-tab-btn ${selectedCity === '루베른' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('루베른')}
-                >
-                  루베른
-                </button>
-                <button 
-                  className={`city-tab-btn ${selectedCity === '인터라겐' ? 'active' : ''}`}
-                  onClick={() => setSelectedCity('인터라겐')}
-                >
-                  인터라겐
-                </button>
-              </div>
+              {cities.length > 0 && (
+                <div className="city-tab-buttons">
+                  {cities.map((city: string) => (
+                    <button
+                      key={city}
+                      className={`city-tab-btn ${selectedCity === city ? 'active' : ''}`}
+                      onClick={() => setSelectedCity(city)}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* RestSchedulePage 일정표 탭 우측 요약 카드와 동일한 구조 */}
               <div className="right-tab-content schedule-summary-content">
                 <div className="summary-card">
