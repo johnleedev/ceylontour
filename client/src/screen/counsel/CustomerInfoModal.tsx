@@ -5,6 +5,7 @@ import { recoilCustomerInfoFormData } from '../../RecoilStore';
 import ModalDateInput from './ModalDateInput';
 import { DateBoxSingle } from '../../boxs/DateBoxSingle'; 
 import { DateBoxSingleTime } from '../../boxs/DateBoxSingleTime';
+import { DateBoxDouble } from '../../boxs/DateBoxDouble';
 
 interface CustomerInfoModalProps {
   onStart: () => void;
@@ -261,41 +262,64 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
               </div>
             </div>
 
-            <div className='form-section'>
-              <div className='form-row'>
-                <div className='input-group'>
-                  <div className='input-with-icon'>
-                    <input
-                      type='text'
-                      name='weddingDate'
-                      value={formData.weddingDate}
-                      onChange={handleInputChange}
-                      placeholder='결혼예정일'
-                    />
-                    <span className='calendar-icon'>📅</span>
-                  </div>
-                </div>
-                <div className='input-group'>
-                  <div className='input-with-icon'>
-                    <input
-                      type='text'
-                      name='travelPeriod'
-                      value={formData.travelPeriod}
-                      onChange={handleInputChange}
-                      onClick={() => setShowDateModal(true)}
-                      placeholder='여행기간'
-                      readOnly
-                      style={{ cursor: 'pointer' }}
-                    />
-                    <span className='calendar-icon'>📅</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* 예약일자 */}
-            <div className='form-section'>
-              <div className='input-group full-width'>
+            <div className='form-section' style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <div className='input-group' style={{width: '30%'}}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#333'
+                  }}
+                >
+                  결혼예정일
+                </label>
+                <DateBoxSingle
+                  width={'100%'}
+                  date={formData.weddingDate ? new Date(formData.weddingDate) : new Date()}
+                  setSelectDate={(dateStr: string) => {
+                    if (dateStr) {
+                      setFormData(prev => ({
+                        ...prev,
+                        weddingDate: dateStr
+                      }));
+                    }
+                  }}
+                />
+              </div>
+              <div className='input-group ' style={{width: '40%'}}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#333'
+                  }}
+                >
+                  여행일자
+                </label>
+                <DateBoxDouble
+                  dateStart={travelDateStart}
+                  dateEnd={travelDateEnd}
+                  setSelectStartDate={(dateStr: string) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      travelDateStart: dateStr
+                    }));
+                  }}
+                  setSelectEndDate={(dateStr: string) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      travelDateEnd: dateStr
+                    }));
+                  }}
+                />
+              </div>
+              <div className='input-group' style={{width: '30%'}}>
                 <label
                   style={{
                     display: 'block',
@@ -308,6 +332,7 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
                   예약일자
                 </label>
                 <DateBoxSingle
+                  width={'100%'}
                   date={formData.reserveDate ? new Date(formData.reserveDate) : new Date()}
                   setSelectDate={(dateStr: string) => {
                     if (dateStr) {

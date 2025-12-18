@@ -45,7 +45,7 @@
     padding: 40px 40px 20px;
     margin: 0;
     border-bottom: 1px solid #e0e0e0;
-    font-family: "Noto Sans KR", Helvetica;
+    
   }
 
   .modal-form-body {
@@ -67,7 +67,7 @@
         font-weight: 400;
         color: #272727;
         margin-bottom: 8px;
-        font-family: "Noto Sans KR", Helvetica;
+        
       }
 
       .theme-checkboxes {
@@ -84,7 +84,7 @@
           font-size: 15px;
           font-weight: 300;
           color: #272727;
-          font-family: "Noto Sans KR", Helvetica;
+          
 
           input[type="checkbox"] {
             width: 20px;
@@ -139,7 +139,7 @@
           font-size: 15px;
           font-weight: 300;
           color: #999999;
-          font-family: "Noto Sans KR", Helvetica;
+          
         }
 
         input {
@@ -149,7 +149,7 @@
           padding: 12px 16px;
           font-size: 15px;
           color: #333;
-          font-family: "Noto Sans KR", Helvetica;
+          
           transition: background-color 0.2s ease;
 
           &:focus {
@@ -198,7 +198,7 @@
           font-size: 14px;
           font-weight: 300;
           color: #555555;
-          font-family: "Noto Sans KR", Helvetica;
+          
 
           input[type="checkbox"] {
             width: 18px;
@@ -242,7 +242,7 @@
         padding: 12px 16px;
         font-size: 15px;
         color: #333;
-        font-family: "Noto Sans KR", Helvetica;
+        
         resize: vertical;
         min-height: 100px;
         transition: border-color 0.2s ease;
@@ -273,7 +273,7 @@
       border-radius: 2px;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-family: "Noto Sans KR", Helvetica;
+      
       border: 1px solid;
       min-width: 120px;
 

@@ -9,10 +9,11 @@ import { useState } from "react";
 interface DateBoxDoubleProps {
   date : any;
   setSelectDate : any;
-  marginLeft? : number
+  marginLeft? : number;
+  width? : string;
 }
 
-export const DateBoxSingle : React.FC<DateBoxDoubleProps> = ({date, setSelectDate, marginLeft }) => {
+export const DateBoxSingle : React.FC<DateBoxDoubleProps> = ({date, setSelectDate, marginLeft, width }) => {
 
   const [startDate, setStartDate] = useState(date);
 
@@ -31,7 +32,7 @@ export const DateBoxSingle : React.FC<DateBoxDoubleProps> = ({date, setSelectDat
   }
 
   return (
-    <div className='calendarbox calendarSingle' style={{marginLeft: marginLeft ? `${marginLeft}px` : '5px'}}>
+    <div className='calendarbox calendarSingle' style={{marginLeft: marginLeft ? `${marginLeft}px` : '5px', width: width ? `${width}` : '150px'}}>
       <div className="datebox dateboxSingle">
          <DatePicker
           locale={ko}

@@ -73,7 +73,7 @@ export const DateBoxDouble : React.FC<DateBoxDoubleProps> = ({dateStart, dateEnd
           selectsRange // 날짜 범위를 선택할 수 있도록 활성화합니다.     
           startDate={startDate} // 날짜 범위 선택 시, 범위의 시작 날짜와 종료 날짜를 설정합니다.
           endDate={endDate}
-          monthsShown={12}// 달력 2개 표시
+          monthsShown={4}// 달력 2개 표시
           isClearable // 선택한 날짜를 초기화할 수 있는 버튼(클리어 버튼)을 활성화합니다.
           onChange={handleSelectDateChange}
           formatWeekDay={(nameOfDay) => nameOfDay.substring(0, 1)}

@@ -602,11 +602,11 @@ export default function RestHotelDetail() {
   };
 
   const highlightItems = [
-    { image: rectangle661, title: '초럭셔리 체험' },
-    { image: rectangle662, title: '버틀러 시스템' },
-    { image: rectangle663, title: '프라이빗 비치' },
-    { image: rectangle664, title: '턴다운 서비스' },
-    { image: rectangle665, title: '허니문 인기' },
+    { image: rectangle76, title: '초럭셔리 체험' },
+    { image: rectangle78, title: '버틀러 시스템' },
+    { image: rectangle76, title: '프라이빗 비치' },
+    { image: rectangle78, title: '턴다운 서비스' },
+    { image: rectangle76, title: '허니문 인기' },
   ];
 
   const benefitItems = [
@@ -722,18 +722,69 @@ export default function RestHotelDetail() {
                 ))}
               </div>
               <div className="room-container-right">
-                {roomTypes.map((room: any, index: number) => (
+                {/* {roomTypes.map((room: any, index: number) => (
                   <React.Fragment key={room.roomTypeName || index}>
                     <span className="roomtype-text">{room.roomTypeName}</span>
                     {index < roomTypes.length - 1 && (
                       <span className="roomtype-separator"></span>
                     )}
                   </React.Fragment>
-                ))}
+                ))} */}
+                 <button
+                    type="button"
+                    className="video-button"
+                    onClick={() => {}}
+                  >
+                    동영상보기
+                  </button>
               </div>
             </div>
 
             <div className="photo-gallery">
+              {(() => {
+                const images = getCurrentImages();
+                if (images && images.length > 0) {
+                  return images.map((img: any, index: number) => {
+                    const isVideo = isVideoFile(img.imageName);
+                    
+                    if (isVideo) {
+                      return (
+                        <div key={index} className="photo-main">
+                          <video
+                            className="photo-main-image"
+                            controls
+                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                          >
+                            브라우저가 비디오 태그를 지원하지 않습니다.
+                          </video>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div key={index} className="photo-main">
+                        <img
+                          className="photo-main-image"
+                          alt={img.title || `이미지 ${index + 1}`}
+                          src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                        />
+                      </div>
+                    );
+                  });
+                }
+                return (
+                  <div className="photo-main">
+                    <img
+                      className="photo-main-image"
+                      alt="메인 이미지"
+                      src={rectangle580}
+                    />
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* <div className="photo-gallery">
               <div className="photo-main">
                 {(() => {
                   const images = getCurrentImages();
@@ -800,7 +851,8 @@ export default function RestHotelDetail() {
                   );
                 })}
               </div>
-            </div>
+            </div> */}
+
 
             <div className="location-info">
               <div className="section-titlebox">
@@ -852,7 +904,7 @@ export default function RestHotelDetail() {
 
             <div className={`benefit-section`}>
               <div className="div-wrapper">
-                <div className="text-wrapper">베네핏 포함사항</div>
+                <div className="text-wrapper">베네핏 & 포함사항</div>
               </div>
       
               <div className="benefit-items">
@@ -904,65 +956,6 @@ export default function RestHotelDetail() {
                 </div>
               </div>
 
-              {/* 여행상품 섹션 */}
-              <div className="product-section">
-                <h2 className="section-title">여행상품</h2>
-                
-                <div className="product-list">
-                  {products.length === 0 ? (
-                    <div className="empty-message">연관된 여행상품이 없습니다.</div>
-                  ) : (
-                    products.map((product: any) => {
-                      // 헤더 텍스트
-                      const headerText =
-                        product.headerText ||
-                        `${product.nation || stateProps.nation || ''} 추천상품`;
-                      
-                      // 상품명 (productScheduleData 기반으로 생성)
-                      const productName = getProductNameFromSchedule(product);
-
-                      const badgeType = product.badgeType || 'recommend';
-                      const badgeText = product.badgeText || '추천상품';
-
-                      return (
-                        <div
-                          key={product.id}
-                          className="product-item"
-                          onClick={async () => {
-                            // productScheduleData를 기반으로 선택된 호텔 정보 생성
-                            const selectedHotels = await getSelectedHotelsFromSchedule(product);
-                            
-                            navigate('/counsel/rest/hotelcost', { 
-                              state: {
-                                hotelInfo: hotelInfo,
-                                productInfo: product,
-                                city: stateProps?.city,
-                                selectedHotels: selectedHotels
-                              }
-                            });
-                            window.scrollTo(0, 0);
-
-                          }}
-                        >
-                          <div className="product-header">
-                            <span className="product-header-text">{headerText}</span>
-                          </div>
-                          <div className="product-content">
-                            <p className="product-name">
-                              {productName}
-                            </p>
-                            <div className="product-badge-wrapper">
-                              <div className={`product-badge badge-${badgeType}`}>
-                                <span>{badgeText}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -987,7 +980,7 @@ export default function RestHotelDetail() {
                   className={`right-tab-button right-tab-schedule ${activeRightTab === 'schedule' ? 'active' : ''}`}
                   onClick={() => setActiveRightTab('schedule')}
                 >
-                  이호텔에서의 하루
+                  상품보기
                 </button>
                 <button
                   type="button"
@@ -1008,81 +1001,62 @@ export default function RestHotelDetail() {
               )}
 
               {activeRightTab === 'schedule' && (
-                <div className="daily-schedule-section">
-                  {/* MORNING 섹션 */}
-                  <div className="schedule-time-block morning-block">
-                    <div className="time-header">
-                      <span className="time-label">MORNING</span>
-                      <span className="time-range">— 아침 루틴 (08:00~11:00)</span>
-                    </div>
+                <div className="product-section">
+                  <h2 className="section-title">여행상품</h2>
+                  
+                  <div className="product-list">
+                    {products.length === 0 ? (
+                      <div className="empty-message">연관된 여행상품이 없습니다.</div>
+                    ) : (
+                      products.map((product: any) => {
+                        // 헤더 텍스트
+                        const headerText =
+                          product.headerText ||
+                          `${product.nation || stateProps.nation || ''} 추천상품`;
+                        
+                        // 상품명 (productScheduleData 기반으로 생성)
+                        const productName = getProductNameFromSchedule(product);
 
-                    {/* 실론투어 베네핏 옵션 */}
-                    <div className="benefit-options">
-                      {morningBenefitOptions.map((option, index) => (
-                        <React.Fragment key={index}>
-                          <div className={`benefit-option ${option.type}-option`}>
-                            <div className="option-label">{option.label}</div>
-                            <img 
-                              className="option-image" 
-                              alt={option.optionImageAlt} 
-                              src={option.optionImage} 
-                            />
-                            <div className="option-content">
-                              <div className="option-title">{option.firstTitle}</div>
+                        const badgeType = product.badgeType || 'recommend';
+                        const badgeText = product.badgeText || '추천상품';
+
+                        return (
+                          <div
+                            key={product.id}
+                            className="product-item"
+                            onClick={async () => {
+                              // productScheduleData를 기반으로 선택된 호텔 정보 생성
+                              const selectedHotels = await getSelectedHotelsFromSchedule(product);
+                              
+                              navigate('/counsel/rest/hotelcost', { 
+                                state: {
+                                  hotelInfo: hotelInfo,
+                                  productInfo: product,
+                                  city: stateProps?.city,
+                                  selectedHotels: selectedHotels
+                                }
+                              });
+                              window.scrollTo(0, 0);
+
+                            }}
+                          >
+                            <div className="product-header">
+                              <span className="product-header-text">{headerText}</span>
                             </div>
-                            <img 
-                              className="schedule-image" 
-                              alt={option.scheduleImageAlt} 
-                              src={option.scheduleImage} 
-                            />
-                            <div className="option-content">
-                              <div className="option-title">{option.secondTitle}</div>
+                            <div className="product-content">
+                              <p className="product-name">
+                                {productName}
+                              </p>
+                              <div className="product-badge-wrapper">
+                                <div className={`product-badge badge-${badgeType}`}>
+                                  <span>{badgeText}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
-
-                          {index === 0 && (
-                            <div className="tip-box">
-                              <div className="tip-icon">
-                                <img alt="Tip" src={vector105} />
-                              </div>
-                              <div className="tip-content">
-                                <span className="tip-label">TIP</span>
-                                <p className="tip-text">
-                                  &quot;점심 이후 바로 스파 이동 → 동선 최소화&quot;
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* LUNCH 섹션 */}
-                  <div className="schedule-time-block lunch-block">
-                    <div className="time-header">
-                      <span className="time-label">LUNCH</span>
-                      <span className="time-range">— 점심 (11:30~13:30)</span>
-                    </div>
-
-                    {/* 핵심 경험 섹션 */}
-                    <div className="experience-section">
-                      <div className="experience-label">핵심 경험</div>
-                      <div className="experience-images">
-                        {experienceItems.map((item, index) => (
-                          <React.Fragment key={index}>
-                            <img 
-                              className="experience-image" 
-                              alt={item.imageAlt} 
-                              src={item.image} 
-                            />
-                            <div className="experience-item">
-                              <div className="experience-title">{item.title}</div>
-                            </div>
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}
