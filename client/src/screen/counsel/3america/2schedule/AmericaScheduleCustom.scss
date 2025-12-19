@@ -1,0 +1,2031 @@
+.TourScheduleCustom {
+    margin-top: 100px;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #fff;
+    padding: 0 50px;
+  
+    // 오른쪽 패널 토글 버튼
+    .right-panel-toggle-btn {
+      position: fixed;
+      top: 120px;
+      right: 20px;
+      z-index: 1000;
+      width: 60px;
+      height: 50px;
+      background-color: #fff;
+      border: none;
+      border-radius: 25px 0 0 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+  
+      svg {
+        font-size: 24px;
+        color: #333;
+      }
+  
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        transform: translateX(-2px);
+      }
+    }
+  
+    .hotel-container {
+      display: flex;
+      width: 100%;
+      min-height: calc(100vh - 100px);
+      margin: 0 auto;
+      transition: all 0.3s ease;
+  
+      // 오른쪽 패널이 없을 때: 전체 스크롤 사용
+      &.without-right-panel {
+        justify-content: center;
+  
+        .left-section {
+          max-width: 1100px;
+          width: 100%;
+          overflow-y: visible; // 전체 스크롤
+        }
+      }
+  
+      // 오른쪽 패널이 있을 때: 각각 독립 스크롤
+      &.with-right-panel {
+        height: 100vh;
+        overflow: hidden;
+  
+        .left-section {
+          overflow-y: auto; // 독립 스크롤
+          height: 100%;
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+          
+          &::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+          }
+        }
+      }
+  
+      // 왼쪽 영역: 기존 내용
+      .left-section {
+        flex: 1;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      }
+  
+    // 오른쪽 영역 스타일 (hotel-container 내부)
+    .hotel-container .right-section {
+        flex: 1;
+        max-width: 670px;
+        padding: 0 20px 20px 20px;
+        box-sizing: border-box;
+        position: relative;
+        animation: slideInRight 0.3s ease;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  
+        // 닫기 버튼
+        .right-panel-close-btn {
+          position: absolute;
+          top: 10px;
+          right: 20px;
+          z-index: 9;
+          width: 32px;
+          height: 32px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+  
+          svg {
+            font-size: 20px;
+            color: #000;
+          }
+  
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+            transform: scale(1.1);
+        }
+      }
+    }
+  
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .custom-center-wrapper {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+  
+    .custom-title-wrapper {
+      display: flex;
+      align-items: center;
+  
+      .arrow-back {
+        font-size: 20px;
+        margin-right: 10px;
+      }
+  
+      .custom-title {
+        margin: 20px;
+        display: flex;
+        align-items: end;
+        
+        .arrow-back {
+          font-size: 20px;
+          margin-right: 10px;
+        }
+        
+        .text-title {
+          font-size: 33px ;
+          margin-right: 10px;
+          
+        }
+    
+        .text-subtitle {
+          font-size: 16px ;
+          margin-right: 20px;
+        }
+        .text-location {
+          display: flex;
+          align-items: center;
+          font-size: 16px ;
+          margin-right: 10px;
+        }
+      }
+    
+    }
+  
+    
+    .tag-wrapper-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+  
+      .tag-wrapper {
+        background-color: #f0f0f0;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 15px ;
+        margin-right: 10px;
+      }
+    }
+  
+    .room-container-wrapper {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 24px;
+  
+      .room-container-left {
+        display: flex;
+        gap: 8px;
+    
+        .roomtabsort {
+          min-width: 80px;
+          padding: 5px 22px;
+          border-radius: 10px;
+          border: none;
+          background-color: #f4f4f4;
+          color: #b0b0b0;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+      
+        .roomtabsort.active {
+          background-color: #222222;
+          color: #ffffff;
+        }
+      }
+      .room-container-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #c0c0c0;
+        font-size: 16px;
+  
+        .roomtype-text {
+          white-space: nowrap;
+        }
+  
+        .roomtype-separator {
+          width: 2px;
+          height: 15px;
+          background-color: #ccc;
+        }
+      }
+     
+    }
+     
+  
+  
+    .section-titlebox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+  
+      .location-title {
+        font-size: 24px;
+        font-weight: 500;
+      }
+      .text-wrapper-11 {
+        color: #2e2e2e;
+       
+        font-size: 14px;
+        font-weight: 400;
+        border: 1px solid #2e2e2e;
+        padding: 3px 10px;
+        border-radius: 10px;
+      }
+  
+      .text {
+        align-self: stretch;
+        color: #555555;
+        
+        font-size: 15px;
+      }
+    }
+  
+    .photo-gallery {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+  
+      .photo-main {
+        width: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+  
+        .photo-main-image {
+          width: 100%;
+          height: 700px;
+          object-fit: cover;
+          display: block;
+        }
+  
+        video.photo-main-image {
+          width: 100%;
+          height: 700px;
+          object-fit: cover;
+          display: block;
+          background-color: #000;
+        }
+      
+      }
+    
+     
+      .photo-thumbnails {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+  
+        .photo-thumbnail {
+          flex: 0 0 auto;
+          width: 120px;
+          border-radius: 8px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: 2px solid transparent;
+          position: relative;
+      
+          img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            display: block;
+          }
+  
+          &:hover {
+            opacity: 0.8;
+          }
+  
+          &.active {
+            border-color: #222222;
+          }
+  
+          // 동영상 썸네일 스타일
+          &.video-thumbnail {
+            .thumbnail-video-wrapper {
+              position: relative;
+              width: 100%;
+              height: 80px;
+              overflow: hidden;
+  
+              .thumbnail-video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+              }
+  
+              .video-play-icon {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 32px;
+                height: 32px;
+                background-color: rgba(0, 0, 0, 0.6);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-size: 14px;
+                pointer-events: none;
+                transition: all 0.2s ease;
+              }
+            }
+  
+            &:hover .video-play-icon {
+              background-color: rgba(0, 0, 0, 0.8);
+              transform: translate(-50%, -50%) scale(1.1);
+            }
+          }
+        }
+      }
+    
+      
+    }
+  
+    
+    
+    .location-info {
+      margin-top: 24px;
+      margin-bottom: 100px;
+  
+      .text-wrapper-10 {
+        color: #333333;
+       
+        font-size: 15px;
+        
+        margin: 16px 0 8px;
+      }
+  
+      .flexcontainer {
+        align-items: flex-start;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+    }
+  
+  
+    
+  
+    .highlight-section {
+      margin-top: 80px;
+      color: #333;
+      text-align: center;
+      width: 100%;
+  
+      .highlight-title {
+        
+        font-size: 25px;
+        font-weight: 500;
+        margin-bottom: 40px;
+      }
+  
+      .highlight-list {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+  
+        
+    
+        .highlight-image-wrap {
+          
+          border-radius: 50%;
+          overflow: hidden;
+          margin: 0 auto 16px;
+    
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+        }
+    
+        .highlight-item-title {
+          
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+    
+        .highlight-item-desc {
+          
+          font-size: 14px;
+          font-weight: 400;
+          line-height: 1.6;
+          color: #cccccc;
+          max-width: 220px;
+          margin: 0 auto;
+        }
+    
+      }
+  
+      
+      @media (max-width: 767px) {
+        margin: 40px -16px;
+        padding: 32px 16px 40px;
+  
+        .highlight-image-wrap {
+          width: 140px;
+          height: 140px;
+        }
+      }
+    }
+  
+  
+    .benefit-section {
+      margin-top: 80px;
+      padding: 40px 0 60px;
+      color: #333;
+      text-align: center;
+  
+      .div-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 32px;
+  
+        .text-wrapper {
+          
+          font-size: 25px;
+          font-weight: 500;
+        }
+      }
+  
+      .benefit-items {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 32px 24px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+  
+      .benefit-item {
+        position: relative;
+        overflow: hidden;
+  
+        .rectangle {
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: cover;
+        }
+  
+        .benefit-card {
+          padding: 16px 20px 24px;
+        }
+  
+        .benefit-title {
+          
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+  
+        .benefit-text {
+          
+          font-size: 14px;
+          color: #333;
+          line-height: 1.6;
+        }
+  
+        .benefit-ribbon {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          background-color: #bca860;
+          color: #ffffff;
+          
+          font-size: 13px;
+          padding: 8px 10px;
+          line-height: 1.4;
+          border-radius: 2px;
+          text-align: left;
+        }
+      }
+  
+      @media (max-width: 767px) {
+        padding: 32px 16px 40px;
+  
+        .benefit-items {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    }
+  
+    .component {
+      margin-top: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+  
+      .section-title {
+        color: #000000;
+        
+        font-size: 25px;
+        font-weight: 500;
+        margin: 0 0 30px 0;
+      }
+  
+      // 후기 및 평점 섹션
+      .review-section {
+        .review-list {
+          display: flex;
+          flex-direction: column;
+          gap: 40px;
+        }
+  
+        .review-item {
+          display: flex;
+          gap: 16px;
+  
+          .review-image {
+            width: 20%;
+            object-fit: cover;
+            border-radius: 8px;
+          }
+          .review-content {
+            width: 80%;
+           
+          }
+  
+          .review-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+  
+            .review-title {
+              color: #000000;
+              font-size: 21px;
+              font-weight: 500;
+              margin: 0;
+              flex: 1;
+            }
+  
+            .review-rating {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+  
+              .review-rating-icon {
+                width: 20px;
+                height: 20px;
+                object-fit: contain;
+              }
+  
+              .review-rating-score {
+                color: #000000;
+                
+                font-size: 16px;
+                font-weight: 500;
+              }
+            }
+          }
+  
+         
+          .review-text {
+            color: #4d4d4d;
+            font-size: 15px;
+            
+            line-height: 24px;
+            margin: 0;
+          }
+        }
+      }
+  
+      // 여행상품 섹션
+      .product-section {
+        .product-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+  
+        .product-item {
+          display: flex;
+          flex-direction: column;
+          background-color: #ececec;
+          overflow: hidden;
+  
+          .product-header {
+            background-color: #ececec;
+            padding: 12px 20px;
+            border-bottom: 1px solid #d0d0d0;
+            text-align: center;
+  
+            .product-header-text {
+              color: #272727;
+              
+              font-size: 15px;
+              font-weight: 500;
+            }
+          }
+  
+          .product-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #fff;
+            padding: 16px 20px;
+            gap: 20px;
+  
+            .product-name {
+              flex: 1;
+              color: #333333;
+              
+              font-size: 17px;
+              font-weight: 400;
+              margin: 0;
+              line-height: 1.5;
+            }
+  
+            .product-badge-wrapper {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+  
+              .product-badge {
+                padding: 6px 12px;
+                border-radius: 3px;
+                
+                font-size: 13px;
+                font-weight: 500;
+                color: #ffffff;
+                white-space: nowrap;
+                cursor: pointer;
+                transition: opacity 0.2s ease;
+  
+                &:hover {
+                  opacity: 0.9;
+                }
+  
+                &.badge-recommend {
+                  background-color: #d27655;
+                }
+  
+                &.badge-lowest {
+                  background-color: #f3bd26;
+                }
+  
+                &.badge-expo {
+                  background-color: #7bcf54;
+                }
+  
+                &.badge-exclusive {
+                  background-color: #4fc0e7;
+                }
+              }
+            }
+          }
+          .product-content:hover {
+            cursor: pointer;
+          }
+        }
+      }
+  
+      // 반응형
+      @media (max-width: 992px) {
+        gap: 40px;
+        margin-top: 60px;
+  
+        .section-title {
+          font-size: 22px;
+          margin-bottom: 24px;
+        }
+  
+        .review-section {
+          .review-item {
+            .review-header {
+              .review-title {
+                font-size: 19px;
+              }
+  
+              .review-rating {
+                .review-rating-score {
+                  font-size: 15px;
+                }
+              }
+            }
+  
+            .review-image {
+              height: 250px;
+            }
+          }
+        }
+  
+        .product-section {
+          .product-item {
+            .product-content {
+              flex-direction: column;
+              align-items: flex-start;
+  
+              .product-badge-wrapper {
+                width: 100%;
+                justify-content: flex-start;
+              }
+            }
+          }
+        }
+      }
+  
+      @media (max-width: 768px) {
+        gap: 30px;
+        margin-top: 40px;
+  
+        .section-title {
+          font-size: 20px;
+          margin-bottom: 20px;
+        }
+  
+        .review-section {
+          .review-list {
+            gap: 30px;
+          }
+  
+          .review-item {
+            gap: 12px;
+  
+            .review-header {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 8px;
+  
+              .review-title {
+                font-size: 18px;
+              }
+  
+              .review-rating {
+                .review-rating-score {
+                  font-size: 14px;
+                }
+              }
+            }
+  
+            .review-image {
+              height: 200px;
+            }
+  
+            .review-text {
+              font-size: 14px;
+              line-height: 22px;
+            }
+          }
+        }
+  
+        .product-section {
+          .product-list {
+            gap: 12px;
+          }
+  
+          .product-item {
+            .product-header {
+              padding: 10px 16px;
+  
+              .product-header-text {
+                font-size: 14px;
+              }
+            }
+  
+            .product-content {
+              padding: 14px 16px;
+  
+              .product-name {
+                font-size: 15px;
+              }
+  
+              .product-badge-wrapper {
+                .product-badge {
+                  padding: 5px 10px;
+                  font-size: 12px;
+                }
+              }
+            }
+          }
+        }
+      }
+  
+      @media (max-width: 480px) {
+        gap: 24px;
+        margin-top: 30px;
+  
+        .section-title {
+          font-size: 18px;
+          margin-bottom: 16px;
+        }
+  
+        .review-section {
+          .review-item {
+            .review-header {
+              .review-title {
+                font-size: 16px;
+              }
+  
+              .review-rating {
+                .review-rating-score {
+                  font-size: 13px;
+                }
+              }
+            }
+  
+            .review-image {
+              height: 180px;
+            }
+  
+            .review-text {
+              font-size: 13px;
+              line-height: 20px;
+            }
+          }
+        }
+  
+        .product-section {
+          .product-item {
+            .product-header {
+              padding: 8px 12px;
+  
+              .product-header-text {
+                font-size: 13px;
+              }
+            }
+  
+            .product-content {
+              padding: 12px;
+  
+              .product-name {
+                font-size: 14px;
+              }
+            }
+          }
+        }
+      }
+    }
+  
+    // 오른쪽 섹션 스타일
+    .right-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+      height: 100vh;
+      max-height: 100vh;
+      overflow-y: auto;
+      padding-top: 0;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
+
+      // 도시 탭 버튼들
+      .city-tab-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+
+        .city-tab-btn {
+          flex: 1;
+          padding: 10px;
+          border: 1px solid #e0e0e0;
+          background: white;
+          color: #333;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: 8px;
+      
+          &:hover {
+            background: white;
+            color: #666;
+            border-color: #ccc;
+          }
+
+          &.active {
+            background: white;
+            color: #000;
+            border-color: #000;
+            font-weight: bold;
+          }
+        }
+      }
+
+      // 일정표 오른쪽 요약 카드
+      .schedule-right-section {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding-top: 50px;
+      }
+
+      .schedule-summary-content {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+
+        .summary-card {
+          width: 100%;
+          background-color: #ffffff;
+          border-radius: 12px;
+          box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+          padding: 20px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+
+          .summary-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            .summary-main-tabs {
+              display: flex;
+              gap: 16px;
+              margin-top: 8px;
+              border-bottom: 1px solid #e5e5e5;
+              padding-bottom: 8px;
+
+              .summary-main-tab {
+                width: 100px;
+                border: none;
+                background: none;
+                padding: 4px 0;
+                font-size: 15px;
+                color: #777;
+                cursor: pointer;
+                position: relative;
+
+                &.active {
+                  color: #000;
+                  font-weight: 500;
+
+                  &::after {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    bottom: -6px;
+                    width: 100%;
+                    height: 2px;
+                    background-color: #000;
+                  }
+                }
+              }
+            }
+          }
+
+          .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+
+            .summary-item {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              background-color: #ffffff;
+              border: 1px solid #e3e3e3;
+              border-radius: 8px;
+              overflow: hidden;
+
+              .summary-item-image {
+                width: 100%;
+                height: 140px;
+                object-fit: cover;
+              }
+
+              .summary-item-content {
+                padding: 10px 12px 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+
+                .summary-item-title {
+                  font-size: 15px;
+                  font-weight: 500;
+                  color: #000;
+                }
+
+                .summary-item-rating {
+                  font-size: 13px;
+                  color: #ffb400;
+                }
+
+                .summary-item-price-row {
+                  display: flex;
+                  justify-content: flex-end;
+                  gap: 4px;
+                  align-items: baseline;
+                  margin-top: 4px;
+
+                  .summary-item-price {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #000;
+                  }
+                
+                  .summary-item-unit {
+                    font-size: 12px;
+                    color: #777;
+                  }
+                }
+              }
+            }
+          }
+
+          .summary-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e3e3e3;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            .summary-footer-top {
+              font-size: 16px;
+              font-weight: 500;
+              color: #000;
+            }
+        
+            .summary-footer-bottom {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 16px;
+              flex-wrap: wrap;
+        
+              .summary-footer-left {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+        
+                .summary-footer-field {
+                  padding: 6px 10px;
+                  border: 1px solid #e3e3e3;
+                  border-radius: 4px;
+                  font-size: 13px;
+                  color: #444;
+        
+                  &.price-field {
+                    font-weight: 500;
+                  }
+                }
+              }
+        
+              .summary-footer-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 4px;
+        
+                .summary-total-label {
+                  font-size: 13px;
+                  color: #333;
+                }
+        
+                .summary-total-price {
+                  font-size: 20px;
+                  font-weight: 700;
+                  color: #000;
+                }
+              }
+            }
+
+            .cost-schedule-btn-wrapper {
+              display: flex;
+              gap: 16px;
+        
+              .cost-schedule-btn {
+                width: 50%;
+                margin-top: 16px;
+                padding: 14px;
+                background-color: #000000;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                
+                font-size: 17px;
+                font-weight: 500;
+                cursor: pointer;
+              }
+            }
+          }
+        }
+      }
+  
+      // 탭 컨테이너
+      .right-tab-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #fff;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        margin-top: 50px;
+        border-bottom: 2px solid #ccc;
+  
+        .right-tab-left {
+          display: flex;
+          gap: 20px;
+          align-items: center;
+        }
+  
+        .right-tab-button {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          position: relative;
+          color: #333;
+          font-size: 15px;
+          font-weight: 400;
+          padding: 8px 0;
+          transition: all 0.3s ease;
+          white-space: nowrap;
+          
+  
+          &:hover {
+            font-weight: bold;
+          }
+  
+          &.active {
+            font-weight: bold;
+  
+            &::after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              height: 2px;
+              background-color: #333
+            }
+          }
+        }
+      }
+  
+      // 탭 컨텐츠
+      .right-tab-content {
+        flex: 1;
+        overflow-y: auto;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        
+        &::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+      }
+  
+      // 실론투어 베네핏 카드 섹션
+      .benefit-card-section {
+        background-color: #ffffff;
+        box-shadow: 0px 4px 9px rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+  
+        .benefit-options {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+  
+          .benefit-option {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+  
+            .option-label {
+              color: #222222;
+              
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 4px;
+            }
+  
+            .option-content {
+              display: flex;
+              justify-content: center;
+              gap: 8px;
+  
+              .option-title {
+                color: #444444;
+                font-size: 17px;
+                font-weight: 400;
+              }
+  
+              .option-description {
+                color: #444444;
+                font-size: 17px;
+                font-weight: 400;
+                line-height: 1.5;
+              }
+            }
+  
+            .option-image {
+              width: 100%;
+              border-radius: 8px;
+              object-fit: cover;
+              margin-top: 8px;
+            }
+  
+            &.main-option {
+              .option-image {
+                max-height: 200px;
+              }
+            }
+  
+            &.select-option {
+              .option-image {
+                max-height: 200px;
+              }
+            }
+          }
+        }
+      }
+  
+      // 하루 일정 섹션
+      .daily-schedule-section {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        margin-top: 20px;
+  
+        .schedule-title {
+          color: #222222;
+          
+          font-size: 17px;
+          font-weight: 500;
+          margin: 0 0 8px 0;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #272727;
+          width: fit-content;
+        }
+  
+        .schedule-time-block {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+  
+          .time-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 16px;
+  
+            .time-label {
+              color: #000000;
+              
+              font-size: 31px;
+              font-weight: 500;
+            }
+  
+            .time-range {
+              color: #333333;
+              
+              font-size: 17px;
+              font-weight: 400;
+            }
+          }
+  
+          // schedule-time-block 안의 benefit-options 스타일
+          .benefit-options {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 20px;
+  
+            .benefit-option {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+  
+              .option-label {
+                color: #222222;
+                
+                font-size: 18px;
+                font-weight: 600;
+                margin-bottom: 4px;
+              }
+  
+              .option-content {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+  
+                .option-title {
+                  color: #444444;
+  
+                  font-size: 17px;
+                  font-weight: 400;
+                  text-align: center;
+                }
+  
+                .option-description {
+                  color: #444444;
+  
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 1.5;
+                }
+              }
+  
+              .option-image {
+                width: 100%;
+                aspect-ratio: 5.5 / 3;
+                border-radius: 8px;
+                object-fit: cover;
+                margin-top: 8px;
+              }
+  
+              // benefit-option 안에 직접 들어가는 schedule-image 스타일
+              .schedule-image {
+                width: 100%;
+                aspect-ratio: 5.5 / 3;
+                border-radius: 8px;
+                object-fit: cover;
+                margin-top: 8px;
+              }
+  
+              
+            }
+          }
+  
+          .schedule-images {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+  
+            .schedule-image {
+              width: 100%;
+              aspect-ratio: 5.5 / 3;
+              border-radius: 8px;
+              object-fit: cover;
+              max-height: 180px;
+            }
+          }
+  
+          .tip-box {
+            background-color: #f1f5fa;
+            border-radius: 5px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+  
+            .tip-icon {
+              flex-shrink: 0;
+              width: 24px;
+              height: 24px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+  
+              img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+              }
+            }
+  
+            .tip-content {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              flex: 1;
+  
+              .tip-label {
+                color: #3277ea;
+                
+                font-size: 18px;
+                font-weight: 600;
+              }
+  
+              .tip-text {
+                color: #444444;
+                
+                font-size: 17px;
+                font-weight: 400;
+                margin: 0;
+                line-height: 1.5;
+              }
+            }
+          }
+  
+          .experience-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+  
+            .experience-label {
+              color: #222222;
+              
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 8px;
+            }
+  
+            .experience-items {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+  
+              .experience-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+  
+                .experience-title {
+                  color: #444444;
+  
+                  font-size: 17px;
+                  font-weight: 400;
+                  text-align: center;
+                }
+  
+                .experience-description {
+                  color: #444444;
+  
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 1.5;
+                }
+              }
+            }
+  
+            .experience-images {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+  
+              .experience-image {
+                width: 100%;
+                aspect-ratio: 5.5 / 3;
+                border-radius: 8px;
+                object-fit: cover;
+              }
+  
+              // experience-images 안에 직접 들어가는 experience-item 스타일
+              .experience-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 4px;
+  
+                .experience-title {
+                  color: #444444;
+  
+                  font-size: 17px;
+                  font-weight: 400;
+                  text-align: center;
+                }
+  
+                .experience-description {
+                  color: #444444;
+  
+                  font-size: 17px;
+                  font-weight: 400;
+                  line-height: 1.5;
+                }
+              }
+            }
+          }
+  
+          &.morning-block {
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e0e0e0;
+          }
+        }
+      }
+    }
+  
+    // 반응형
+    @media (max-width: 1200px) {
+      .right-panel-toggle-btn {
+        top: 100px;
+        right: 15px;
+        width: 50px;
+        height: 45px;
+  
+        svg {
+          font-size: 20px;
+        }
+      }
+  
+      .hotel-container {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 100px);
+        overflow: visible;
+  
+        &.without-right-panel {
+          .left-section {
+            max-width: 100%;
+          }
+        }
+  
+        &.with-right-panel {
+          height: auto;
+          overflow: visible;
+  
+          .left-section {
+            height: auto;
+            overflow-y: visible;
+          }
+        }
+  
+        .left-section {
+          border-right: none;
+          border-bottom: 1px solid #e0e0e0;
+          height: auto;
+          overflow-y: visible;
+        }
+  
+        .right-section {
+          flex: 1;
+          max-width: 100%;
+          position: relative;
+          top: 0;
+          height: auto;
+          overflow-y: visible;
+  
+          .right-panel-close-btn {
+            top: 15px;
+            right: 15px;
+            width: 28px;
+            height: 28px;
+  
+            svg {
+              font-size: 18px;
+            }
+          }
+        }
+      }
+    }
+  
+    @media (max-width: 992px) {
+      .right-section {
+        .right-tab-container {
+          .right-tab-left {
+            gap: 15px;
+          }
+  
+          .right-tab-button {
+            font-size: 14px;
+            padding: 6px 0;
+          }
+        }
+  
+        .benefit-card-section {
+          padding: 20px;
+  
+          .benefit-options {
+            gap: 20px;
+  
+            .benefit-option {
+              .option-label {
+                font-size: 17px;
+              }
+  
+              .option-content {
+                .option-title,
+                .option-description {
+                  font-size: 16px;
+                }
+              }
+            }
+          }
+        }
+  
+        .daily-schedule-section {
+          gap: 28px;
+  
+          .schedule-title {
+            font-size: 16px;
+          }
+  
+          .schedule-time-block {
+            gap: 18px;
+  
+            .time-header {
+              .time-label {
+                font-size: 28px;
+              }
+  
+              .time-range {
+                font-size: 16px;
+              }
+            }
+  
+            .benefit-options {
+              .benefit-option {
+                .schedule-image {
+                  max-height: 170px;
+                }
+              }
+            }
+  
+            .tip-box {
+              padding: 14px;
+  
+              .tip-content {
+                .tip-label {
+                  font-size: 17px;
+                }
+  
+                .tip-text {
+                  font-size: 16px;
+                }
+              }
+            }
+  
+            .experience-section {
+              .experience-label {
+                font-size: 17px;
+              }
+  
+              .experience-items {
+                .experience-item {
+                  .experience-title,
+                  .experience-description {
+                    font-size: 16px;
+                  }
+                }
+              }
+  
+              .experience-images {
+                .experience-item {
+                  .experience-title,
+                  .experience-description {
+                    font-size: 16px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  
+    @media (max-width: 768px) {
+      padding: 0 15px;
+  
+      .right-panel-toggle-btn {
+        top: 80px;
+        right: 10px;
+        width: 45px;
+        height: 40px;
+  
+        svg {
+          font-size: 18px;
+        }
+      }
+  
+      .custom-container {
+        .left-section {
+          padding: 15px;
+        }
+  
+        .right-section {
+          padding: 0 15px 15px 15px;
+  
+          .right-panel-close-btn {
+            top: 10px;
+            right: 10px;
+            width: 26px;
+            height: 26px;
+  
+            svg {
+              font-size: 16px;
+            }
+          }
+        }
+      }
+  
+      .right-section {
+        gap: 20px;
+  
+        .right-tab-container {
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 50px;
+  
+          .right-tab-left {
+            gap: 12px;
+          }
+  
+          .right-tab-button {
+            padding: 6px 0;
+            font-size: 14px;
+          }
+        }
+  
+        .benefit-card-section {
+          padding: 16px;
+          gap: 16px;
+  
+          .benefit-card-header {
+            padding-bottom: 12px;
+  
+            .benefit-card-title {
+              font-size: 15px;
+            }
+          }
+  
+          .benefit-options {
+            gap: 18px;
+  
+            .benefit-option {
+              gap: 10px;
+  
+              .option-label {
+                font-size: 16px;
+              }
+  
+              .option-content {
+                gap: 6px;
+  
+                .option-title,
+                .option-description {
+                  font-size: 15px;
+                }
+              }
+  
+              .option-image {
+                max-height: 160px;
+              }
+  
+              .schedule-image {
+                max-height: 150px;
+              }
+            }
+          }
+        }
+  
+        .daily-schedule-section {
+          gap: 24px;
+  
+          .schedule-title {
+            font-size: 15px;
+            padding-bottom: 10px;
+          }
+  
+          .schedule-time-block {
+            gap: 16px;
+  
+            .time-header {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 4px;
+              margin-bottom: 12px;
+  
+              .time-label {
+                font-size: 24px;
+              }
+  
+              .time-range {
+                font-size: 15px;
+              }
+            }
+  
+            .schedule-images {
+              gap: 10px;
+  
+              .schedule-image {
+                max-height: 150px;
+              }
+            }
+  
+            .tip-box {
+              padding: 12px;
+              gap: 10px;
+  
+              .tip-icon {
+                width: 20px;
+                height: 20px;
+              }
+  
+              .tip-content {
+                gap: 3px;
+  
+                .tip-label {
+                  font-size: 16px;
+                }
+  
+                .tip-text {
+                  font-size: 15px;
+                }
+              }
+            }
+  
+            .experience-section {
+              gap: 14px;
+  
+              .experience-label {
+                font-size: 16px;
+                margin-bottom: 6px;
+              }
+  
+              .experience-items {
+                gap: 10px;
+  
+                .experience-item {
+                  gap: 3px;
+  
+                  .experience-title,
+                  .experience-description {
+                    font-size: 15px;
+                  }
+                }
+              }
+  
+              .experience-images {
+                gap: 10px;
+  
+                .experience-image {
+                  max-height: 150px;
+                }
+  
+                .experience-item {
+                  .experience-title,
+                  .experience-description {
+                    font-size: 15px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  
+    @media (max-width: 480px) {
+      .right-section {
+        gap: 16px;
+  
+        .right-tab-container {
+          padding: 6px 0;
+  
+          .right-tab-left {
+            gap: 10px;
+          }
+  
+          .right-tab-button {
+            padding: 4px 0;
+            font-size: 13px;
+          }
+        }
+  
+        .benefit-card-section {
+          padding: 14px;
+          gap: 14px;
+  
+          .benefit-card-header {
+            padding-bottom: 10px;
+  
+            .benefit-card-title {
+              font-size: 14px;
+            }
+          }
+  
+          .benefit-options {
+            gap: 16px;
+  
+            .benefit-option {
+              gap: 8px;
+  
+              .option-label {
+                font-size: 15px;
+              }
+  
+              .option-content {
+                gap: 5px;
+  
+                .option-title,
+                .option-description {
+                  font-size: 14px;
+                }
+              }
+  
+              .option-image {
+                max-height: 140px;
+              }
+  
+              .schedule-image {
+                max-height: 130px;
+              }
+            }
+          }
+        }
+  
+        .daily-schedule-section {
+          gap: 20px;
+  
+          .schedule-title {
+            font-size: 14px;
+            padding-bottom: 8px;
+          }
+  
+          .schedule-time-block {
+            gap: 14px;
+  
+            .time-header {
+              margin-bottom: 10px;
+  
+              .time-label {
+                font-size: 22px;
+              }
+  
+              .time-range {
+                font-size: 14px;
+              }
+            }
+  
+            .schedule-images {
+              .schedule-image {
+                max-height: 130px;
+              }
+            }
+  
+            .tip-box {
+              padding: 10px;
+              gap: 8px;
+  
+              .tip-icon {
+                width: 18px;
+                height: 18px;
+              }
+  
+              .tip-content {
+                .tip-label {
+                  font-size: 15px;
+                }
+  
+                .tip-text {
+                  font-size: 14px;
+                }
+              }
+            }
+  
+            .experience-section {
+              gap: 12px;
+  
+              .experience-label {
+                font-size: 15px;
+              }
+  
+              .experience-items {
+                .experience-item {
+                  .experience-title,
+                  .experience-description {
+                    font-size: 14px;
+                  }
+                }
+              }
+  
+              .experience-images {
+                .experience-image {
+                  max-height: 130px;
+                }
+  
+                .experience-item {
+                  .experience-title,
+                  .experience-description {
+                    font-size: 14px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }

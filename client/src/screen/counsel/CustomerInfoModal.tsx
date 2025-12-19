@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './CustomerInfoModal.scss';
 import { useRecoilState } from 'recoil';
 import { recoilCustomerInfoFormData } from '../../RecoilStore';
-import ModalDateInput from './ModalDateInput';
 import { DateBoxSingle } from '../../boxs/DateBoxSingle'; 
 import { DateBoxSingleTime } from '../../boxs/DateBoxSingleTime';
 import { DateBoxDouble } from '../../boxs/DateBoxDouble';
@@ -476,14 +475,7 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
         </div>
       </div>
 
-      {/* 날짜 선택 모달 */}
-      <ModalDateInput
-        isOpen={showDateModal}
-        onClose={() => setShowDateModal(false)}
-        dateStart={travelDateStart}
-        dateEnd={travelDateEnd}
-        onDateChange={handleDateChange}
-      />
+     
     </div>
   );
 }

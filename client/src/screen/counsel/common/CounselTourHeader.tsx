@@ -44,7 +44,7 @@ const CounselTourHeader: React.FC = () => {
   const isActiveMenu = (path: string) => {
     if (path === '/counsel/tour') {
       // 기본 경로는 정확히 일치할 때만 활성화
-      return location.pathname === '/counsel/tour' || location.pathname === '/counsel/tour/';
+      return location.pathname === '/counsel/tour' || location.pathname === '/counsel/europe/';
     }
     return location.pathname.startsWith(path);
   };
@@ -79,10 +79,10 @@ const CounselTourHeader: React.FC = () => {
   // 네비게이션 메뉴 항목
   const navMenuItems = [
     { id: 'trip', name: '여행상품', path: '/counsel/tour' },
-    { id: 'schedule', name: '일정', path: '/counsel/tour/schedule' },
-    { id: 'hotel', name: '호텔', path: '/counsel/tour/hotel' },
-    { id: 'flight', name: '항공', path: '/counsel/tour/flight' },
-    { id: 'estimate', name: '견적', path: '/counsel/tour/estimate' },
+    { id: 'schedule', name: '일정', path: '/counsel/europe/schedule' },
+    { id: 'hotel', name: '호텔', path: '/counsel/europe/hotel' },
+    { id: 'flight', name: '항공', path: '/counsel/europe/flight' },
+    { id: 'estimate', name: '견적', path: '/counsel/europe/estimate' },
   ];
 
   // 여행지 목록 데이터

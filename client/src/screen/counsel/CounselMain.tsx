@@ -50,7 +50,7 @@ export default function CounselMain() {
       image: require('../images/counsel/main/mainCard1.png'),
     },
     {
-      id: 'tour',
+      id: 'europe',
       name: '유럽',
       image: require('../images/counsel/main/mainCard2.png'),
     },
@@ -202,8 +202,16 @@ export default function CounselMain() {
       return;
     }
     // '관광지' 클릭 시 '/counsel/tour'로 이동
-    if (destination === 'tour') {
-      navigate('/counsel/tour');
+    if (destination === 'europe') {
+      navigate('/counsel/europe/');
+      return;
+    }
+    if (destination === 'america') {
+      navigate('/counsel/america');
+      return;
+    }
+    if (destination === 'australia') {
+      navigate('/counsel/australia');
       return;
     }
     
