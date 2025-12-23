@@ -93,7 +93,7 @@ interface ScheduleRederBoxProps {
   
 
 export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
-  const [mainTab, setMainTab] = useState<string>('일정미리보기');
+  
   
   const fetchScheduleData = async () => {
   

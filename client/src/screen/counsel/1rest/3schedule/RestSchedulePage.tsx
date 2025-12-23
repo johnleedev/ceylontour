@@ -17,6 +17,7 @@ import scheduleImg4 from '../../../lastimages/counselrest/schedule/image-3.png';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { recoilSelectedScheduleData } from '../../../../RecoilStore';
+import ScheduleRederCustom from '../../../common/ScheduleRederCustom';
 
 export default function RestSchedulePage() {
 
@@ -24,6 +25,9 @@ export default function RestSchedulePage() {
   const location = useLocation();
   const stateProps = location.state;
   const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
+  const [isSelectScheduleCustom, setIsSelectScheduleCustom] = useState(false);
+
+ 
 
   const [mainTab, setMainTab] = useState<string>('일정미리보기');
   const [productInfo, setProductInfo] = useState<any | null>(null);
@@ -37,7 +41,6 @@ export default function RestSchedulePage() {
 
   useEffect(() => {
     setProductInfo(stateProps);
-    console.log('stateProps', stateProps);
   }, [stateProps]);
 
 
@@ -108,18 +111,46 @@ export default function RestSchedulePage() {
             {/* 일정표 탭 콘텐츠 */}
             {activeButton === 'create' && (
               <div className="schedule-tab-content-left">
-                <ScheduleRederBox 
-                  id={stateProps.id}
-                  onSelectedScheduleChange={(schedule, index) => {
-                    setSelectedSchedule(schedule);
-                    setSelectedScheduleIndex(index);
-                  }}
-                />
+                {
+                  isSelectScheduleCustom ? (
+                    <button 
+                      className="schedule-revise-btn"
+                      onClick={() => setIsSelectScheduleCustom(false)}
+                    >
+                      돌아가기
+                    </button>
+                  ) : (
+                    <button 
+                      className="schedule-revise-btn"
+                      onClick={() => setIsSelectScheduleCustom(true)}
+                    >
+                     일정표 수정
+                    </button>
+                  )
+                }
+                {
+                  isSelectScheduleCustom ? (
+                    <ScheduleRederCustom
+                      id={stateProps.id}
+                      productInfo={stateProps}
+                      onSelectedScheduleChange={(schedule: any, index: number) => {
+                        setSelectedSchedule(schedule);
+                        setSelectedScheduleIndex(index);
+                      }}
+                    />
+                  ) : (
+                    <ScheduleRederBox
+                      id={stateProps.id}
+                      onSelectedScheduleChange={(schedule, index) => {
+                        setSelectedSchedule(schedule);
+                        setSelectedScheduleIndex(index);
+                      }}
+                    />
+                  )
+                }
               </div>
             )}
-            
           </div>
-          
           
         </div>
 

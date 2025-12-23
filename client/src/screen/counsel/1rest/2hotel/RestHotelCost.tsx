@@ -833,6 +833,7 @@ export default function RestHotelCost() {
             // reserveDate: reserveDate,
             landCompany: productInfo?.landCompany && productInfo.landCompany !== '전체' ? productInfo.landCompany : ''
           });
+          console.log(costInputRes.data);
           
           // API 응답이 false인 경우 빈 배열 반환
           if (costInputRes.data === false) {
@@ -1271,7 +1272,8 @@ export default function RestHotelCost() {
         selectedHotels.forEach((selectedHotel) => {
           if (selectedHotel.hotel) {
             const hotelName = selectedHotel.hotel.hotelNameKo || selectedHotel.hotelSort;
-            const nights = selectedHotel.dayNight ? `${selectedHotel.dayNight}박` : '';
+            const dayNight = selectedHotel.dayNight || '';
+            const nights = dayNight ? (dayNight.includes('박') ? dayNight : `${dayNight}박`) : '';
             parts.push(`${hotelName}${nights ? ` ${nights}` : ''}`);
           }
         });
@@ -1314,7 +1316,7 @@ export default function RestHotelCost() {
         const item = scheduleData[i];
         const hotelSort = item.hotelSort || '';
         const dayNight = item.dayNight || '';
-        const nights = dayNight ? `${dayNight}박` : '';
+        const nights = dayNight ? (dayNight.includes('박') ? dayNight : `${dayNight}박`) : '';
 
         // selectedHotels에서 해당 인덱스의 호텔을 먼저 확인
         const selectedHotel = selectedHotels.find(sh => sh.index === i);
@@ -1365,7 +1367,8 @@ export default function RestHotelCost() {
         selectedHotels.forEach((selectedHotel) => {
           if (selectedHotel.hotel) {
             const hotelName = selectedHotel.hotel.hotelNameKo || selectedHotel.hotelSort;
-            const nights = selectedHotel.dayNight ? `${selectedHotel.dayNight}박` : '';
+            const dayNight = selectedHotel.dayNight || '';
+            const nights = dayNight ? (dayNight.includes('박') ? dayNight : `${dayNight}박`) : '';
             parts.push(`${hotelName}${nights ? ` ${nights}` : ''}`);
           }
         });
@@ -2005,8 +2008,7 @@ export default function RestHotelCost() {
               const resortCards = scheduleCards.filter(c => c.badge === '리조트');
               if (resortCards.length === 1 && poolVillaCards.length === 2) {
                 if (isFirstPoolVilla) {
-                  // 풀빌라1(중간): forPreAddCost 사용
-                  rawFieldKey = 'forPreAddCost';
+                  // 풀빌라1(중간): preStay 값에 따라 요금 필드 결정
                   if (Array.isArray(hotelCost.costInput) && hotelCost.costInput.length > 0) {
                     const firstCost = hotelCost.costInput[0];
                     let parsed: any = firstCost.inputDefault;
@@ -2018,6 +2020,29 @@ export default function RestHotelCost() {
                       }
                     }
                     const defaultsArr = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+                    
+                    // preStay 값 확인 (첫 번째 요소의 preStay 사용)
+                    const firstDef = defaultsArr[0] || {};
+                    const preStay = firstDef.preStay;
+                    
+                    // preStay에 따라 필드 키 결정
+                    if (preStay === 'true' || preStay === true) {
+                      // preStay가 true인 경우: forPreAddCost 사용
+                      rawFieldKey = 'forPreAddCost';
+                    } else {
+                      // preStay가 false인 경우: 박수에 따라 필드 결정
+                      if (nights === 2) {
+                        rawFieldKey = 'twoTwoDayCost';
+                      } else if (nights === 3) {
+                        rawFieldKey = 'oneThreeDayCost';
+                      } else if (nights === 4) {
+                        rawFieldKey = 'fourDayCost';
+                      } else {
+                        // 기본값으로 forPreAddCost 사용
+                        rawFieldKey = 'forPreAddCost';
+                      }
+                    }
+                    
                     const roomList = defaultsArr.flatMap((def: any) =>
                       Array.isArray(def.costByRoomType) ? def.costByRoomType : []
                     );
@@ -2025,8 +2050,9 @@ export default function RestHotelCost() {
                       (roomType && roomList.find((r: any) => r.roomType === roomType)) ||
                       roomList[0] ||
                       null;
-                    if (room && room.forPreAddCost !== undefined) {
-                      rawFieldValue = room.forPreAddCost;
+                    
+                    if (room && rawFieldKey && room[rawFieldKey] !== undefined && room[rawFieldKey] !== '') {
+                      rawFieldValue = room[rawFieldKey];
                       currency = room.currency || '';
                     }
                   }

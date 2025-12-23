@@ -66,6 +66,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
     isAddOrRevise,
   } = params;
 
+
   try {
     const targetScheduleData = dataToFetch || scheduleData || propsScheduleInfo;
 

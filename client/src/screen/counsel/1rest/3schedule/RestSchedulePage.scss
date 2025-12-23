@@ -220,7 +220,27 @@
 
   .schedule-tab-content-left {
     margin-top: 20px;
+    position: relative;
     width: 100%;
+  }
+
+  .schedule-revise-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 100px;
+    padding: 10px;
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    &:hover {
+      background-color: #333;
+    }
   }
 
   // 오른쪽 섹션 스타일

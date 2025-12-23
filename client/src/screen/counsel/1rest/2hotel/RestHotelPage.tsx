@@ -12,6 +12,8 @@ export default function RestHotelPage() {
   console.log('selectedCity', selectedCity);
   const [loading, setLoading] = useState<boolean>(true);
   const [hotels, setHotels] = useState<any[]>([]);
+  const [originalHotels, setOriginalHotels] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
 
   const fetchDestinations = async () => {
@@ -22,8 +24,10 @@ export default function RestHotelPage() {
         const copy = [...response.data];
         console.log('copy', copy);
         setHotels(copy);
+        setOriginalHotels(copy);
       } else {
         setHotels([]);
+        setOriginalHotels([]);
       }
     } catch (error) {
       console.error('나라 리스트를 가져오는 중 오류 발생:', error);
@@ -37,6 +41,19 @@ export default function RestHotelPage() {
   useEffect(() => {
     fetchDestinations();
   }, []);
+
+  // 검색어에 따라 호텔 리스트 필터링
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setHotels(originalHotels);
+    } else {
+      const filtered = originalHotels.filter((hotel) => {
+        const query = searchQuery.toLowerCase();
+        return hotel.hotelNameKo?.toLowerCase().includes(query);
+      });
+      setHotels(filtered);
+    }
+  }, [searchQuery, originalHotels]);
 
 
 
@@ -70,10 +87,18 @@ export default function RestHotelPage() {
         </div>
 
         <div className="hotel-header-search">
-          <form className="hotel-search-form">
+          <form 
+            className="hotel-search-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
             <input
               className="hotel-search-input"
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="호텔명으로 검색"
             />
             <button type="submit" className="hotel-search-button">
               <span className="hotel-search-icon">🔍</span>
@@ -167,17 +192,7 @@ export default function RestHotelPage() {
           })
         )}
       </div>
-      <div className="text-wrapper-nav-destination">여행지</div>
-
-      <div className="text-wrapper-nav-schedule">일정</div>
-
-      <div className="text-wrapper-nav-hotel">호텔</div>
-
-      <div className="text-wrapper-nav-estimate">견적</div>
-
-      <div className="text-wrapper-nav-flight">항공</div>
-
-      <div className="rectangle-nav-indicator" />
+      
     </div>
   );
 };

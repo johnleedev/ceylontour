@@ -397,6 +397,24 @@ export const calculateComboPrice = (
 						: pool1Input.inputDefault
 					: null;
 				const defaultsArr = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+				
+				// preStay 값 확인 (첫 번째 요소의 preStay 사용)
+				const firstDef = defaultsArr[0] || {};
+				const preStay = firstDef.preStay;
+				
+				// preStay에 따라 필드 키 결정
+				let fieldKey = 'forPreAddCost';
+				if (preStay === 'false' || preStay === false) {
+					// preStay가 false인 경우: 박수에 따라 필드 결정
+					if (pool1Nights === 2) {
+						fieldKey = 'twoTwoDayCost';
+					} else if (pool1Nights === 3) {
+						fieldKey = 'oneThreeDayCost';
+					} else if (pool1Nights === 4) {
+						fieldKey = 'fourDayCost';
+					}
+				}
+				
 				const roomList = defaultsArr.flatMap((def: any) =>
 					Array.isArray(def.costByRoomType) ? def.costByRoomType : []
 				);
@@ -406,7 +424,10 @@ export const calculateComboPrice = (
 							roomList.find((r: any) => r.roomType === pool1RoomType)) ||
 						roomList[0];
 					if (!poolCurrency) poolCurrency = room.currency || '';
-					pool1Add = parseAmount(room.forPreAddCost);
+					const fieldValue = room[fieldKey];
+					if (fieldValue !== undefined && fieldValue !== '') {
+						pool1Add = parseAmount(fieldValue);
+					}
 				}
 			}
 		} catch (e) {
@@ -730,6 +751,24 @@ export const calculateHotelSearchResult = (
 									: pool1Input.inputDefault
 								: null;
 							const defaultsArr = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+							
+							// preStay 값 확인 (첫 번째 요소의 preStay 사용)
+							const firstDef = defaultsArr[0] || {};
+							const preStay = firstDef.preStay;
+							
+							// preStay에 따라 필드 키 결정
+							let fieldKey = 'forPreAddCost';
+							if (preStay === 'false' || preStay === false) {
+								// preStay가 false인 경우: 박수에 따라 필드 결정
+								if (pool1Nights === 2) {
+									fieldKey = 'twoTwoDayCost';
+								} else if (pool1Nights === 3) {
+									fieldKey = 'oneThreeDayCost';
+								} else if (pool1Nights === 4) {
+									fieldKey = 'fourDayCost';
+								}
+							}
+							
 							const roomList = defaultsArr.flatMap((def: any) =>
 								Array.isArray(def.costByRoomType) ? def.costByRoomType : []
 							);
@@ -739,7 +778,10 @@ export const calculateHotelSearchResult = (
 										roomList.find((r: any) => r.roomType === selectedRoomType)) ||
 									roomList[0];
 								if (!poolCurrency) poolCurrency = room.currency || '';
-								pool1Add = parseAmount(room.forPreAddCost);
+								const fieldValue = room[fieldKey];
+								if (fieldValue !== undefined && fieldValue !== '') {
+									pool1Add = parseAmount(fieldValue);
+								}
 							}
 						}
 					} catch (e) {
