@@ -55,6 +55,7 @@ export default function RestTripPage () {
       }
       
       const data = await response.json();
+      console.log('data', data);
 
 
       // API 응답 데이터를 Destination 형식으로 변환
@@ -122,34 +123,11 @@ export default function RestTripPage () {
 
   useEffect(() => {
     fetchDestinations();
-    fetchWikiTitle();
   }, []);
 
 
-  const fetchWikiTitle = async () => {
-   console.log('fetchWikiTitle');
-    const copy = '발리'
-    try {
-      const response = await fetch(`${AdminURL}/apiwikipediaapi/getwikititle/${copy}`);
-      
-      if (!response.ok) {
-        throw new Error('위키 제목을 가져오는데 실패했습니다.');
-      }
-      
-      const data = await response.json();
-      console.log(data);
-      
-      
-    } catch (error) {
-      console.error('위키 제목을 가져오는 중 오류 발생:', error);
-    }
-  };
-    
-
-
-
   return (
-    <div className="trip-page-wrapper">
+    <div className="rest-trip-page-wrapper">
       <div className={`trip-container ${selectedCity ? 'detail-open' : ''}`}>
         {/* 왼쪽 영역: 헤더 + 나라 리스트 */}
         <div className="left-section">
@@ -231,7 +209,7 @@ export default function RestTripPage () {
                     }}
                   >
                     <div className="nation-image-container">
-                      <img className="image" alt={city.name} src={`${AdminURL}/images/cityimages/${city.image}`} />
+                      <img className="image" alt={city.name} src={`${AdminURL}/images/citycustomimages/${city.image}`} />
                     </div>
                     <div className="nation-info">
                       <div className='nation-name'>{city.name}</div>
@@ -273,13 +251,13 @@ export default function RestTripPage () {
                   >
                     기본정보
                   </button>
-                  {/* <button
+                  <button
                     type="button"
                     className={`tab-button text-wrapper-tab-highlight ${activeTab === 'highlight' ? 'active' : ''}`}
                     onClick={() => setActiveTab('highlight')}
                   >
                     하이라이트
-                  </button> */}
+                  </button>
                   <button
                     type="button"
                     className={`tab-button text-wrapper-tab-entry ${activeTab === 'entry' ? 'active' : ''}`}
@@ -327,89 +305,358 @@ export default function RestTripPage () {
                     })()}
                   </div>
                   <div className="detail-info-grid">
-                    {selectedCityData?.timeDifference && (
-                      <div className="info-item">
-                        <div className="info-label">시차</div>
-                        <div className="info-value">
-                          <span className="info-strong">{selectedCityData.timeDifference}</span>
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // timezoneInfo 파싱
+                      try {
+                        const timezoneInfo = selectedCityData?.timezoneInfo ? JSON.parse(selectedCityData.timezoneInfo) : null;
+                        if (timezoneInfo?.timeDifference) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">시차</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  <span className="info-strong">{timezoneInfo.timeDifference}</span>
+                                </div>
+                                {timezoneInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {timezoneInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.visa && (
-                      <div className="info-item">
-                        <div className="info-label">비자</div>
-                        <div className="info-value">
-                          {selectedCityData.visa}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // visaInfo 파싱
+                      try {
+                        const visaInfo = selectedCityData?.visaInfo ? JSON.parse(selectedCityData.visaInfo) : null;
+                        if (visaInfo?.info) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">비자</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {visaInfo.info}
+                                </div>
+                                {visaInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {visaInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.language && (
-                      <div className="info-item">
-                        <div className="info-label">언어</div>
-                        <div className="info-value">{selectedCityData.language}</div>
-                      </div>
-                    )}
+                    {(() => {
+                      // languageInfo 파싱
+                      try {
+                        const languageInfo = selectedCityData?.languageInfo ? JSON.parse(selectedCityData.languageInfo) : null;
+                        if (languageInfo?.languages && Array.isArray(languageInfo.languages) && languageInfo.languages.length > 0) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">언어</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">{languageInfo.languages.join(', ')}</div>
+                                {languageInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {languageInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.roaming && (
-                      <div className="info-item">
-                        <div className="info-label">로밍</div>
-                        <div className="info-value">
-                          {selectedCityData.roaming}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // additionalInfo에서 로밍 정보 파싱
+                      try {
+                        const additionalInfo = selectedCityData?.additionalInfo ? JSON.parse(selectedCityData.additionalInfo) : null;
+                        if (additionalInfo?.휴대폰 && Array.isArray(additionalInfo.휴대폰) && additionalInfo.휴대폰.length > 0) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">로밍</div>
+                              <div className="info-value">
+                                {additionalInfo.휴대폰[0]}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.currency && (
-                      <div className="info-item">
-                        <div className="info-label">화폐</div>
-                        <div className="info-value">
-                          {selectedCityData.currency}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // exrateInfo 파싱
+                      try {
+                        const exrateInfo = selectedCityData?.exrateInfo ? JSON.parse(selectedCityData.exrateInfo) : null;
+                        if (exrateInfo?.exchangeRate) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">화폐</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {exrateInfo.exchangeRate}
+                                </div>
+                                {exrateInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {exrateInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.tipManner && (
-                      <div className="info-item">
-                        <div className="info-label">팁매너</div>
-                        <div className="info-value">
-                          {selectedCityData.tipManner}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // tipInfo 파싱
+                      try {
+                        const tipInfo = selectedCityData?.tipInfo ? JSON.parse(selectedCityData.tipInfo) : null;
+                        if (tipInfo?.info) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">팁매너</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {tipInfo.info}
+                                </div>
+                                {tipInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {tipInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.voltage && (
-                      <div className="info-item">
-                        <div className="info-label">전압</div>
-                        <div className="info-value">{selectedCityData.voltage}</div>
-                      </div>
-                    )}
+                    {(() => {
+                      // plugInfo 파싱
+                      try {
+                        const plugInfo = selectedCityData?.plugInfo ? JSON.parse(selectedCityData.plugInfo) : null;
+                        if (plugInfo?.voltage) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">전압</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">{plugInfo.voltage}</div>
+                                {plugInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {plugInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.weather && (
-                      <div className="info-item">
-                        <div className="info-label">날씨</div>
-                        <div className="info-value info-multiline">
-                          {selectedCityData.weather.split('\n').map((line: string, index: number) => (
-                            <React.Fragment key={index}>
-                              {line}
-                              {index < selectedCityData.weather.split('\n').length - 1 && <br />}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // priceInfo 파싱
+                      try {
+                        const priceInfo = selectedCityData?.priceInfo ? JSON.parse(selectedCityData.priceInfo) : null;
+                        if (priceInfo?.priceLevel) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">물가</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {priceInfo.priceLevel}
+                                </div>
+                                {priceInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {priceInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
 
-                    {selectedCityData?.precautions && (
-                      <div className="info-item">
-                        <div className="info-label">주의사항</div>
-                        <div className="info-multiline">
-                          {selectedCityData.precautions.split('\n').map((line: string, index: number) => (
-                            <p key={index} className="info-text">{line}</p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      // weatherInfo 파싱
+                      try {
+                        const weatherInfo = selectedCityData?.weatherInfo ? JSON.parse(selectedCityData.weatherInfo) : null;
+                        if (weatherInfo && (weatherInfo.minTemp || weatherInfo.maxTemp || (weatherInfo.details && Array.isArray(weatherInfo.details) && weatherInfo.details.length > 0))) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">날씨</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                {(weatherInfo.minTemp || weatherInfo.maxTemp) && (
+                                  <div className="info-value">
+                                    최저 : {weatherInfo.minTemp || '-'}, 최고 : {weatherInfo.maxTemp || '-'}
+                                  </div>
+                                )}
+                                {weatherInfo.details && Array.isArray(weatherInfo.details) && weatherInfo.details.length > 0 && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {weatherInfo.details.map((line: string, index: number) => (
+                                      <React.Fragment key={index}>
+                                        {line}
+                                        {index < weatherInfo.details.length - 1 && <br />}
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // caution 또는 additionalInfo에서 주의사항 파싱
+                      if (selectedCityData?.caution && selectedCityData.caution.trim() !== '') {
+                        return (
+                          <div className="info-item">
+                            <div className="info-label">주의사항</div>
+                            <div className="info-multiline">
+                              {selectedCityData.caution.split('\n').map((line: string, index: number) => (
+                                <p key={index} className="info-text">{line}</p>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // additionalInfo 파싱
+                      try {
+                        const additionalInfo = selectedCityData?.additionalInfo ? JSON.parse(selectedCityData.additionalInfo) : null;
+                        if (!additionalInfo) return null;
+
+                        const sections: Array<{ title: string; content: string[] }> = [];
+
+                        // 영업시간
+                        if (additionalInfo.businessHours && Array.isArray(additionalInfo.businessHours) && additionalInfo.businessHours.length > 0) {
+                          sections.push({ title: '영업시간', content: additionalInfo.businessHours });
+                        }
+
+                        // 가격 정보
+                        if (additionalInfo.prices && Array.isArray(additionalInfo.prices) && additionalInfo.prices.length > 0) {
+                          sections.push({ title: '가격 정보', content: additionalInfo.prices });
+                        }
+
+                        // 물
+                        if (additionalInfo.물 && Array.isArray(additionalInfo.물) && additionalInfo.물.length > 0) {
+                          sections.push({ title: '물', content: additionalInfo.물 });
+                        }
+
+                        // 인터넷 사용
+                        if (additionalInfo['인터넷 사용'] && Array.isArray(additionalInfo['인터넷 사용']) && additionalInfo['인터넷 사용'].length > 0) {
+                          sections.push({ title: '인터넷 사용', content: additionalInfo['인터넷 사용'] });
+                        }
+
+                        // 전화 사용
+                        if (additionalInfo.phone && Array.isArray(additionalInfo.phone) && additionalInfo.phone.length > 0) {
+                          sections.push({ title: '전화 사용', content: additionalInfo.phone });
+                        }
+
+                        // 우편
+                        if (additionalInfo.우편 && Array.isArray(additionalInfo.우편) && additionalInfo.우편.length > 0) {
+                          sections.push({ title: '우편', content: additionalInfo.우편 });
+                        }
+
+                        // ATM
+                        if (additionalInfo.atm && Array.isArray(additionalInfo.atm) && additionalInfo.atm.length > 0) {
+                          sections.push({ title: 'ATM', content: additionalInfo.atm });
+                        }
+
+                        // 카드/현금 사용
+                        if (additionalInfo.cardCashUsage && Array.isArray(additionalInfo.cardCashUsage) && additionalInfo.cardCashUsage.length > 0) {
+                          sections.push({ title: '카드/현금 사용', content: additionalInfo.cardCashUsage });
+                        }
+
+                        // 화장실
+                        if (additionalInfo.restroom && Array.isArray(additionalInfo.restroom) && additionalInfo.restroom.length > 0) {
+                          sections.push({ title: '화장실', content: additionalInfo.restroom });
+                        }
+
+                        // 흡연/음주
+                        if (additionalInfo.smokingDrinking && Array.isArray(additionalInfo.smokingDrinking) && additionalInfo.smokingDrinking.length > 0) {
+                          sections.push({ title: '흡연/음주', content: additionalInfo.smokingDrinking });
+                        }
+
+                        // 예절
+                        if (additionalInfo.etiquette && Array.isArray(additionalInfo.etiquette) && additionalInfo.etiquette.length > 0) {
+                          sections.push({ title: '예절', content: additionalInfo.etiquette });
+                        }
+
+                        if (sections.length === 0) return null;
+
+                        return (
+                          <div className="info-item">
+                            <div className="info-label">추가정보</div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              {sections.map((section, sectionIndex) => (
+                                <div key={sectionIndex}>
+                                  <div className="info-value" style={{ marginBottom: '4px' }}>
+                                    {section.title}
+                                  </div>
+                                  <div style={{ fontSize: '13px', color: '#999' }}>
+                                    {section.content.map((item: string, itemIndex: number) => (
+                                      <div key={itemIndex} style={{ marginBottom: itemIndex < section.content.length - 1 ? '8px' : '0' }}>
+                                        {item.split('\\n').map((line: string, lineIndex: number) => (
+                                          <React.Fragment key={lineIndex}>
+                                            {line}
+                                            {lineIndex < item.split('\\n').length - 1 && <br />}
+                                          </React.Fragment>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                        return null;
+                      }
+                    })()}
                   </div>
 
                   <div

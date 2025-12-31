@@ -1,29 +1,9 @@
-.RestHotelDetail {
+.EuropeCityDetail {
   margin-top: 100px;
   width: 100%;
   box-sizing: border-box;
   background-color: #fff;
-
-  // 상단 헤더 이미지
-  .hotel-header-image {
-    width: 100%;
-    height: 300px;
-    overflow: hidden;
-    position: relative;
-    margin-bottom: 40px;
-    
-
-    .header-image-media {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-
-  }
-
- 
+  padding: 0 50px;
 
   // 오른쪽 패널 토글 버튼
   .right-panel-toggle-btn {
@@ -54,13 +34,12 @@
     }
   }
 
-  .hotel-container {
+  .city-container {
     display: flex;
     gap: 20px;
     width: 100%;
     min-height: calc(100vh - 100px);
     margin: 0 auto;
-    padding: 0 50px;
     transition: all 0.3s ease;
 
     // 오른쪽 패널이 없을 때: 전체 스크롤 사용
@@ -145,13 +124,13 @@
     }
   }
   
-  .hotel-center-wrapper {
+  .city-center-wrapper {
     width: 100%;
     max-width: 1100px;
     margin: 0 auto;
   }
 
-  .hotel-title-wrapper {
+  .city-title-wrapper {
     display: flex;
     align-items: center;
 
@@ -160,7 +139,7 @@
       margin-right: 10px;
     }
 
-    .hotel-title {
+    .city-title {
       margin: 20px;
       display: flex;
       align-items: end;
@@ -248,6 +227,10 @@
         height: 15px;
         background-color: #ccc;
       }
+      .weather-text {
+        white-space: nowrap;
+        color: #666;
+      }
       .video-button {
         padding: 5px 22px;
         border-radius: 3px;
@@ -327,16 +310,19 @@
     margin-top: 24px;
     margin-bottom: 100px;
 
-    .text-wrapper-address {
+    .text-wrapper-10 {
       color: #333333;
+     
       font-size: 15px;
-      margin-bottom: 10px;
+      
+      margin: 16px 0 8px;
     }
 
     .flexcontainer {
       align-items: flex-start;
       display: flex;
       flex-direction: column;
+      gap: 5px;
     }
   }
 
@@ -921,6 +907,223 @@
         display: none; /* Chrome, Safari, Opera */
       }
 
+      // 도시정보 섹션
+      .detail-info-content {
+        .detail-main-image {
+          width: 100%;
+          margin-bottom: 20px;
+          overflow: hidden;
+
+          .image-detail-main {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            aspect-ratio: 1.39;
+          }
+        }
+
+        .detail-info-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+
+          .info-item {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            .info-label {
+              flex: 0 0 90px;
+              color: #000000;
+              font-size: 18px;
+              font-weight: 500;
+              margin: 0;
+            }
+
+            .info-value,
+            .info-multiline {
+              flex: 1;
+              color: #090909;
+              font-size: 15px;
+              line-height: 1.6;
+              margin: 0;
+            }
+
+            .info-strong {
+              font-weight: 500;
+            }
+
+            .info-multiline {
+              display: block;
+            }
+
+            .info-text {
+              margin: 0 0 4px 0;
+            }
+          }
+        }
+      }
+
+      // 여행상품 섹션 (EuropeTripPage 스타일)
+      .schedule-list-container {
+        padding: 0;
+
+        .selected-nation-title {
+          font-size: 28px;
+          font-weight: 700;
+          color: #333;
+          margin: 0 0 20px 0;
+        }
+
+        .schedule-tabs {
+          display: flex;
+          gap: 0;
+          border-bottom: 1px solid #e0e0e0;
+          margin-bottom: 20px;
+
+          .schedule-tab {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+
+            &.active {
+              color: #333;
+              font-weight: 600;
+              border-bottom-color: #333;
+            }
+
+            &:hover:not(.active) {
+              color: #333;
+            }
+          }
+        }
+
+        .schedule-search {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 30px;
+
+          .schedule-search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+
+            &:focus {
+              border-color: #2FB4E2;
+            }
+
+            &::placeholder {
+              color: #999;
+            }
+          }
+
+          .schedule-search-btn {
+            padding: 12px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+
+            &:hover {
+              background: #555;
+            }
+          }
+        }
+
+        .schedule-sections {
+          .no-schedules {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 16px;
+          }
+
+          .schedule-section {
+            margin-bottom: 30px;
+
+            .schedule-section-header {
+              background: #666;
+              color: white;
+              padding: 12px 16px;
+              font-size: 16px;
+              font-weight: 600;
+              margin-bottom: 10px;
+            }
+
+            .schedule-item {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 16px;
+              border-bottom: 1px solid #f0f0f0;
+              transition: background 0.2s ease;
+
+              &:hover {
+                background: #f8f8f8;
+              }
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              .schedule-item-content {
+                flex: 1;
+
+                .schedule-item-title {
+                  font-size: 16px;
+                  font-weight: 600;
+                  color: #333;
+                  margin: 0 0 6px 0;
+                }
+
+                .schedule-item-detail {
+                  font-size: 14px;
+                  color: #666;
+                  margin: 0;
+                }
+              }
+
+              .schedule-item-badge {
+                padding: 6px 12px;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                flex-shrink: 0;
+                margin-left: 16px;
+
+                &.recommend {
+                  background: #ff6b35;
+                  color: white;
+                }
+
+                &.special {
+                  background: #2FB4E2;
+                  color: white;
+                }
+              }
+            }
+          }
+        }
+      }
+
       // 여행상품 섹션 (원래 디자인 유지)
       .product-section {
         .section-title {
@@ -1369,7 +1572,7 @@
       }
     }
 
-    .hotel-container {
+    .city-container {
       flex-direction: column;
       height: auto;
       min-height: calc(100vh - 100px);
@@ -1538,7 +1741,7 @@
       }
     }
 
-    .hotel-container {
+    .city-container {
       .left-section {
         padding: 15px;
       }

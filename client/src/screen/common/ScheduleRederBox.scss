@@ -75,7 +75,7 @@
 
           &--active {
           border: 2px solid #007bff;
-          background: #e3f2fd;
+          background: #fff;
           }
 
           & > div {
@@ -216,7 +216,6 @@
           padding-top: 15px;
 
           .schedule-schedule__element__header__wrapper {
-            border-left: 1px dotted #b4b4b4;
             font-size: 16px;
             display: flex;
             flex-direction: column;
@@ -345,8 +344,7 @@
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  gap: 8px;
-                  padding-bottom: 12px;
+                  padding-bottom: 5px;
                   border-bottom: 1px solid #000;
 
                   img {
@@ -363,7 +361,7 @@
                 .schedule-flight__time__wrapper {
                   display: flex;
                   justify-content: center;
-                  margin-top: 10px;
+                  margin-top: 7px;
                   position: relative;
 
                   .schedule-flight__time {
@@ -384,7 +382,7 @@
                       border: 1px solid #000;
                       border-radius: 50%;
                       background-color: #fff;
-                      margin-bottom: 4px;
+                      margin-bottom: 5px;
                     }
                   }
 
@@ -399,7 +397,7 @@
                   }
 
                   .schedule-time__text {
-                    font-size: 18px;
+                    font-size: 20px;
                     font-weight: 700;
                   }
 
@@ -417,7 +415,7 @@
             
 
             .schedule-schedule__element__subTitle__wrapper {
-              border-left: 1px dotted #b4b4b4;
+              
 
               .schedule-schedule__element__subTitle {
                 display: flex;
@@ -490,8 +488,8 @@
 
                 .schedule-table__main {
                   font-size: 15px;
-                  line-height: 1.8;
-                  color: #333;
+                  font-weight: 400;
+                  color: #666;
                   white-space: pre-wrap;
                 }
               }

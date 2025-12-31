@@ -22,6 +22,7 @@ import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle
 import rectangle677 from '../../../lastimages/counselrest/hotel/detail/rectangle-677.png';
 import vector105 from '../../../lastimages/counselrest/hotel/detail/vector-105.svg';
 import reviewimage from '../../../lastimages/counselrest/hotel/detail/review.png';
+import hotelmain from '../../../images/counsel/rest/hotel/hotelmain.png';
 import RatingBoard from '../../../common/RatingBoard';
 import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
@@ -659,6 +660,15 @@ export default function RestHotelDetail() {
 
   return (
     <div className="RestHotelDetail">
+      {/* 상단 헤더 이미지 */}
+      <div className="hotel-header-image">
+        <img
+          className="header-image-media"
+          alt="호텔 메인 이미지"
+          src={hotelmain}
+        />
+      </div>
+
       {/* 오른쪽 패널 토글 버튼 */}
       {!showRightPanel && (
         <button
@@ -860,28 +870,17 @@ export default function RestHotelDetail() {
                 <span className="text-wrapper-11">호텔 위치 보기</span>
               </div>
 
-              <p className="text-wrapper-10">
+              <p className="text-wrapper-address">
                 {hotelInfo?.hotelAddress || ''}
               </p>
 
               <div className="flexcontainer">
-                <p className="text">
-                  <span className="span">누사두아 게이티드 지역의 고급 라인업</span>
-                </p>
-
-                <p className="text">
-                  <span className="span">공항 → 20~25분</span>
-                </p>
-
-                <p className="text">
-                  <span className="span">발리 컬렉션 쇼핑센터 → 차량 5분</span>
-                </p>
-
-                <p className="text">
-                  <span className="span">
+                <span className="span">누사두아 게이티드 지역의 고급 라인업</span>
+                <span className="span">공항 → 20~25분</span>
+                <span className="span">발리 컬렉션 쇼핑센터 → 차량 5분</span>
+                <span className="span">
                     주변: 무려프 비치클럽·워터블로우·BTDC 산책로
-                  </span>
-                </p>
+                </span>
               </div>
             </div>
 
@@ -963,37 +962,36 @@ export default function RestHotelDetail() {
         {/* 오른쪽 영역: 실론투어 베네핏 및 하루 일정 */}
         {showRightPanel && (
           <div className="right-section">
-            {/* 닫기 버튼 */}
-            <button
-              type="button"
-              className="right-panel-close-btn"
-              onClick={() => setShowRightPanel(false)}
-            >
-              <IoMdClose />
-            </button>
-
-            {/* 탭 컨테이너 */}
-            <div className="right-tab-container">
-              <div className="right-tab-left">
-                <button
-                  type="button"
-                  className={`right-tab-button right-tab-schedule ${activeRightTab === 'schedule' ? 'active' : ''}`}
-                  onClick={() => setActiveRightTab('schedule')}
-                >
-                  상품보기
-                </button>
-                <button
-                  type="button"
-                  className={`right-tab-button right-tab-benefit ${activeRightTab === 'benefit' ? 'active' : ''}`}
-                  onClick={() => setActiveRightTab('benefit')}
-                >
-                  실론투어 베네핏
-                </button>
-              </div>
-            </div>
-
             {/* 탭 컨텐츠 */}
             <div className="right-tab-content">
+              {/* 닫기 버튼 */}
+              <button
+                type="button"
+                className="right-panel-close-btn"
+                onClick={() => setShowRightPanel(false)}
+              >
+                <IoMdClose />
+              </button>
+
+              {/* 탭 컨테이너 */}
+              <div className="right-tab-container">
+                <div className="right-tab-left">
+                  <button
+                    type="button"
+                    className={`right-tab-button right-tab-schedule ${activeRightTab === 'schedule' ? 'active' : ''}`}
+                    onClick={() => setActiveRightTab('schedule')}
+                  >
+                    상품보기
+                  </button>
+                  <button
+                    type="button"
+                    className={`right-tab-button right-tab-benefit ${activeRightTab === 'benefit' ? 'active' : ''}`}
+                    onClick={() => setActiveRightTab('benefit')}
+                  >
+                    실론투어 베네핏
+                  </button>
+                </div>
+              </div>
               {activeRightTab === 'benefit' && (
                 <div className="benefit-card-section">
                   {/* 실론투어 베네핏 탭은 현재 별도 콘텐츠 없음 */}
@@ -1002,7 +1000,6 @@ export default function RestHotelDetail() {
 
               {activeRightTab === 'schedule' && (
                 <div className="product-section">
-                  <h2 className="section-title">여행상품</h2>
                   
                   <div className="product-list">
                     {products.length === 0 ? (

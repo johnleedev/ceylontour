@@ -363,57 +363,59 @@ export default function RestSchedulePage() {
                       <div className="summary-total-price">￦100,000</div>
                     </div>
                   </div>
-                  <div className="cost-schedule-btn-wrapper">
-                    <button
-                      className="cost-schedule-btn"
-                      onClick={() => {
-                        if (!selectedSchedule) {
-                          alert('항공편을 선택해주세요.');
-                          return;
-                        }
-
-                        // 선택된 항공편의 일정 정보 추출
-                        const airlineData = selectedSchedule.airlineData;
-                        const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
-
-                        // 항공편 정보 추출 (첫 번째 날짜에서)
-                        const firstDay = scheduleDetailData[0];
-                        const airlineItem = firstDay?.scheduleDetail?.find((item: any) => item.sort === 'airline' && item.airlineData);
-
-                        setSelectedScheduleData({
-                          productInfo: productInfo,
-                          scheduleDetails: {
-                            airlineData: airlineData,
-                            scheduleList: [selectedSchedule], // 선택된 항공편의 일정만 저장
-                            selectedIndex: selectedScheduleIndex
-                          },
-                          selectedSchedule: selectedSchedule,
-                          selectedItems: [],
-                          totalPrice: 100000,
-                          guestCount: 2
-                        });
-                        alert('일정이 담겼습니다.');
-                      }}
-                    >
-                      일정담기
-                    </button>
-                    <button
-                      className="cost-schedule-btn"
-                      onClick={() => {
-                        navigate('/counsel/rest/flight', { state: productInfo });
-                        window.scrollTo(0, 0);
-                      }}
-                    >
-                      다음
-                    </button>
-                  </div>
                 </div>
                 
               </div>
             </div>
+
+            <div className="cost-schedule-btn-wrapper">
+              <button
+                className="cost-schedule-btn"
+                onClick={() => {
+                  if (!selectedSchedule) {
+                    alert('항공편을 선택해주세요.');
+                    return;
+                  }
+
+                  // 선택된 항공편의 일정 정보 추출
+                  const airlineData = selectedSchedule.airlineData;
+                  const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
+
+                  // 항공편 정보 추출 (첫 번째 날짜에서)
+                  const firstDay = scheduleDetailData[0];
+                  const airlineItem = firstDay?.scheduleDetail?.find((item: any) => item.sort === 'airline' && item.airlineData);
+
+                  setSelectedScheduleData({
+                    productInfo: productInfo,
+                    scheduleDetails: {
+                      airlineData: airlineData,
+                      scheduleList: [selectedSchedule], // 선택된 항공편의 일정만 저장
+                      selectedIndex: selectedScheduleIndex
+                    },
+                    selectedSchedule: selectedSchedule,
+                    selectedItems: [],
+                    totalPrice: 100000,
+                    guestCount: 2
+                  });
+                  alert('일정이 담겼습니다.');
+                }}
+              >
+                일정담기
+              </button>
+              <button
+                className="cost-schedule-btn"
+                onClick={() => {
+                  navigate('/counsel/rest/flight', { state: productInfo });
+                  window.scrollTo(0, 0);
+                }}
+              >
+                다음
+              </button>
+            </div>
           </div>
         )}
       </div>
+      
     </div>
   );
 };

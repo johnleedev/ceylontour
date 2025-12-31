@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import './EuropeTripPage.scss';
 import { AdminURL } from '../../../../MainURL';
 import { useNavigate } from 'react-router-dom';
-import { FaRegCalendarAlt } from 'react-icons/fa';
+import Image_bali from '../../../lastimages/counselrest/trip/image.png';
+import Image_phuket from '../../../lastimages/counselrest/trip/image-1.png';
+import Image_guam from '../../../lastimages/counselrest/trip/image-2.png';
+import Image_maldives from '../../../lastimages/counselrest/trip/image-3.png';
+import Image_morisus from '../../../lastimages/counselrest/trip/mapimage.png';
+import WorldMapImage from '../../../images/counsel/worldmap.jpg';
+import axios from 'axios';
+
 
 interface Destination {
   id: string;
@@ -15,29 +22,6 @@ interface Destination {
   rawData?: any;
 }
 
-interface DestinationInfo {
-  name: string;
-  mainImage: string;
-  timeDifference: string;
-  currency: string;
-  visa: string;
-  voltage: string;
-  language: string;
-  weather: string;
-  precautions: string;
-  highlights: string[];
-  regionalInfo: {
-    region: string;
-    description: string;
-    attractions: string[];
-    images: string[];
-  }[];
-  entryExitInfo: {
-    title: string;
-    content: string;
-  }[];
-}
-
 interface ScheduleItem {
   id: number;
   nation: string[];
@@ -46,93 +30,118 @@ interface ScheduleItem {
     periodDay: string;
   };
   productName: string;
+  tourmapImage?: string;
+  productScheduleData?: string;
 }
 
-const EuropeTripPage: React.FC = () => {
+
+export default function EuropeTripPage () {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'recommend' | 'create'>('recommend');
-  const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
-  const [selectedDestinationData, setSelectedDestinationData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('기본정보');
-  const [isSingleCity, setIsSingleCity] = useState(true);
-  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedCityData, setSelectedCityData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'info' | 'product' | 'highlight' | 'entry'>('info');
+  const [isSingleCity, setIsSingleCity] = useState(true);
+  const [isMultiCity, setIsMultiCity] = useState(false);
+  const [isWorldMapOpen, setIsWorldMapOpen] = useState(false);
+  const [activeButton, setActiveButton] = useState<'recommend' | 'create'>('recommend');
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [scheduleDataMap, setScheduleDataMap] = useState<{ [key: string]: any }>({}); // 국가명을 키로 하는 스케줄 데이터 맵
   const [scheduleFilter, setScheduleFilter] = useState('전체');
   const [scheduleSearch, setScheduleSearch] = useState('');
   
-  // 일정만들기 모드용 상태
-  const [selectedDestinationsForCreate, setSelectedDestinationsForCreate] = useState<string[]>([]);
-  const [createScheduleDays, setCreateScheduleDays] = useState(1);
-  const [regionFilter, setRegionFilter] = useState('전체');
-  const [selectedCities, setSelectedCities] = useState<{ [key: string]: string[] }>({}); // 국가명: [도시명들]
+  const highlightItems = [
+    { id: 1, title: '포토스팟에서 인생샷', image: Image_bali },
+    { id: 2, title: '일출보기 투어', image: Image_phuket },
+    { id: 3, title: '우붓 명소 맞춤 투어', image: Image_guam },
+    { id: 4, title: '우붓 정글탐험', image: Image_maldives },
+  ];
 
-
-  const locationType = '관광지'
-  const fetchDestinations = async () => {
+   const fetchDestinations = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${AdminURL}/ceylontour/getnationlisteurope`);
       
-      if (!response.ok) {
+      // 두 개의 API를 병렬로 호출
+      const [scheduleResponse, nationResponse] = await Promise.all([
+        fetch(`${AdminURL}/ceylontour/getschedulelisteurope`),
+        fetch(`${AdminURL}/ceylontour/getnationlisteurope`)
+      ]);
+      
+      if (!scheduleResponse.ok || !nationResponse.ok) {
         throw new Error('데이터를 가져오는데 실패했습니다.');
       }
       
-      const data = await response.json();
+      const scheduleData = await scheduleResponse.json();
+      const nationData = await nationResponse.json();
      
-      // API 응답 데이터를 Destination 형식으로 변환
-      const formattedDestinations: Destination[] = Array.isArray(data) 
-        ? data
-            .filter((item: any) => {
-              // isView가 'true'이고 schedule이 존재하며 빈 배열이 아닌 것만 필터링
-              return item.isView === 'true' && 
-                     item.schedule && 
-                     Array.isArray(item.schedule) && 
-                     item.schedule.length > 0;
+      // schedule 데이터를 국가명을 키로 하는 맵으로 저장
+      const scheduleMap: { [key: string]: any } = {};
+      if (Array.isArray(scheduleData)) {
+        scheduleData.forEach((item: any) => {
+          if (item.isView === 'true' && item.nationKo && item.schedule && Array.isArray(item.schedule) && item.schedule.length > 0) {
+            scheduleMap[item.nationKo] = item;
+          }
+        });
+      }
+      setScheduleDataMap(scheduleMap);
+
+      // nation 데이터를 Destination 형식으로 변환 (초기 리스트용)
+      const nationDestinations: Destination[] = Array.isArray(nationData) 
+        ? nationData
+            .filter((nation: any) => {
+              // isView가 'true'인 국가만 필터링
+              return nation.isView === 'true';
             })
-            .map((item: any) => {
-              // inputImage 파싱 (JSON 배열 문자열)
+            .map((nation: any) => {
+              // 국가의 inputImage 사용
               let imageUrl = require('../../../lastimages/nations/img_aus.png'); // 기본 이미지
               try {
-                const images = JSON.parse(item.inputImage || '[]');
-                if (Array.isArray(images) && images.length > 0 && images[0]) {
-                  imageUrl = images[0];
+                const nationImages = JSON.parse(nation.inputImage || '[]');
+                if (Array.isArray(nationImages) && nationImages.length > 0 && nationImages[0]) {
+                  imageUrl = nationImages[0];
                 }
               } catch (e) {
                 // 파싱 실패 시 기본 이미지 사용
               }
 
-              // schedule 개수 계산
-              const scheduleCount = Array.isArray(item.schedule) ? item.schedule.length : 0;
+              // 비행시간 기본값
+              let airTime = '7시간 30분'; // 기본값
+              if (nation.cities && Array.isArray(nation.cities) && nation.cities.length > 0) {
+                try {
+                  const firstCity = nation.cities[0];
+                  const trafficCode = JSON.parse(firstCity.trafficCode || '{}');
+                  if (trafficCode.airplane && Array.isArray(trafficCode.airplane) && trafficCode.airplane.length > 0) {
+                    // 비행시간 정보가 있다면 사용
+                  }
+                } catch (e) {
+                  // 파싱 실패 시 기본값 사용
+                }
+              }
+
+              // 국가 정보를 rawData로 저장 (필드명 매핑 포함)
+              const nationDataObj = {
+                ...nation,
+                // 필드명 매핑 (기존 코드와 호환)
+                timeDifference: nation.timeDiff,
+                precautions: nation.caution,
+                // cities 정보도 포함
+                cities: nation.cities || [],
+              };
 
               return {
-                id: String(item.id),
-                name: item.nationKo || '',
+                id: String(nation.id),
+                name: nation.nationKo || '',
                 image: imageUrl,
                 selected: false,
                 departure: ['인천', '김포'], // API에 없으므로 기본값
-                airTime: '7시간 30분', // API에 없으므로 기본값
-                scheduleCount: scheduleCount,
-                rawData: item // 원본 데이터 저장
+                airTime: airTime,
+                scheduleCount: scheduleMap[nation.nationKo]?.schedule?.length || 0, // schedule 데이터에서 개수 가져오기
+                rawData: nationDataObj // 국가 정보 저장
               };
             })
         : [];
       
-      // 중복 제거: 같은 이름(nationKo)을 가진 항목 중 첫 번째 것만 유지
-      const uniqueDestinations = formattedDestinations.reduce((acc: Destination[], current: Destination) => {
-        const existingIndex = acc.findIndex(item => item.name === current.name);
-        if (existingIndex === -1) {
-          // 같은 이름이 없으면 추가
-          acc.push(current);
-        } else {
-          // 같은 이름이 있으면 scheduleCount가 더 많은 것으로 교체
-          if (current.scheduleCount > acc[existingIndex].scheduleCount) {
-            acc[existingIndex] = current;
-          }
-        }
-        return acc;
-      }, []);
-      
-      setDestinations(uniqueDestinations);
+      setDestinations(nationDestinations);
     } catch (error) {
       console.error('나라 리스트를 가져오는 중 오류 발생:', error);
       // 에러 발생 시 빈 배열 설정
@@ -142,122 +151,21 @@ const EuropeTripPage: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
     fetchDestinations();
   }, []);
 
-  const destinationInfo: DestinationInfo = {
-    name: '발리',
-    mainImage: require('../../../lastimages/nations/img_aus.png'),
-    timeDifference: '-1시간 (한국: 3시 → 발리:2시)',
-    currency: '화폐단위는 루피아(RP) / 1루피아= 약 1,000원',
-    visa: '도착비자 (VOS : Visa On Arrival) : $ 35',
-    voltage: '220V',
-    language: '인도네시아어, 발리어',
-    weather: '발리의 1년 평균기온은 24~34℃정도의 고온다습한 열대몬순 기후이다. 건기는 4월~9월, 우기는 10월~3월이지만 스콜이 한두번 지나가는 정도이고 쾌적하고 휴양하기 좋은 시기이다. ※자외선 차단제(선크림 등) 꼭 준비해야함.',
-    precautions: '주의사항에 대해서 적는 곳입니다. 주의사항에 대해서 적는 곳입니다. 주의사항에 대해서 적는 곳입니다.',
-    highlights: [
-      '세미냑 해변의 아름다운 일몰',
-      '우붓의 전통 발리 문화 체험',
-      '루루투르 화산의 장관',
-      '발리 전통 마사지와 스파',
-      '테갈랄랑 라이스 테라스',
-      '울루와투 사원의 케차크 댄스'
-    ],
-    regionalInfo: [
-      {
-        region: '스미냑',
-        description: '이 지역을 소개하는 곳입니다.',
-        attractions: ['지도보기'],
-        images: [
-          // require('../../lastimages/nations/img_france.jpeg'),
-          // require('../../lastimages/nations/img_france.jpeg'),
-          // require('../../lastimages/nations/img_france.jpeg'),
-          // require('../../lastimages/nations/img_france.jpeg'),
-          // require('../../lastimages/nations/img_france.jpeg'),
-          // require('../../lastimages/nations/img_france.jpeg')
-        ]
-      },
-      {
-        region: '우붓',
-        description: '이 지역을 소개하는 곳입니다.',
-        attractions: ['지도보기'],
-        images: [
-          // require('../../lastimages/nations/img_swiss.jpg'),
-          // require('../../lastimages/nations/img_swiss.jpg'),
-          // require('../../lastimages/nations/img_swiss.jpg'),
-          // require('../../lastimages/nations/img_swiss.jpg'),
-          // require('../../lastimages/nations/img_swiss.jpg'),
-          // require('../../lastimages/nations/img_swiss.jpg')
-        ]
-      },
-      {
-        region: '이태리',
-        description: '이 지역을 소개하는 곳입니다.',
-        attractions: ['지도보기'],
-        images: [
-          // require('../../lastimages/nations/img_italy.jpg'),
-          // require('../../lastimages/nations/img_italy.jpg'),
-          // require('../../lastimages/nations/img_italy.jpg'),
-          // require('../../lastimages/nations/img_italy.jpg'),
-          // require('../../lastimages/nations/img_italy.jpg'),
-          // require('../../lastimages/nations/img_italy.jpg')
-        ]
-      }
-    ],
-    entryExitInfo: [
-      {
-        title: '공항',
-        content: '웅우라라이 공항'
-      },
-      {
-        title: '비행시간',
-        content: '7시간 30분'
-      },
-      {
-        title: '시차',
-        content: '한국보다 2시간 느림'
-      },
-      {
-        title: '입국 전 준비사항',
-        content: '여권: 내용을 적는 곳입니다\n비자: 내용을 적는 곳입니다\n백신/건강: 내용을 적는 곳입니다'
-      },
-      {
-        title: '현지 입국 절차',
-        content: '진행순서: 사전 출입국 작성시-자동 입국출구로이동-여권스캔후 통과-수화물 수령-세관 신고서 제시-입국장으로 나오기\n입국카드작성: 내용을 적는 곳입니다\n작성방법: 내용을 적는 곳입니다'
-      }
-    ]
-  };
-
-  const handleDestinationClick = (destination: Destination) => {
-    if (mode === 'recommend') {
-      // 추천일정 모드: 기존 로직
-      if (selectedDestination === destination.name) {
-        setSelectedDestination(null);
-        setSelectedDestinationData(null);
-      } else {
-        setSelectedDestination(destination.name);
-        const destinationData = destinations.find(d => d.id === destination.id);
-        if (destinationData && (destinationData as any).rawData) {
-          setSelectedDestinationData((destinationData as any).rawData);
-        }
-      }
-    } else {
-      // 일정만들기 모드: 다중 선택
-      if (selectedDestinationsForCreate.includes(destination.name)) {
-        setSelectedDestinationsForCreate(selectedDestinationsForCreate.filter(name => name !== destination.name));
-      } else {
-        setSelectedDestinationsForCreate([...selectedDestinationsForCreate, destination.name]);
-      }
-    }
-  };
-
   // schedule 데이터 파싱 및 그룹화
   const getGroupedSchedules = () => {
-    if (!selectedDestinationData || !selectedDestinationData.schedule) return [];
+    if (!selectedCity) return {};
+    
+    // scheduleDataMap에서 선택된 국가의 스케줄 데이터 가져오기
+    const scheduleData = scheduleDataMap[selectedCity];
+    if (!scheduleData || !scheduleData.schedule || !Array.isArray(scheduleData.schedule)) {
+      return {};
+    }
 
-    const schedules: ScheduleItem[] = selectedDestinationData.schedule.map((item: any) => {
+    const schedules: ScheduleItem[] = scheduleData.schedule.map((item: any) => {
       let nations: string[] = [];
       try {
         nations = JSON.parse(item.nation || '[]');
@@ -277,7 +185,7 @@ const EuropeTripPage: React.FC = () => {
         nation: nations,
         tourPeriodData: periodData,
         tourmapImage: item.tourmapImage || '',
-        productScheduleData : item.productScheduleData || '',
+        productScheduleData: item.productScheduleData || '',
         productName: item.productName || ''
       };
     });
@@ -293,16 +201,16 @@ const EuropeTripPage: React.FC = () => {
     }
 
     // 탭 필터
-    if (!selectedDestination) return {};
+    if (!selectedCity) return {};
     
     if (scheduleFilter.includes('온니')) {
-      filtered = filtered.filter(s => s.nation.length === 1 && s.nation[0] === selectedDestination);
+      filtered = filtered.filter(s => s.nation.length === 1 && s.nation[0] === selectedCity);
     } else if (scheduleFilter.includes('외 1개국')) {
-      filtered = filtered.filter(s => s.nation.length === 2 && s.nation.includes(selectedDestination));
+      filtered = filtered.filter(s => s.nation.length === 2 && s.nation.includes(selectedCity));
     } else if (scheduleFilter.includes('외 2개국')) {
-      filtered = filtered.filter(s => s.nation.length === 3 && s.nation.includes(selectedDestination));
+      filtered = filtered.filter(s => s.nation.length === 3 && s.nation.includes(selectedCity));
     } else if (scheduleFilter.includes('외 3개국')) {
-      filtered = filtered.filter(s => s.nation.length === 4 && s.nation.includes(selectedDestination));
+      filtered = filtered.filter(s => s.nation.length === 4 && s.nation.includes(selectedCity));
     }
 
     // 그룹화 (nation 배열을 기준으로)
@@ -318,451 +226,830 @@ const EuropeTripPage: React.FC = () => {
     return grouped;
   };
 
-  const tabs = ['기본정보', '하이라이트', '지역별 정보', '입출국 안내'];
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case '기본정보':
-        return (
-          <div className="destination-details">
-            <div className="detail-item">
-              <div className="detail-content">
-                <h4>시차</h4>
-                <p>{destinationInfo.timeDifference}</p>
-              </div>
-            </div>
-
-            <div className="detail-item">
-              <div className="detail-content">
-                <h4>화폐</h4>
-                <p>{destinationInfo.currency}</p>
-              </div>
-            </div>
-
-            <div className="detail-item">
-              <div className="detail-content">
-                <h4>비자</h4>
-                <p>{destinationInfo.visa}</p>
-              </div>
-            </div>
-
-            <div className="detail-item">   
-              <div className="detail-content">
-                <h4>전압</h4>
-                <p>{destinationInfo.voltage}</p>
-              </div>
-            </div>
-
-            <div className="detail-item">
-              <div className="detail-content">
-                <h4>언어</h4>
-                <p>{destinationInfo.language}</p>
-              </div>
-            </div>
-
-            <div className="detail-item">
-              <div className="detail-content">
-                <h4>날씨</h4>
-                <p>{destinationInfo.weather}</p>
-              </div>
-            </div>
-
-            <div className="detail-item">
-              <div className="detail-content">
-                <h4>주의사항</h4>
-                <p>{destinationInfo.precautions}</p>
-              </div>
-            </div>
-          </div>
-        );
-
-      case '하이라이트':
-        return (
-          <div className="highlights-content">
-            <div className="highlights-grid">
-              {destinationInfo.highlights.map((highlight, index) => (
-                <div key={index} className="highlight-item">
-                  <div className="highlight-number">{index + 1}</div>
-                  <p>{highlight}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case '지역별 정보':
-        return (
-          <div className="regional-content">
-            {destinationInfo.regionalInfo.map((region, index) => (
-              <div key={index} className="region-item">
-                <div className="region-header">
-                  <h3>{region.region}</h3>
-                  <button className="map-btn">지도보기</button>
-                </div>
-                <p className="region-description">{region.description}</p>
-                <div className="region-images">
-                  <div className="image-grid">
-                    {region.images.map((image, idx) => (
-                      <div key={idx} className="image-item">
-                        <img src={image} alt={`${region.region} ${idx + 1}`} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-
-      case '입출국 안내':
-        return (
-          <div className="entry-exit-content">
-            {destinationInfo.entryExitInfo.map((info, index) => (
-              <div key={index} className={`info-item ${index >= 3 ? 'highlighted' : ''}`}>
-                <h3>{info.title}</h3>
-                <p>{info.content.split('\n').map((line, idx) => (
-                  <span key={idx}>
-                    {line}
-                    {idx < info.content.split('\n').length - 1 && <br />}
-                  </span>
-                ))}</p>
-              </div>
-            ))}
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   return (
-    <div className="trip-page">
-
-      {/* 메인 컨텐츠 */}
-      <div className={`trip-main ${mode === 'recommend' ? (selectedDestination ? 'has-selection' : '') : 'has-selection'}`}>
-        {/* 좌측 패널 - 여행지 선택 */}
-        <div className="left-panel">
-          <div className="panel-content">
-            {/* 패널 헤더 */}
-            <div className="panel-header">
-              <div className="action-buttons">
-                <button 
-                  className={`btn-primary ${mode === 'recommend' ? 'active' : ''}`}
-                  onClick={() => {
-                    setMode('recommend');
-                    setSelectedDestination(null);
-                    setSelectedDestinationData(null);
-                    setSelectedDestinationsForCreate([]);
-                  }}
+    <div className="trip-page-wrapper">
+      <div className={`trip-container ${selectedCity ? 'detail-open' : ''}`}>
+        {/* 왼쪽 영역: 헤더 + 나라 리스트 */}
+        <div className="left-section">
+          {/* 헤더 영역 */}
+          <div className="trip-header">
+            <div className="header-buttons">
+              <button 
+                className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
+                onClick={() => setActiveButton('recommend')}
+              >
+                추천일정
+              </button>
+              <button 
+                className={`btn-tap ${activeButton === 'create' ? 'active' : ''}`}
+                onClick={() => setActiveButton('create')}
+              >
+                일정만들기
+              </button>
+            </div>
+            <div className="header-filters">
+              <div className="filter-left">
+                <label className="filter-checkbox">
+                  <input 
+                    type="checkbox" 
+                    checked={isSingleCity}
+                    onChange={(e) => {
+                      setIsSingleCity(e.target.checked);
+                      if (e.target.checked) setIsMultiCity(false);
+                    }}
+                  />
+                  <span className="filter-item">싱글시티</span>
+                </label>
+                <label className="filter-checkbox">
+                  <input 
+                    type="checkbox" 
+                    checked={isMultiCity}
+                    onChange={(e) => {
+                      setIsMultiCity(e.target.checked);
+                      if (e.target.checked) setIsSingleCity(false);
+                    }}
+                  />
+                  <span className="filter-item">멀티시티</span>
+                </label>
+              </div>
+              <div className="filter-right">
+                <button
+                  type="button"
+                  className="worldmap-button"
+                  onClick={() => setIsWorldMapOpen(true)}
                 >
-                  추천일정
-                </button>
-                <button 
-                  className={`btn-secondary ${mode === 'create' ? 'active' : ''}`}
-                  onClick={() => {
-                    setMode('create');
-                    setSelectedDestination(null);
-                    setSelectedDestinationData(null);
-                    setSelectedDestinationsForCreate([]);
-                  }}
-                >
-                  일정만들기
+                  세계지도 보기
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* 필터 옵션 */}
-            {/* <div className="filter-options">
-              <button 
-                className={`filter-btn ${isSingleCity ? 'active' : ''}`}
-                onClick={() => setIsSingleCity(true)}
-              >
-                싱글시티
-              </button>
-              <button 
-                className={`filter-btn ${!isSingleCity ? 'active' : ''}`}
-                onClick={() => setIsSingleCity(false)}
-              >
-                멀티시티
-              </button>
-            </div> */}
-
-            {/* 추천일정 모드: 여행지 그리드 */}
-            {mode === 'recommend' && (
-              <div className={`destinations-grid ${selectedDestination ? 'has-selection' : 'no-selection'}`}>
-                {loading ? (
-                  <div className="loading-message">로딩 중...</div>
-                ) : destinations.length === 0 ? (
-                  <div className="empty-message">데이터가 없습니다.</div>
-                ) : (
-                  destinations.map((destination) => {
-
-                    return (
-                      <div 
-                        key={destination.id}
-                        className={`destination-card ${selectedDestination === destination.name ? 'selected' : ''}`}
-                        onClick={() => handleDestinationClick(destination)}
-                      >
-                        <div className="card-image">
-                          <img src={`${AdminURL}/images/nationimages/${destination.image}`} alt={destination.name} />
-                          {selectedDestination === destination.name && (
-                            <div className="selection-indicator">
-                              ✓
-                            </div>
-                          )}
-                        </div>
-                        <div className="card-text-content">
-                          <div className="card-name-group">
-                            <h3 className="card-name">{destination.name}</h3>
-                            <span className="card-schedule-count">({destination.scheduleCount}개)</span>
-                          </div>
-                          <span className="card-plus-icon">+</span>
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            )}
-
-            {/* 일정만들기 모드: 여행지 선택 */}
-            {mode === 'create' && (
-              <div className="create-mode-content">
-                {/* 지역 필터 탭 */}
-                <div className="region-tabs">
-                  {['전체', '서유럽', '동유럽', '북유럽'].map((region) => (
-                    <button
-                      key={region}
-                      className={`region-tab ${regionFilter === region ? 'active' : ''}`}
-                      onClick={() => setRegionFilter(region)}
-                    >
-                      {region}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 여행지 카드 그리드 */}
-                <div className="create-destinations-grid">
-                  {loading ? (
-                    <div className="loading-message">로딩 중...</div>
-                  ) : destinations.length === 0 ? (
-                    <div className="empty-message">데이터가 없습니다.</div>
-                  ) : (
-                    destinations.map((destination) => {
-                      // 도시 목록 (실제 데이터가 있으면 사용, 없으면 기본값)
-                      const cities = ['파리', '베르사이유', '니스']; // 기본값, 실제로는 API에서 가져와야 함
-                      const selectedCitiesForCountry = selectedCities[destination.name] || [];
-
-                      
-                      return (
-                        <div key={destination.id} className="create-destination-card">
-                          <div className="create-card-image">
-                            <img src={`${AdminURL}/images/nationimages/${destination.image}`} alt={destination.name} />
-                          </div>
-                          <div className="create-card-content">
-                            <h3 className="create-card-country">{destination.name}</h3>
-                            <div className="create-card-cities">
-                              {cities.map((city, index) => {
-                                const isChecked = selectedCitiesForCountry.includes(city);
-                                return (
-                                  <label key={index} className="city-checkbox-label">
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={(e) => {
-                                        const newSelectedCities = { ...selectedCities };
-                                        if (!newSelectedCities[destination.name]) {
-                                          newSelectedCities[destination.name] = [];
-                                        }
-                                        if (e.target.checked) {
-                                          newSelectedCities[destination.name] = [
-                                            ...newSelectedCities[destination.name],
-                                            city
-                                          ];
-                                        } else {
-                                          newSelectedCities[destination.name] = newSelectedCities[destination.name].filter(c => c !== city);
-                                        }
-                                        setSelectedCities(newSelectedCities);
-                                      }}
-                                    />
-                                    <span className="city-name">{city}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
+          {/* 나라 리스트 */}
+          <div className="nation-list-section">
+            <div className="nation-grid">
+              {loading ? (
+                <div className="loading-message">로딩 중...</div>
+              ) : destinations.length === 0 ? (
+                <div className="empty-message">데이터가 없습니다.</div>
+              ) : (
+                destinations.map((city) => (
+                  <div 
+                    key={city.id} 
+                    className={`nation-card ${selectedCity === city.name ? 'selected' : ''}`}
+                    onClick={() => {
+                      console.log(city.rawData);
+                      if (selectedCity === city.name) {
+                        setSelectedCity(null);
+                        setSelectedCityData(null);
+                      } else {
+                        setSelectedCity(city.name);
+                        setSelectedCityData(city.rawData);
+                        setActiveTab('info'); // 기본정보 탭 자동 선택
+                      }
+                    }}
+                  >
+                    <div className="nation-image-container">
+                      <img className="image" alt={city.name} src={`${AdminURL}/images/nationimages/${city.image}`} />
+                    </div>
+                    <div className="nation-info">
+                      <div className='nation-name'>{city.name}</div>
+                      <p className='nation-airTime'>
+                        <span className="text-wrapper-airtime-label">비행시간 약 </span>
+                        <span className="text-wrapper-airtime-value">{city.airTime}</span>
+                      </p>
+                      <div className='nation-departure'>인천출발ㅣ부산출발</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 우측 패널 */}
-        {/* 추천일정 모드: Schedule 리스트 */}
-        {mode === 'recommend' && selectedDestination && (
-          <div className="right-panel">
-            <div className="panel-content">
-              <div className="schedule-list-container">
-                {/* 나라 제목 */}
-                <h2 className="selected-nation-title">{selectedDestination}</h2>
-
-                {/* 탭 네비게이션 */}
-                <div className="schedule-tabs">
-                  {['전체', `${selectedDestination}온니`, `${selectedDestination}외 1개국`, `${selectedDestination}외 2개국`, `${selectedDestination}외 3개국`].map((tab) => (
-                    <button
-                      key={tab}
-                      className={`schedule-tab ${scheduleFilter === tab ? 'active' : ''}`}
-                      onClick={() => setScheduleFilter(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 검색바 */}
-                <div className="schedule-search">
-                  <input
-                    type="text"
-                    placeholder="상품검색"
-                    value={scheduleSearch}
-                    onChange={(e) => setScheduleSearch(e.target.value)}
-                    className="schedule-search-input"
-                  />
-                  <button className="schedule-search-btn">🔍</button>
-                </div>
-
-                {/* Schedule 리스트 */}
-                <div className="schedule-sections">
-                  {Object.keys(getGroupedSchedules()).length === 0 ? (
-                    <div className="no-schedules">일정이 없습니다.</div>
-                  ) : (
-                    Object.entries(getGroupedSchedules()).map(([groupKey, schedules]) => (
-                      <div key={groupKey} className="schedule-section">
-                        <div className="schedule-section-header">{groupKey}</div>
-                        {schedules.map((schedule: any, index) => {
-                          const periodText = schedule.tourPeriodData.periodNight && schedule.tourPeriodData.periodDay
-                            ? `${schedule.tourPeriodData.periodNight} ${schedule.tourPeriodData.periodDay}`
-                            : '';
-                          
-                          // 상세 정보는 productName에서 추출하거나 nation 배열을 기반으로 생성
-                          const detailText = schedule.productName || schedule.nation.join(' + ');
-
-                          return (
-                            <div 
-                              key={index} 
-                              className="schedule-item"
-                              onClick={() => {
-                                if (schedule.id) {
-                                  navigate(`/counsel/europe/schedulerecommend`, { state: schedule });
-                                  window.scrollTo(0, 0);
-                                }
-                              }}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              <div className="schedule-item-content">
-                                <h4 className="schedule-item-title">
-                                 {schedule.nation.join(' + ')} {periodText}
-                                </h4>
-                                <p className="schedule-item-detail">{detailText}</p>
-                              </div>
-                              {index === 0 && groupKey === selectedDestination && (
-                                <button className="schedule-item-badge recommend">추천상품</button>
-                              )}
-                              {index === 0 && groupKey.includes('스위스') && (
-                                <button className="schedule-item-badge special">특가상품</button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+        {/* 오른쪽 영역: 상세 정보 */}
+        {selectedCity && (
+          <div className="right-section">
+            <div className="detail-section">
+          <div className="detail-card">
+            <div className="detail-header">
+              <h2 className="detail-title">{selectedCityData?.nationKo || selectedCity || '국가 정보'}</h2>
+              <div className="detail-subtitle">{selectedCityData?.nationEn || ''}</div>
             </div>
-          </div>
-        )}
 
-        {/* 일정만들기 모드: 일정 구성 패널 */}
-        {mode === 'create' && (
-          <div className="right-panel create-schedule-panel">
-            <div className="panel-content">
-              <div className="create-schedule-container">
-                {/* 여행기간 입력 */}
-                <div className="travel-period-section">
-                  <div className="travel-period-input-wrapper">
-                    <FaRegCalendarAlt className="calendar-icon" />
-                    <input
-                      type="text"
-                      className="travel-period-input"
-                      placeholder="여행기간"
-                      value={createScheduleDays}
-                      onChange={(e) => setCreateScheduleDays(parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-                </div>
-
-
-                {/* 선택된 도시 목록 */}
-                <div className="selected-cities-section">
-                  {Object.values(selectedCities).flat().length === 0 ? (
-                    <div className="no-selected-cities">선택된 도시가 없습니다</div>
-                  ) : (
-                    Object.values(selectedCities).flat().map((city, index) => (
-                      <div key={index} className="selected-city-card">
-                        <span className="city-name">{city}</span>
-                        <input
-                          type="checkbox"
-                          checked={true}
-                          onChange={() => {
-                            // 체크박스 해제 시 도시 제거
-                            const newSelectedCities = { ...selectedCities };
-                            Object.keys(newSelectedCities).forEach(country => {
-                              newSelectedCities[country] = newSelectedCities[country].filter(c => c !== city);
-                            });
-                            setSelectedCities(newSelectedCities);
-                          }}
-                          className="city-checkbox"
-                        />
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* 다음 버튼 */}
-                <div className="create-next-button-wrapper">
+            <div className="detail-tabs">
+              <div className="tab-container">
+                <div className="tab-left">
                   <button
-                    className="create-next-button"
-                    onClick={() => {
-                      // 다음 단계로 이동
-                      const allSelectedCities = Object.values(selectedCities).flat();
-                      if (allSelectedCities.length > 0) {
-                        navigate(`/counsel/europe/schedulecustom`, {
-                          state: {
-                            selectedCities: allSelectedCities,
-                            selectedCitiesByCountry: selectedCities,
-                            createScheduleDays: createScheduleDays
-                          }
-                        });
-                      }
-                    }}
-                    disabled={Object.values(selectedCities).flat().length === 0}
+                    type="button"
+                    className={`tab-button text-wrapper-tab-info ${activeTab === 'info' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('info')}
                   >
-                    다음
+                    기본정보
+                  </button>
+                 
+                  <button
+                    type="button"
+                    className={`tab-button text-wrapper-tab-product ${activeTab === 'product' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('product')}
+                  >
+                    여행상품
+                  </button>
+                 
+                  <button
+                    type="button"
+                    className={`tab-button text-wrapper-tab-entry ${activeTab === 'entry' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('entry')}
+                  >
+                    입출국 안내
+                  </button>
+                </div>
+                <div className="tab-right">
+                  <button
+                    type="button"
+                    className="tab-map-button"
+                    onClick={() => navigate(`/counsel/europe/city`, { state : {nationData: selectedCityData, nationName: selectedCity}})}
+                  >
+                    도시보기
                   </button>
                 </div>
               </div>
             </div>
+
+            <div className="detail-content">
+              {activeTab === 'info' && (
+                <>
+                  <div className="detail-main-image">
+                    {(() => {
+                      // basicinfoImage 우선, 없으면 inputImage의 첫 번째 이미지 사용
+                      if (selectedCityData?.basicinfoImage) {
+                        return <img className="image-detail-main" alt={selectedCity || 'Image'} src={`${AdminURL}/images/citymapinfo/${selectedCityData.basicinfoImage}`} />;
+                      }
+                      if (selectedCityData?.inputImage) {
+                        try {
+                          const images = JSON.parse(selectedCityData.inputImage || '[]');
+                          const mainImage = Array.isArray(images) && images.length > 0 ? images[0] : Image_morisus;
+                          return <img className="image-detail-main" alt={selectedCity || 'Image'} src={`${AdminURL}/images/nationimages/${mainImage}`} />;
+                        } catch (e) {
+                          return <img className="image-detail-main" alt={selectedCity || 'Image'} src={Image_morisus} />;
+                        }
+                      }
+                      return <img className="image-detail-main" alt={selectedCity || 'Image'} src={Image_morisus} />;
+                    })()}
+                  </div>
+                  <div className="detail-info-grid">
+                    {(() => {
+                      // timezoneInfo 파싱
+                      try {
+                        const timezoneInfo = selectedCityData?.timezoneInfo ? JSON.parse(selectedCityData.timezoneInfo) : null;
+                        if (timezoneInfo?.timeDifference) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">시차</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  <span className="info-strong">{timezoneInfo.timeDifference}</span>
+                                </div>
+                                {timezoneInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {timezoneInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // visaInfo 파싱
+                      try {
+                        const visaInfo = selectedCityData?.visaInfo ? JSON.parse(selectedCityData.visaInfo) : null;
+                        if (visaInfo?.info) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">비자</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {visaInfo.info}
+                                </div>
+                                {visaInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {visaInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // languageInfo 파싱
+                      try {
+                        const languageInfo = selectedCityData?.languageInfo ? JSON.parse(selectedCityData.languageInfo) : null;
+                        if (languageInfo?.languages && Array.isArray(languageInfo.languages) && languageInfo.languages.length > 0) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">언어</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">{languageInfo.languages.join(', ')}</div>
+                                {languageInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {languageInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // additionalInfo에서 로밍 정보 파싱
+                      try {
+                        const additionalInfo = selectedCityData?.additionalInfo ? JSON.parse(selectedCityData.additionalInfo) : null;
+                        if (additionalInfo?.휴대폰 && Array.isArray(additionalInfo.휴대폰) && additionalInfo.휴대폰.length > 0) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">로밍</div>
+                              <div className="info-value">
+                                {additionalInfo.휴대폰[0]}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // exrateInfo 파싱
+                      try {
+                        const exrateInfo = selectedCityData?.exrateInfo ? JSON.parse(selectedCityData.exrateInfo) : null;
+                        if (exrateInfo?.exchangeRate) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">화폐</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {exrateInfo.exchangeRate}
+                                </div>
+                                {exrateInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {exrateInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // tipInfo 파싱
+                      try {
+                        const tipInfo = selectedCityData?.tipInfo ? JSON.parse(selectedCityData.tipInfo) : null;
+                        if (tipInfo?.info) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">팁매너</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {tipInfo.info}
+                                </div>
+                                {tipInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {tipInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // plugInfo 파싱
+                      try {
+                        const plugInfo = selectedCityData?.plugInfo ? JSON.parse(selectedCityData.plugInfo) : null;
+                        if (plugInfo?.voltage) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">전압</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">{plugInfo.voltage}</div>
+                                {plugInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {plugInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // priceInfo 파싱
+                      try {
+                        const priceInfo = selectedCityData?.priceInfo ? JSON.parse(selectedCityData.priceInfo) : null;
+                        if (priceInfo?.priceLevel) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">물가</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div className="info-value">
+                                  {priceInfo.priceLevel}
+                                </div>
+                                {priceInfo.description && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {priceInfo.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // weatherInfo 파싱
+                      try {
+                        const weatherInfo = selectedCityData?.weatherInfo ? JSON.parse(selectedCityData.weatherInfo) : null;
+                        if (weatherInfo && (weatherInfo.minTemp || weatherInfo.maxTemp || (weatherInfo.details && Array.isArray(weatherInfo.details) && weatherInfo.details.length > 0))) {
+                          return (
+                            <div className="info-item">
+                              <div className="info-label">날씨</div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                {(weatherInfo.minTemp || weatherInfo.maxTemp) && (
+                                  <div className="info-value">
+                                    최저 : {weatherInfo.minTemp || '-'}, 최고 : {weatherInfo.maxTemp || '-'}
+                                  </div>
+                                )}
+                                {weatherInfo.details && Array.isArray(weatherInfo.details) && weatherInfo.details.length > 0 && (
+                                  <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>
+                                    {weatherInfo.details.map((line: string, index: number) => (
+                                      <React.Fragment key={index}>
+                                        {line}
+                                        {index < weatherInfo.details.length - 1 && <br />}
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+
+
+                    {(() => {
+                      // caution 또는 additionalInfo에서 주의사항 파싱
+                      if (selectedCityData?.caution && selectedCityData.caution.trim() !== '') {
+                        return (
+                          <div className="info-item">
+                            <div className="info-label">주의사항</div>
+                            <div className="info-multiline">
+                              {selectedCityData.caution.split('\n').map((line: string, index: number) => (
+                                <p key={index} className="info-text">{line}</p>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      // additionalInfo 파싱
+                      try {
+                        const additionalInfo = selectedCityData?.additionalInfo ? JSON.parse(selectedCityData.additionalInfo) : null;
+                        if (!additionalInfo) return null;
+
+                        const sections: Array<{ title: string; content: string[] }> = [];
+
+                        // 영업시간
+                        if (additionalInfo.businessHours && Array.isArray(additionalInfo.businessHours) && additionalInfo.businessHours.length > 0) {
+                          sections.push({ title: '영업시간', content: additionalInfo.businessHours });
+                        }
+
+                        // 가격 정보
+                        if (additionalInfo.prices && Array.isArray(additionalInfo.prices) && additionalInfo.prices.length > 0) {
+                          sections.push({ title: '가격 정보', content: additionalInfo.prices });
+                        }
+
+                        // 물
+                        if (additionalInfo.물 && Array.isArray(additionalInfo.물) && additionalInfo.물.length > 0) {
+                          sections.push({ title: '물', content: additionalInfo.물 });
+                        }
+
+                        // 인터넷 사용
+                        if (additionalInfo['인터넷 사용'] && Array.isArray(additionalInfo['인터넷 사용']) && additionalInfo['인터넷 사용'].length > 0) {
+                          sections.push({ title: '인터넷 사용', content: additionalInfo['인터넷 사용'] });
+                        }
+
+                        // 전화 사용
+                        if (additionalInfo.phone && Array.isArray(additionalInfo.phone) && additionalInfo.phone.length > 0) {
+                          sections.push({ title: '전화 사용', content: additionalInfo.phone });
+                        }
+
+                        // 우편
+                        if (additionalInfo.우편 && Array.isArray(additionalInfo.우편) && additionalInfo.우편.length > 0) {
+                          sections.push({ title: '우편', content: additionalInfo.우편 });
+                        }
+
+                        // ATM
+                        if (additionalInfo.atm && Array.isArray(additionalInfo.atm) && additionalInfo.atm.length > 0) {
+                          sections.push({ title: 'ATM', content: additionalInfo.atm });
+                        }
+
+                        // 카드/현금 사용
+                        if (additionalInfo.cardCashUsage && Array.isArray(additionalInfo.cardCashUsage) && additionalInfo.cardCashUsage.length > 0) {
+                          sections.push({ title: '카드/현금 사용', content: additionalInfo.cardCashUsage });
+                        }
+
+                        // 화장실
+                        if (additionalInfo.restroom && Array.isArray(additionalInfo.restroom) && additionalInfo.restroom.length > 0) {
+                          sections.push({ title: '화장실', content: additionalInfo.restroom });
+                        }
+
+                        // 흡연/음주
+                        if (additionalInfo.smokingDrinking && Array.isArray(additionalInfo.smokingDrinking) && additionalInfo.smokingDrinking.length > 0) {
+                          sections.push({ title: '흡연/음주', content: additionalInfo.smokingDrinking });
+                        }
+
+                        // 예절
+                        if (additionalInfo.etiquette && Array.isArray(additionalInfo.etiquette) && additionalInfo.etiquette.length > 0) {
+                          sections.push({ title: '예절', content: additionalInfo.etiquette });
+                        }
+
+                        if (sections.length === 0) return null;
+
+                        return (
+                          <div className="info-item">
+                            <div className="info-label">추가정보</div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              {sections.map((section, sectionIndex) => (
+                                <div key={sectionIndex}>
+                                  <div className="info-value" style={{ marginBottom: '4px' }}>
+                                    {section.title}
+                                  </div>
+                                  <div style={{ fontSize: '13px', color: '#999' }}>
+                                    {section.content.map((item: string, itemIndex: number) => (
+                                      <div key={itemIndex} style={{ marginBottom: itemIndex < section.content.length - 1 ? '8px' : '0' }}>
+                                        {item.split('\\n').map((line: string, lineIndex: number) => (
+                                          <React.Fragment key={lineIndex}>
+                                            {line}
+                                            {lineIndex < item.split('\\n').length - 1 && <br />}
+                                          </React.Fragment>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                        return null;
+                      }
+                    })()}
+                  </div>
+
+                  <div
+                    className="detail-button"
+                    onClick={() => navigate(`/counsel/europe/city`, { state : {nationData: selectedCityData, nationName: selectedCity}})}
+                  >
+                    <div className="group-product-button">
+                      <div className="text-wrapper-product-button">상품보기</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'product' && (
+                <div className="schedule-list-container">
+                  {/* 나라 제목 */}
+                  <h2 className="selected-nation-title">{selectedCity}</h2>
+
+                  {/* 탭 네비게이션 */}
+                  <div className="schedule-tabs">
+                    {['전체', `${selectedCity}온니`, `${selectedCity}외 1개국`, `${selectedCity}외 2개국`, `${selectedCity}외 3개국`].map((tab) => (
+                      <button
+                        key={tab}
+                        className={`schedule-tab ${scheduleFilter === tab ? 'active' : ''}`}
+                        onClick={() => setScheduleFilter(tab)}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 검색바 */}
+                  <div className="schedule-search">
+                    <input
+                      type="text"
+                      placeholder="상품검색"
+                      value={scheduleSearch}
+                      onChange={(e) => setScheduleSearch(e.target.value)}
+                      className="schedule-search-input"
+                    />
+                    <button className="schedule-search-btn">🔍</button>
+                  </div>
+
+                  {/* Schedule 리스트 */}
+                  <div className="schedule-sections">
+                    {Object.keys(getGroupedSchedules()).length === 0 ? (
+                      <div className="no-schedules">일정이 없습니다.</div>
+                    ) : (
+                      Object.entries(getGroupedSchedules()).map(([groupKey, schedules]) => (
+                        <div key={groupKey} className="schedule-section">
+                          <div className="schedule-section-header">{groupKey}</div>
+                          {schedules.map((schedule: any, index) => {
+                            const periodText = schedule.tourPeriodData.periodNight && schedule.tourPeriodData.periodDay
+                              ? `${schedule.tourPeriodData.periodNight} ${schedule.tourPeriodData.periodDay}`
+                              : '';
+                            
+                            // 상세 정보는 productName에서 추출하거나 nation 배열을 기반으로 생성
+                            const detailText = schedule.productName || schedule.nation.join(' + ');
+
+                            return (
+                              <div 
+                                key={index} 
+                                className="schedule-item"
+                                onClick={() => {
+                                  if (schedule.id) {
+                                    navigate(`/counsel/europe/schedulerecommend`, { state: schedule });
+                                    window.scrollTo(0, 0);
+                                  }
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <div className="schedule-item-content">
+                                  <h4 className="schedule-item-title">
+                                   {schedule.nation.join(' + ')} {periodText}
+                                  </h4>
+                                  <p className="schedule-item-detail">{detailText}</p>
+                                </div>
+                                {index === 0 && groupKey === selectedCity && (
+                                  <button className="schedule-item-badge recommend">추천상품</button>
+                                )}
+                                {index === 0 && groupKey.includes('스위스') && (
+                                  <button className="schedule-item-badge special">특가상품</button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'entry' && (
+                <div className="entry-guide">
+                  <div className="entry-section">
+                    {(() => {
+                      // cities 배열의 첫 번째 도시에서 trafficCode 추출
+                      try {
+                        if (selectedCityData?.cities && Array.isArray(selectedCityData.cities) && selectedCityData.cities.length > 0) {
+                          const firstCity = selectedCityData.cities[0];
+                          const trafficCode = JSON.parse(firstCity.trafficCode || '{}');
+                          if (trafficCode.airplane && Array.isArray(trafficCode.airplane) && trafficCode.airplane.length > 0) {
+                            const airports = trafficCode.airplane.map((airport: any) => 
+                              `${airport.airport} (${airport.code})`
+                            ).join(', ');
+                            return (
+                              <div className="entry-row">
+                                <div className="entry-label">공항</div>
+                                <div className="entry-value">{airports}</div>
+                              </div>
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 무시
+                      }
+                      return null;
+                    })()}
+                    {selectedCityData?.timeDifference && (
+                      <div className="entry-row">
+                        <div className="entry-label">시차</div>
+                        <div className="entry-value">{selectedCityData.timeDifference}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="entry-section">
+                    <div className="entry-section-title">입국 전 준비사항</div>
+                    <div className="entry-row">
+                      <div className="entry-label">여권</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">비자</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">백신/건강</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                  </div>
+
+                  <div className="entry-section">
+                    <div className="entry-section-title">사전 입출국 신청방법</div>
+                    <div className="entry-row">
+                      <div className="entry-label">비자</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">입국신고서</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">검역신고</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">세관신고</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                  </div>
+
+                  <div className="entry-section">
+                    <div className="entry-section-title">현지 입국 절차</div>
+                    <div className="entry-row">
+                      <div className="entry-label">입국심사/검역</div>
+                      <div className="entry-value">
+                        입국심사 / 세관신고서 작성 (한국인/기내/입국장)
+                      </div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">입국장 동선</div>
+                      <div className="entry-value">
+                        입국심사 후 수하물 찾기 → 세관검사 → 출구
+                      </div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">수하물 수령</div>
+                      <div className="entry-value">
+                        현지 입국 안내 오디오 또는 가이드 안내에 따라 이동
+                      </div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">현지 가이드 미팅</div>
+                      <div className="entry-value">
+                        입국장으로 나와 가이드 미팅 후 이동
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="entry-section">
+                    <div className="entry-section-title">세관신고 면세범위</div>
+                    <div className="entry-row">
+                      <div className="entry-label">주류</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">담배</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">현금</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">중요서류 등</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                  </div>
+
+                  <div className="entry-section">
+                    <div className="entry-section-title">귀국 절차</div>
+                    <div className="entry-row">
+                      <div className="entry-label">탑승수속, 출국심사</div>
+                      <div className="entry-value">
+                        출국시간 2시간~3시간 전 공항 도착 후 진행
+                      </div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">면세 환급</div>
+                      <div className="entry-value">내용을 적는 곳입니다.</div>
+                    </div>
+                    <div className="entry-row">
+                      <div className="entry-label">휴대품 신고</div>
+                      <div className="entry-value">
+                        입국 시 800달러, 주류 1병, 담배 200개비, 향수 60ml
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'highlight' && (
+                <div className="highlight-grid">
+                  {(() => {
+                    // API에서 하이라이트 이미지 가져오기
+                    if (selectedCityData?.inputImage) {
+                      try {
+                        const images = JSON.parse(selectedCityData.inputImage || '[]');
+                        if (Array.isArray(images) && images.length > 0) {
+                          return images.slice(0, 4).map((image: string, index: number) => (
+                            <div key={index} className="highlight-card">
+                              <div className="highlight-image-wrap">
+                                <img src={`${AdminURL}/images/nationimages/${image}`} alt={`${selectedCity} 하이라이트 ${index + 1}`} />
+                              </div>
+                              {selectedCityData?.highlightTitles && Array.isArray(selectedCityData.highlightTitles) && selectedCityData.highlightTitles[index] ? (
+                                <div className="highlight-title">{selectedCityData.highlightTitles[index]}</div>
+                              ) : (
+                                <div className="highlight-title">{selectedCity} 하이라이트 {index + 1}</div>
+                              )}
+                            </div>
+                          ));
+                        }
+                      } catch (e) {
+                        // 파싱 실패 시 기본 하이라이트 표시
+                      }
+                    }
+                    // 기본 하이라이트 표시
+                    return highlightItems.map((item) => (
+                      <div key={item.id} className="highlight-card">
+                        <div className="highlight-image-wrap">
+                          <img src={item.image} alt={item.title} />
+                        </div>
+                        <div className="highlight-title">{item.title}</div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
           </div>
         )}
       </div>
+
+      {isWorldMapOpen && (
+        <div
+          className="worldmap-modal-overlay"
+          onClick={() => setIsWorldMapOpen(false)}
+        >
+          <div
+            className="worldmap-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="worldmap-close"
+              onClick={() => setIsWorldMapOpen(false)}
+            >
+              ×
+            </button>
+            <img src={WorldMapImage} alt="세계 지도" />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
 
-export default EuropeTripPage;
+

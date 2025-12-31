@@ -75,7 +75,7 @@ export default function RestHotelPage() {
   ];
 
   return (
-    <div className="div-wrapper-screen">
+    <div className="RestHotelPage">
       <div className="hotel-header">
         <div className="hotel-header-left">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

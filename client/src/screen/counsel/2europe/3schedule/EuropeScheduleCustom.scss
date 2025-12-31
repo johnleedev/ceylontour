@@ -9,7 +9,7 @@
     .right-panel-toggle-btn {
       position: fixed;
       top: 120px;
-      right: 20px;
+      right: 0px;
       z-index: 1000;
       width: 60px;
       height: 50px;
@@ -36,6 +36,7 @@
   
     .hotel-container {
       display: flex;
+      gap: 20px;
       width: 100%;
       min-height: calc(100vh - 100px);
       margin: 0 auto;
@@ -81,11 +82,10 @@
     .hotel-container .right-section {
         flex: 1;
         max-width: 670px;
-        padding: 0 20px 20px 20px;
+        padding: 20px;
         box-sizing: border-box;
         position: relative;
         animation: slideInRight 0.3s ease;
-        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
   
         // 닫기 버튼
         .right-panel-close-btn {
@@ -1197,6 +1197,10 @@
         overflow-y: auto;
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.15);
+        padding: 30px;
         
         &::-webkit-scrollbar {
           display: none; /* Chrome, Safari, Opera */
@@ -1715,7 +1719,7 @@
         }
   
         .right-section {
-          padding: 0 15px 15px 15px;
+          padding: 15px;
   
           .right-panel-close-btn {
             top: 10px;

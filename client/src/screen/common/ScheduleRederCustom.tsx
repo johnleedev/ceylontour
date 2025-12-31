@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import './ScheduleRederBox.scss'
 import { DropdownBox } from '../../boxs/DropdownBox';
 import axios from 'axios';
@@ -9,7 +9,6 @@ import RatingBoard from './RatingBoard';
 import { useRecoilValue } from 'recoil';
 import { recoilExchangeRate } from '../../RecoilStore';
 import ScheduleTrafficAdd from './ScheduleTrafficAdd';
-import ScheduleDetailBoxImport from './ScheduleDetaiBoxImport';
 import { fetchScheduleDetailDataExternal } from './ScheduleDetailRedering';
 import { GoDotFill } from "react-icons/go";
 import { FaArrowsLeftRight } from "react-icons/fa6";
@@ -600,56 +599,164 @@ export default function ScheduleRederCustom (props : any) {
   // 통합 교통편 모달 상태
   const [trafficModalOpen, setTrafficModalOpen] = useState<{dayIndex: number, locationIndex: number} | null>(null);
   const [selectedTrafficTab, setSelectedTrafficTab] = useState<'airline' | 'train' | 'bus' | 'ship'>('airline');
-  // 각 locationItem별 탭 타입 관리 (키: `${dayIndex}-${locationIndex}`, 값: '묶음일정' | '상세일정')
-  const [searchTabTypes, setSearchTabTypes] = useState<Record<string, '묶음일정' | '상세일정'>>({});
-  // 검색 모달 상태
-  const [searchModalOpen, setSearchModalOpen] = useState<{dayIndex: number, locationIndex: number, tabType: '묶음일정' | '상세일정'} | null>(null);
   const [searchModalKeyword, setSearchModalKeyword] = useState<string>('');
   // 아이콘 선택기 열림 상태 (키: `${dayIndex}-${locationIndex}`)
   const [iconSelectorOpen, setIconSelectorOpen] = useState<Record<string, boolean>>({});
+  // 선택된 영역 상태 (외부에서 상세일정 아이템을 클릭했을 때 데이터를 추가할 위치)
+  const [selectedLocation, setSelectedLocation] = useState<{dayIndex: number, locationIndex: number, locationDetailIndex?: number, tabType: '변경'} | null>(null);
   
-  // 입력창에서 검색하기 함수
-  const handleWordSearching = async (searchWord: string, dayIndex: number, detailIndex: number) => {
-    const tabKey = `${dayIndex}-${detailIndex}`;
-    const tabType = searchTabTypes[tabKey] || '묶음일정'; // 기본값은 묶음일정
-    
-    try {
-      if (tabType === '상세일정') {
-        // 소분류 검색: getdetailboxsearch API 사용
-        const res = await axios.post(`${AdminURL}/scheduledetailbox/getdetailboxsearch`, {
-          city: '전체', // 도시는 전체로 검색 (필요시 tourLocation 사용 가능)
-          word: searchWord
-        });
-        if (res.data && res.data.resultData && res.data.resultData !== false && Array.isArray(res.data.resultData)) {
-          const copy = [...res.data.resultData];
-          setLocationSearchList(copy);
-          setSearchListDayOpenId(dayIndex);
-          setSearchListDetailOpenId(detailIndex);
-        } else {
-          setLocationSearchList([]);
-          setSearchListDayOpenId(null);
-          setSearchListDetailOpenId(null);
-        }
-      } else {
-        // 대분류 검색: getscheduledetailsearch API 사용 (기존)
-        const res = await axios.post(`${AdminURL}/scheduledetailbox/getscheduledetailsearch`, {
-          word: searchWord
-        });
-        if (res.data.resultData) {
-          const copy = [...res.data.resultData];
-          setLocationSearchList(copy);
-          setSearchListDayOpenId(dayIndex);
-          setSearchListDetailOpenId(detailIndex);
-        } else {
-          setLocationSearchList([]);
-          setSearchListDayOpenId(null);
-          setSearchListDetailOpenId(null);
-        }
+  // 최신 selectedLocation 값을 참조하기 위한 ref
+  const selectedLocationRef = useRef<{dayIndex: number, locationIndex: number, locationDetailIndex?: number, tabType: '변경'} | null>(null);
+  
+  // selectedLocation이 변경될 때마다 ref 업데이트
+  React.useEffect(() => {
+    selectedLocationRef.current = selectedLocation;
+  }, [selectedLocation]);
+  
+  // locationDetailItem의 subLocationDetail을 변경하는 함수
+  const handleLocationDetailItemChange = (item: any, dayIndex: number, locationIndex: number, locationDetailIndex: number) => {
+    // 소분류는 바로 하나의 박스로 입력
+    let postImages: string[] = [];
+    if (Array.isArray(item.inputImage)) {
+      postImages = item.inputImage.slice(0, 3);
+    } else if (typeof item.inputImage === 'string') {
+      try {
+        const arr = JSON.parse(item.inputImage);
+        postImages = Array.isArray(arr) ? arr.slice(0, 3) : [item.inputImage];
+      } catch {
+        postImages = [item.inputImage];
       }
-    } catch (error) {
-      console.error("Failed to fetch search results:", error);
     }
+    
+    const sortValue = item.sort || '';
+    const subLocationValue = sortValue ? `[${sortValue}]` : '';
+    
+    const detailBoxItem = {
+      id: item.id,
+      postImages: postImages,
+      locationTitle: item.productName,
+      locationContent: item.detailNotice,
+      locationDetailSort: ''
+    };
+    
+    // 해당 DAY/LOCATION/LOCATIONDETAIL의 subLocationDetail 업데이트
+    setScheduleList(prev => {
+      const next = [...prev];
+      const schedule = next[selectedScheduleIndex];
+      const day = schedule?.scheduleDetailData?.[dayIndex];
+      const currentItem = day?.scheduleDetail?.[locationIndex];
+
+      if (!schedule || !day || currentItem === undefined) return prev;
+
+      const newScheduleDetail = [...day.scheduleDetail];
+      const updatedItem = { ...currentItem };
+      
+      if (updatedItem.locationDetail && Array.isArray(updatedItem.locationDetail) && updatedItem.locationDetail[locationDetailIndex]) {
+        const updatedLocationDetail = [...updatedItem.locationDetail];
+        updatedLocationDetail[locationDetailIndex] = {
+          ...updatedLocationDetail[locationDetailIndex],
+          subLocation: subLocationValue,
+          subLocationDetail: [detailBoxItem] as any
+        };
+        updatedItem.locationDetail = updatedLocationDetail;
+      }
+      
+      newScheduleDetail[locationIndex] = updatedItem;
+
+      const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+      const newScheduleDetailData = [...schedule.scheduleDetailData];
+      newScheduleDetailData[dayIndex] = updatedDay;
+
+      next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+
+      return next;
+    });
   };
+
+  // 외부에서 상세일정 아이템을 추가하는 함수를 전역에 노출 (항상 존재하도록 설정)
+  React.useEffect(() => {
+    // 전역 함수를 항상 설정 (selectedLocation이 null이어도 함수는 존재)
+    (window as any).__addDetailItemToSelectedLocation = (item: any) => {
+      console.log('전역 함수 호출됨, item:', item);
+      // ref를 통해 최신 selectedLocation 값 참조
+      const currentSelectedLocation = selectedLocationRef.current;
+      console.log('현재 선택된 영역 (ref):', currentSelectedLocation);
+      if (!currentSelectedLocation) {
+        console.warn('선택된 영역이 없습니다.');
+        alert('먼저 일정표에서 "변경" 버튼을 클릭하여 추가할 위치를 선택해주세요.');
+        return;
+      }
+      
+      if (currentSelectedLocation.tabType === '변경' && currentSelectedLocation.locationDetailIndex !== undefined) {
+        console.log('변경 버튼으로 인한 subLocationDetail 변경 실행');
+        // locationDetailItem의 subLocationDetail을 변경하는 로직을 직접 구현
+        let postImages: string[] = [];
+        if (Array.isArray(item.inputImage)) {
+          postImages = item.inputImage.slice(0, 3);
+        } else if (typeof item.inputImage === 'string') {
+          try {
+            const arr = JSON.parse(item.inputImage);
+            postImages = Array.isArray(arr) ? arr.slice(0, 3) : [item.inputImage];
+          } catch {
+            postImages = [item.inputImage];
+          }
+        }
+        
+        const sortValue = item.sort || '';
+        const subLocationValue = sortValue ? `[${sortValue}]` : '';
+        
+        const detailBoxItem = {
+          id: item.id,
+          postImages: postImages,
+          locationTitle: item.productName,
+          locationContent: item.detailNotice,
+          locationDetailSort: ''
+        };
+        
+        // 해당 DAY/LOCATION/LOCATIONDETAIL의 subLocationDetail 업데이트
+        setScheduleList(prev => {
+          const next = [...prev];
+          const schedule = next[selectedScheduleIndex];
+          const day = schedule?.scheduleDetailData?.[currentSelectedLocation.dayIndex];
+          const currentItem = day?.scheduleDetail?.[currentSelectedLocation.locationIndex];
+
+          if (!schedule || !day || currentItem === undefined) return prev;
+
+          const newScheduleDetail = [...day.scheduleDetail];
+          const updatedItem = { ...currentItem };
+          
+          if (updatedItem.locationDetail && Array.isArray(updatedItem.locationDetail) && updatedItem.locationDetail[currentSelectedLocation.locationDetailIndex!]) {
+            const updatedLocationDetail = [...updatedItem.locationDetail];
+            updatedLocationDetail[currentSelectedLocation.locationDetailIndex!] = {
+              ...updatedLocationDetail[currentSelectedLocation.locationDetailIndex!],
+              subLocation: subLocationValue,
+              subLocationDetail: [detailBoxItem] as any
+            };
+            updatedItem.locationDetail = updatedLocationDetail;
+          }
+          
+          newScheduleDetail[currentSelectedLocation.locationIndex] = updatedItem;
+
+          const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
+          const newScheduleDetailData = [...schedule.scheduleDetailData];
+          newScheduleDetailData[currentSelectedLocation.dayIndex] = updatedDay;
+
+          next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
+
+          return next;
+        });
+      }
+      // 추가 후 선택 해제
+      setSelectedLocation(null);
+    };
+    console.log('전역 함수 설정 완료:', (window as any).__addDetailItemToSelectedLocation);
+    
+    return () => {
+      // 컴포넌트 언마운트 시에만 삭제
+      delete (window as any).__addDetailItemToSelectedLocation;
+    };
+  }, []); // 빈 dependency array - 컴포넌트 마운트 시 한 번만 설정
+  
 
 
 
@@ -705,184 +812,6 @@ export default function ScheduleRederCustom (props : any) {
     
     return code;
   }
-
-  // 소분류 선택 시 처리 함수
-  const handleDetailBoxItemClick = async (item: any, dayIndex: number, detailIndex: number) => {
-    // 디버깅: item 객체 구조 확인
-    console.log('소분류 선택 - item 객체:', item);
-    console.log('소분류 선택 - item.sort:', item.sort);
-    
-    // 소분류는 바로 하나의 박스로 입력
-    let postImages: string[] = [];
-    if (Array.isArray(item.inputImage)) {
-      postImages = item.inputImage.slice(0, 3);
-    } else if (typeof item.inputImage === 'string') {
-      try {
-        const arr = JSON.parse(item.inputImage);
-        postImages = Array.isArray(arr) ? arr.slice(0, 3) : [item.inputImage];
-      } catch {
-        postImages = [item.inputImage];
-      }
-    }
-    
-    // item.sort 값 확인 및 설정 (하위 호환성을 위해 sort도 확인)
-    const sortValue = item.sort || '';
-    const subLocationValue = sortValue ? `[${sortValue}]` : '';
-    console.log('소분류 선택 - subLocationValue:', subLocationValue);
-    
-    const detailBoxItem = {
-      id: item.id,
-      postImages: postImages,
-      locationTitle: item.productName,
-      locationContent: item.detailNotice, // 이건 detailBoxItem의 locationContent이므로 그대로 유지
-      locationDetailSort: ''
-    };
-    
-    // 해당 DAY/LOCATION에 삽입
-    setScheduleList(prev => {
-      const next = [...prev];
-      const schedule = next[selectedScheduleIndex];
-      const day = schedule?.scheduleDetailData?.[dayIndex];
-      const currentItem = day?.scheduleDetail?.[detailIndex];
-
-      if (!schedule || !day || currentItem === undefined) return prev;
-
-      const newScheduleDetail = [...day.scheduleDetail];
-      
-      // 현재 항목이 location 타입이고 locationDetail이 있는 경우
-      if (((currentItem.sort || currentItem.st) === 'location' || (currentItem.sort || currentItem.st) === 'g' || (currentItem.sort || currentItem.st) === 'p') && currentItem.locationDetail && currentItem.locationDetail.length > 0) {
-        // 기존 locationDetail을 모두 제거하고 새로운 하나로 교체 (추가가 아닌 완전 교체)
-        const updatedLocationDetail = [{
-          subLocation: subLocationValue, // [익스커션] 형식으로 설정
-          isUseContent: false,
-          subLocationContent: '',
-          subLocationDetail: [detailBoxItem] as any // 새로 선택한 소분류로 교체
-        }];
-        newScheduleDetail[detailIndex] = {
-          ...currentItem,
-          st: 'p', // 소분류(상세일정)는 'p'
-          locationDetail: updatedLocationDetail
-        };
-      } else {
-        // locationDetail이 없거나 빈 경우, 새로운 구조 생성
-        newScheduleDetail[detailIndex] = {
-          id: currentItem.id || 0,
-          st: 'p', // 소분류(상세일정)는 'p'
-          location: '', // 텍스트 입력창과 분리하기 위해 빈 문자열로 설정
-          isUseMainContent: false,
-          isViewLocation: true,
-          locationDetail: [{
-            subLocation: subLocationValue, // [익스커션] 형식으로 설정
-            isUseContent: false,
-            subLocationContent: '',
-            subLocationDetail: [detailBoxItem] as any
-          }],
-          airlineData: null
-        };
-      }
-
-      const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
-      const newScheduleDetailData = [...schedule.scheduleDetailData];
-      newScheduleDetailData[dayIndex] = updatedDay;
-
-      next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
-
-      return next;
-    });
-    setSearchListDayOpenId(null);
-    setSearchListDetailOpenId(null);
-  };
-
-  // 검색 리스트 중에 하나 선택 시 일정 상세 데이터 입력 (대분류용)
-  const handleSearchItemClick = async (item: any, dayIndex: number, detailIndex: number) => {
-    // 1. locationDetail 파싱
-    let locationDetailArr: any[] = safeJsonParse<any[]>(item.locationDetail, []);
-    // 2. 모든 id 수집
-    const allIds: string[] = [];
-    locationDetailArr.forEach((detail: any) => {
-      if (Array.isArray(detail.subLocationDetail)) {
-        detail.subLocationDetail.forEach((id: any) => allIds.push(String(id)));
-      }
-    });
-    // 3. 상세정보 받아오기 (POST, 여러 id)
-    const detailMap: Record<string, any> = {};
-    if (allIds.length > 0) {
-      const res = await axios.post(`${AdminURL}/scheduledetailbox/getdetailboxbyid`, {
-        scheduleDetailIds: allIds
-      });
-      if (res.data && Array.isArray(res.data)) {
-        res.data.forEach((d: any) => {
-          let postImages: string[] = [];
-          if (Array.isArray(d.inputImage)) {
-            postImages = d.inputImage.slice(0, 3);
-          } else if (typeof d.inputImage === 'string') {
-            try {
-              const arr = JSON.parse(d.inputImage);
-              postImages = Array.isArray(arr) ? arr.slice(0, 3) : [d.inputImage];
-            } catch {
-              postImages = [d.inputImage];
-            }
-          }
-          detailMap[String(d.id)] = {
-            id: d.id,
-            postImages,
-            locationTitle: d.productName,
-            locationContent: d.detailNotice,
-            locationDetailSort: ''
-          };
-        });
-      }
-    }
-    // 4. locationDetail의 subLocationDetail을 실제 객체로 치환하고 isUseContent 직접 사용
-    const newLocationDetail = locationDetailArr.map((detail: any, index: number) => ({
-      subLocation: detail.subLocation,
-      subLocationContent: detail.subLocationContent || '',
-      isUseContent: detail.isUseContent !== undefined ? detail.isUseContent : false,
-      subLocationDetail: Array.isArray(detail.subLocationDetail)
-        ? detail.subLocationDetail.map((id: any) =>
-            detailMap[String(id)] || {
-              id: String(id),
-              postImages: [],
-              locationTitle: '',
-              locationContent: '',
-              locationDetailSort: ''
-            }
-          )
-        : []
-    }));
-    // 5. 해당 DAY/LOCATION에 삽입
-    setScheduleList(prev => {
-      const next = [...prev];
-      const schedule = next[selectedScheduleIndex];
-      const day = schedule?.scheduleDetailData?.[dayIndex];
-      const currentItem = day?.scheduleDetail?.[detailIndex];
-
-      if (!schedule || !day || currentItem === undefined) return prev;
-
-      const newScheduleDetail = [...day.scheduleDetail];
-      // '유럽공통'으로 검색된 경우에는 현재 선택된 도시명으로 대체
-
-      newScheduleDetail[detailIndex] = {
-        id: item.id,
-        st: 'g', // 대분류(묶음일정)는 'g'
-        location: '', // 텍스트 입력창과 분리하기 위해 빈 문자열로 설정
-        isUseMainContent: false,
-        isViewLocation: true,
-        locationDetail: newLocationDetail,
-        airlineData: null
-      };
-
-      const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
-      const newScheduleDetailData = [...schedule.scheduleDetailData];
-      newScheduleDetailData[dayIndex] = updatedDay;
-
-      next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
-
-      return next;
-    });
-    setSearchListDayOpenId(null);
-    setSearchListDetailOpenId(null); // 리스트 닫기
-  };
 
   const [editMealRowIndex, setEditMealRowIndex] = useState<number>(-1);
 
@@ -1907,171 +1836,10 @@ export default function ScheduleRederCustom (props : any) {
                                                           });
                                                         }}
                                                       />
-                                                      {/* 설명추가/설명없음 버튼 */}
-                                                      {!loctionItem.isUseMainContent ? (
-                                                        <button
-                                                          type="button"
-                                                          style={{
-                                                            color: '#333',
-                                                            border: '1px solid #ddd',
-                                                            backgroundColor:'#fff',
-                                                            borderRadius: '4px',
-                                                            padding: '8px 16px',
-                                                            fontSize: '14px',
-                                                            cursor: 'pointer',
-                                                            fontWeight: '500',
-                                                            marginLeft: '8px'
-                                                          }}
-                                                          onClick={() => {
-                                                            setScheduleList(prev => {
-                                                              const next = [...prev];
-                                                              const schedule = next[selectedScheduleIndex];
-                                                              const day = schedule?.scheduleDetailData?.[dayIndex];
-                                                              const currentItem = day?.scheduleDetail?.[locationIndex];
-
-                                                              if (!schedule || !day || !currentItem) return prev;
-
-                                                              const newScheduleDetail = [...day.scheduleDetail];
-                                                              const updatedItem = { ...currentItem, isUseMainContent: true };
-                                                              newScheduleDetail[locationIndex] = updatedItem;
-
-                                                              const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
-
-                                                              const newScheduleDetailData = [...schedule.scheduleDetailData];
-                                                              newScheduleDetailData[dayIndex] = updatedDay;
-
-                                                              next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
-
-                                                              return next;
-                                                            });
-                                                          }}
-                                                        >
-                                                          설명추가
-                                                        </button>
-                                                      ) : (
-                                                        <button
-                                                          type="button"
-                                                          style={{
-                                                            color: '#333',
-                                                            border: '1px solid #ddd',
-                                                            backgroundColor: '#fff',
-                                                            borderRadius: '4px',
-                                                            padding: '8px 16px',
-                                                            fontSize: '14px',
-                                                            cursor: 'pointer',
-                                                            fontWeight: '500',
-                                                            marginLeft: '8px'
-                                                          }}
-                                                          onClick={() => {
-                                                            setScheduleList(prev => {
-                                                              const next = [...prev];
-                                                              const schedule = next[selectedScheduleIndex];
-                                                              const day = schedule?.scheduleDetailData?.[dayIndex];
-                                                              const currentItem = day?.scheduleDetail?.[locationIndex];
-
-                                                              if (!schedule || !day || !currentItem) return prev;
-
-                                                              const newScheduleDetail = [...day.scheduleDetail];
-                                                              const updatedItem = { ...currentItem, mainContent: '', isUseMainContent: false };
-                                                              newScheduleDetail[locationIndex] = updatedItem;
-
-                                                              const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
-
-                                                              const newScheduleDetailData = [...schedule.scheduleDetailData];
-                                                              newScheduleDetailData[dayIndex] = updatedDay;
-
-                                                              next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
-
-                                                              return next;
-                                                            });
-                                                          }}
-                                                        >
-                                                          설명없애기
-                                                        </button>
-                                                      )}
                                                     </>
-                                                  )}
-                                                  {/* 묶음일정 | 상세일정 탭 버튼 */}
-                                                  {((loctionItem.sort || loctionItem.st) !== 'airline' && (loctionItem.sort || loctionItem.st) !== 'train' && (loctionItem.sort || loctionItem.st) !== 'bus' && (loctionItem.sort || loctionItem.st) !== 'ship') && loctionItem.isViewLocation !== false && (
-                                                    <div style={{
-                                                      display: 'flex',
-                                                      alignItems: 'center',
-                                                      marginLeft: '8px',
-                                                      gap: '4px'
-                                                    }}>
-                                                    <div style={{
-                                                      display: 'flex',
-                                                      border: '1px solid #ddd',
-                                                      borderRadius: '4px',
-                                                      overflow: 'hidden',
-                                                      height: '30px'
-                                                    }}>
-                                                      <button
-                                                        type="button"
-                                                        style={{
-                                                          padding: '4px 12px',
-                                                          border: 'none',
-                                                          background: '#fff',
-                                                          color: '#333',
-                                                          cursor: 'pointer',
-                                                          fontSize: '12px',
-                                                          fontWeight: '400',
-                                                          borderRight: '1px solid #ddd'
-                                                        }}
-                                                        onClick={() => {
-                                                          const tabKey = `${dayIndex}-${locationIndex}`;
-                                                          setSearchTabTypes(prev => ({ ...prev, [tabKey]: '묶음일정' }));
-                                                          setSearchModalOpen({ dayIndex, locationIndex, tabType: '묶음일정' });
-                                                          setSearchModalKeyword('');
-                                                          setLocationSearchList([]);
-                                                        }}
-                                                      >
-                                                        묶음일정
-                                                      </button>
-                                                      <button
-                                                        type="button"
-                                                        style={{
-                                                          padding: '4px 12px',
-                                                          border: 'none',
-                                                          background: '#fff',
-                                                          color: '#333',
-                                                          cursor: 'pointer',
-                                                          fontSize: '12px',
-                                                          fontWeight: '400'
-                                                        }}
-                                                        onClick={() => {
-                                                          const tabKey = `${dayIndex}-${locationIndex}`;
-                                                          setSearchTabTypes(prev => ({ ...prev, [tabKey]: '상세일정' }));
-                                                          setSearchModalOpen({ dayIndex, locationIndex, tabType: '상세일정' });
-                                                          setSearchModalKeyword('');
-                                                          setLocationSearchList([]);
-                                                        }}
-                                                      >
-                                                        상세일정
-                                                      </button>
-                                                      </div>
-                                                    </div>
                                                   )}
                                                 </>
                                               }
-                                              <ScheduleDetailBoxImport
-                                                searchTabTypes={searchTabTypes}
-                                                setSearchTabTypes={setSearchTabTypes}
-                                                dayIndex={dayIndex}
-                                                locationIndex={locationIndex}
-                                                searchModalOpen={searchModalOpen}
-                                                setSearchModalOpen={setSearchModalOpen}
-                                                locationSearchList={locationSearchList}
-                                                setLocationSearchList={setLocationSearchList}
-                                                handleDetailBoxItemClick={handleDetailBoxItemClick}
-                                                handleSearchItemClick={handleSearchItemClick}
-                                                safeJsonParse={safeJsonParse}
-                                                searchModalKeyword={searchModalKeyword}
-                                                setSearchModalKeyword={setSearchModalKeyword}
-                                                locationType={props.productInfo.locationType}
-                                                tourNation={props.productInfo.tourNation}
-                                                nation={props.productInfo.nation}
-                                              />
                                               {/* 버튼 그룹: ModalAddScheduleDetail.tsx와 동일한 구조/스타일 */}
                                               <div className="schedule-schedule__btns" style={{display:'flex', alignItems:'center', marginLeft:'4px'}}>
                                                 <button
@@ -2205,38 +1973,6 @@ export default function ScheduleRederCustom (props : any) {
                                                     setCurrentSearchShipCity('');
                                                   }}
                                                 >교통편추가</button>
-                                                <button
-                                                  className="schedule-schedule__btn"
-                                                  onClick={() => {
-                                                    setScheduleList(prev => {
-                                                      const next = [...prev];
-                                                      const schedule = next[selectedScheduleIndex];
-                                                      const day = schedule?.scheduleDetailData?.[dayIndex];
-                                                      // idx를 사용하여 정확한 항목 찾기 (idx가 있으면 사용, 없으면 locationIndex 사용)
-                                                      const currentItem = (loctionItem.idx !== undefined && loctionItem.idx !== null)
-                                                        ? day?.scheduleDetail?.find((item: any) => item.idx === loctionItem.idx) || day?.scheduleDetail?.[locationIndex]
-                                                        : day?.scheduleDetail?.[locationIndex];
-                                                      if (!schedule || !day || !currentItem) return prev;
-                                                      const newScheduleDetail = [...day.scheduleDetail];
-                                                      // idx를 사용하여 정확한 위치 찾기 (idx가 있으면 사용, 없으면 locationIndex 사용)
-                                                      const itemIndex = (loctionItem.idx !== undefined && loctionItem.idx !== null)
-                                                        ? newScheduleDetail.findIndex((item: any) => item.idx === loctionItem.idx)
-                                                        : -1;
-                                                      const targetIndex = itemIndex !== -1 ? itemIndex : locationIndex;
-                                                      // isViewLocation이 undefined일 때는 true로 간주하고 false로 토글
-                                                      const currentIsViewLocation = currentItem.isViewLocation !== undefined 
-                                                        ? currentItem.isViewLocation 
-                                                        : true;
-                                                      const updatedItem = { ...currentItem, isViewLocation: !currentIsViewLocation };
-                                                      newScheduleDetail[targetIndex] = updatedItem;
-                                                      const updatedDay = { ...day, scheduleDetail: newScheduleDetail };
-                                                      const newScheduleDetailData = [...schedule.scheduleDetailData];
-                                                      newScheduleDetailData[dayIndex] = updatedDay;
-                                                      next[selectedScheduleIndex] = { ...schedule, scheduleDetailData: newScheduleDetailData };
-                                                      return next;
-                                                    });
-                                                  }}
-                                                >{loctionItem.isViewLocation !== false ? '노출안함' : '노출함'}</button>
                                               </div>
                                             </div>
                                           </div>
@@ -2495,8 +2231,23 @@ export default function ScheduleRederCustom (props : any) {
                                         {((loctionItem.sort || loctionItem.st) === 'location' || (loctionItem.sort || loctionItem.st) === 'g' || (loctionItem.sort || loctionItem.st) === 'p') ? (
                                           // location 타입일 때의 기존 UI
                                           loctionItem.locationDetail.map((locationDetailItem:any, locationDetailIndex:number)=>{
+                                            // 선택 상태 확인 (조건을 변수로 추출)
+                                            const isSelected = selectedLocation?.dayIndex === dayIndex && 
+                                                              selectedLocation?.locationIndex === locationIndex && 
+                                                              selectedLocation?.locationDetailIndex === locationDetailIndex && 
+                                                              selectedLocation?.tabType === '변경';
+                                            
                                             return (
-                                              <div key={locationDetailIndex} className="schedule-schedule__sub_element__wrapper">
+                                              <div 
+                                                key={locationDetailIndex} 
+                                                className="schedule-schedule__sub_element__wrapper"
+                                                style={{
+                                                  backgroundColor: isSelected ? 'rgb(218, 241, 255)' : 'transparent',
+                                                  borderRadius: isSelected ? '8px' : '0',
+                                                  padding: isSelected ? '4px' : '0',
+                                                  transition: 'all 0.2s'
+                                                }}
+                                              >
                                                 <div className="schedule-schedule__element__subTitle__wrapper">
                                                   <div className="schedule-schedule__element__subTitle">
                                                     <div className="schedule-absolute__wrapper">
@@ -2506,10 +2257,21 @@ export default function ScheduleRederCustom (props : any) {
                                                       <span>{locationDetailItem.subLocation ? locationDetailItem.subLocation.replace(/^\[|\]$/g, '') : ''}</span>
                                                       <div className="schedule-schedule__btns">
                                                         <button className="schedule-schedule__btn" title="변경"
+                                                          style={{
+                                                            backgroundColor: isSelected ? '#5fb7ef' : '#fff',
+                                                            color: isSelected ? '#fff' : '#333',
+                                                            border: isSelected ? '1px solid #5fb7ef' : '1px solid #ddd',
+                                                            transition: 'all 0.2s'
+                                                          }}
                                                           onClick={() => {
-                                                            setSearchListDayOpenId(dayIndex);
-                                                            setSearchListDetailOpenId(locationIndex);
-                                                            handleWordSearching(loctionItem.location, dayIndex, locationIndex);
+                                                            // 이미 선택된 상태라면 해제, 아니면 선택
+                                                            if (isSelected) {
+                                                              setSelectedLocation(null);
+                                                            } else {
+                                                              // 선택 상태 설정
+                                                              const newLocation = { dayIndex, locationIndex, locationDetailIndex, tabType: '변경' as const };
+                                                              setSelectedLocation(newLocation);
+                                                            }
                                                           }}>변경</button>
                                                       </div>
                                                     </div>
@@ -2535,19 +2297,18 @@ export default function ScheduleRederCustom (props : any) {
                                                     return (
                                                       <div key={subDetailBoxIndex}>
                                                         {shouldShowDivider && (
-                                                          <div style={{width:'100%', height:'1px', background:'#ddd', marginTop:'20px', marginBottom:'20px', borderTop:'1px dotted #999'}}></div>
+                                                          <div className="schedule-subDetail__divider"></div>
                                                         )}
-                                                      <div className="schedule-schedule__element__main__wrapper"
-                                                          style={{width:'100%', display:'flex', flexDirection:'column', gap:'15px', padding:'30px'}}>
-                                                          <div className="schedule-table__wrapper" style={{width:'100%', padding:'10px 0'}}>
-                                                            <div className="schedule-table__header" style={{fontSize:'20px', fontWeight:'bold', marginBottom:'10px', color:'#000'}}>
+                                                        <div className="schedule-schedule__element__main__wrapper" >
+                                                          <div className="schedule-table__wrapper">
+                                                            <div className="schedule-table__header">
                                                               <span>{subDetailBoxItem.locationTitle}</span>
                                                             </div>
-                                                            <div className="schedule-table__main" style={{fontSize:'15px', lineHeight:'1.8', color:'#333', whiteSpace:'pre-wrap'}}
+                                                            <div className="schedule-table__main"
                                                               dangerouslySetInnerHTML={{__html: subDetailBoxItem.locationContent}}
                                                             />                                                
                                                           </div>
-                                                          <div className="schedule-image__wrapper" style={{width:'100%', overflow:'hidden', marginTop:'8px'}}>
+                                                          <div className="schedule-image__wrapper">
                                                             <div style={{
                                                               display:'flex', 
                                                               width:'100%', 
@@ -2566,7 +2327,7 @@ export default function ScheduleRederCustom (props : any) {
                                                               ) : (
                                                                 <span></span>
                                                               )}
-                                                        </div>
+                                                            </div>
                                                           </div>
                                                         </div>
                                                       </div>

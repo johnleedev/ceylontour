@@ -143,9 +143,10 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
         props.onSelectedScheduleChange(props.scheduleInfo, 0);
       }
     } else {
-    fetchScheduleData();
+      // id가 변경될 때마다 해당 id 기준으로 다시 일정 조회
+      fetchScheduleData();
     }
-  }, [props.scheduleInfo]);
+  }, [props.scheduleInfo, props.id]);
 
 
   
@@ -640,9 +641,9 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
                                                       }
                                                     })()}
                                                     <span>{loctionItem.airlineData?.airlineName || '-'}</span>
-                                                    <span style={{marginLeft:'10px'}}>{loctionItem.airlineData?.airlineCode}</span>
+                                                    <span style={{marginLeft:'5px'}}>{loctionItem.airlineData?.airlineCode}</span>
                                                     {loctionItem.airlineData?.addDay === 'true' && (
-                                                      <span style={{marginLeft:'10px', color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
+                                                      <span style={{color:'#ff6b6b', fontWeight:'bold'}}>+1D</span>
                                                     )}
                                                   </div>
                                                   <div className="schedule-flight__time__wrapper">
