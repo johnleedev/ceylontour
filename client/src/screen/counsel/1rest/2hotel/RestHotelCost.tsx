@@ -1424,9 +1424,10 @@ export default function RestHotelCost() {
                     {hotelInfo?.hotelNameEn || ''}
                   </div>
                   <RatingBoard
+                    ratingSize={20}
                     rating={
-                      hotelInfo && (hotelInfo.tripAdviser || hotelInfo.customerScore)
-                        ? parseFloat(hotelInfo.tripAdviser || hotelInfo.customerScore)
+                      hotelInfo && hotelInfo.hotelLevel
+                        ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
                         : 0
                     }
                   />
@@ -1697,7 +1698,7 @@ export default function RestHotelCost() {
                             <div className="review-header">
                               <h3 className="review-title">{review.title}</h3>
                               <div className="review-rating">
-                                <RatingBoard rating={review.rating} />
+                                <RatingBoard ratingSize={20} rating={review.rating} />
                               </div>
                             </div>
                             

@@ -215,7 +215,7 @@ export default function RestMain() {
                       <div className="tour_detail__card__info">
                         {hotelObj.city}/{hotelObj.hotelLocation}
                         <div className="tour_detail__rating__wrapper">
-                          <RatingBoard rating={parseInt(hotelObj.customerScore)} />
+                          <RatingBoard ratingSize={20} rating={parseInt(hotelObj.customerScore)} />
                         </div>  
                       </div>
                     </div>
@@ -258,7 +258,7 @@ export default function RestMain() {
                   {obj.address.state}/{obj.address.city}
                 </span>
                 <div className="recommend__rating__wrapper">
-                  <RatingBoard rating={obj.rating} />
+                  <RatingBoard ratingSize={20} rating={obj.rating} />
                 </div>
               </div>
 

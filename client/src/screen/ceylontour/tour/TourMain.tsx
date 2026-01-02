@@ -236,7 +236,7 @@ export default function TourMainPage() {
                   {obj.address.state}/{obj.address.city}
                 </span>
                 <div className="recommend__rating__wrapper">
-                  <RatingBoard rating={obj.rating} />
+                  <RatingBoard ratingSize={20} rating={obj.rating} />
                 </div>
               </div>
 

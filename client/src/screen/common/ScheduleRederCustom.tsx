@@ -2430,7 +2430,7 @@ export default function ScheduleRederCustom (props : any) {
                                   <div className="schedule-additional__info__wrapper" style={{marginLeft:'0'}}>
                                       <p>{dayItem.hotel || ''}</p>
                                     <div className="schedule-additional__rating__wrapper">
-                                      <RatingBoard rating={parseInt(dayItem.score) || 0} />
+                                      <RatingBoard ratingSize={16} rating={parseInt(dayItem.score) || 0} />
                                     </div>
                                   </div>
                                   <div className="schedule-additional__btn__wrapper schedule-schedule__btns">

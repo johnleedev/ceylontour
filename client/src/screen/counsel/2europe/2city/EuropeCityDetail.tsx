@@ -26,6 +26,7 @@ import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
 import Image_morisus from '../../../lastimages/counselrest/trip/mapimage.png';
+import GoogleMap from '../../../common/GoogleMap';
 
 
 export default function EuropeCityDetail() {
@@ -140,6 +141,7 @@ export default function EuropeCityDetail() {
 
   const btnSolids = [
     { text: '소개' },
+    { text: '기본사진' },
     { text: '가이드투어' },
     { text: '입장/체험' },
     { text: '경기/공연' },
@@ -212,11 +214,12 @@ export default function EuropeCityDetail() {
 
   // 현재 탭에 따른 이미지 리스트
   const getCurrentImages = () => {
-    if (activeTab === 0) return imageNotice; // 소개
-    if (activeTab === 1) return imageGuide; // 가이드투어
-    if (activeTab === 2) return imageEnt; // 입장/체험
-    if (activeTab === 3) return imageEvent; // 경기/공연
-    return imageCafe; // 레스토랑/카페
+    if (activeTab === 0) return []
+    if (activeTab === 1) return imageNotice; 
+    if (activeTab === 2) return imageGuide; 
+    if (activeTab === 3) return imageEnt; 
+    if (activeTab === 4) return imageEvent;
+    return imageCafe;
   };
 
   // 파일이 동영상인지 확인
@@ -227,18 +230,21 @@ export default function EuropeCityDetail() {
     return videoExtensions.some(ext => lowerFileName.endsWith(ext));
   };
 
-  // trafficCode 파싱
-  const getTrafficInfo = () => {
-    try {
-      const trafficCode = JSON.parse(cityInfo.trafficCode || '{}');
-      return trafficCode;
-    } catch (e) {
-      return {};
+  // 헤더에 사용할 첫 번째 이미지 가져오기
+  const getHeaderImage = () => {
+    if (imageNotice && imageNotice.length > 0) {
+      const firstImage = imageNotice[0];
+      const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+      if (imageName) {
+        return `${AdminURL}/images/cityimages/${imageName}`;
+      }
     }
+    return rectangle580; // 기본 이미지
   };
 
-  const trafficInfo = getTrafficInfo();
 
+
+ 
   const highlightItems = [
     { image: rectangle76, title: '주요 명소' },
     { image: rectangle78, title: '문화 유산' },
@@ -270,33 +276,43 @@ export default function EuropeCityDetail() {
     },
   ];
 
-  const reviewItems = [
-    {
-      id: 1,
-      title: '후기제목을 적는 곳입니다',
-      rating: 5.0,
-      image: reviewimage,
-      text: `이 도시는 유럽의 아름다운 문화와 역사를 경험할 수 있는 최고의 여행지입니다.
-    중세 시대의 건축물과 현대적인 시설이 조화롭게 어우러져 있어
-    방문객들에게 잊을 수 없는 추억을 선사합니다.
-    특히 구시가지는 유네스코 세계문화유산으로 지정되어 있어
-    역사적 가치가 높습니다....`
-    },
-    {
-      id: 2,
-      title: '후기제목을 적는 곳입니다',
-      rating: 5.0,
-      image: reviewimage,
-      text: `이 도시는 유럽의 아름다운 문화와 역사를 경험할 수 있는 최고의 여행지입니다.
-    중세 시대의 건축물과 현대적인 시설이 조화롭게 어우러져 있어
-    방문객들에게 잊을 수 없는 추억을 선사합니다.
-    특히 구시가지는 유네스코 세계문화유산으로 지정되어 있어
-    역사적 가치가 높습니다....`
-    },
-  ];
 
   return (
     <div className="EuropeCityDetail">
+      {/* 상단 헤더 이미지 */}
+      <div className="city-header-image">
+        <img
+          className="header-image-media"
+          alt="도시 메인 이미지"
+          src={getHeaderImage()}
+        />
+        {/* 어두운 overlay */}
+        <div className="header-image-overlay"></div>
+        {/* 도시 제목 정보 (이미지 중앙에 표시) */}
+        <div className="city-title-overlay">
+          <div className="city-title-content">
+            <div className="text-title">{cityInfo?.cityKo || '도시명'}</div>
+            <div className="text-subtitle">
+              {cityInfo?.cityEn || ''}
+            </div>
+            <div className="text-location">
+              <p>{stateProps?.nationName || ''}</p>
+              <IoIosArrowForward />
+              <p>{cityInfo?.cityKo || ''}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 왼쪽 상단 뒤로가기 버튼 */}
+      <button
+        type="button"
+        className="left-back-btn"
+        onClick={() => navigate(-1)}
+      >
+        <IoIosArrowBack />
+      </button>
+
       {/* 오른쪽 패널 토글 버튼 */}
       {!showRightPanel && (
         <button
@@ -312,24 +328,6 @@ export default function EuropeCityDetail() {
         {/* 왼쪽 영역: 기존 내용 */}
         <div className="left-section">
           <div className="city-center-wrapper">
-            <div className="city-title-wrapper">
-              <IoIosArrowBack
-                className="arrow-back"
-                onClick={() => navigate(-1)}
-              />
-              <div className="city-title">
-                <div className="text-title">{cityInfo?.cityKo || '도시명'}</div>
-                <div className="text-subtitle">
-                  {cityInfo?.cityEn || ''}
-                </div>
-
-                <div className="text-location">
-                  <p>{stateProps?.nationName || ''}</p>
-                  <IoIosArrowForward />
-                  <p>{cityInfo?.cityKo || ''}</p>
-                </div>
-              </div>
-            </div>
 
             <div className="room-container-wrapper">
               <div className="room-container-left">
@@ -351,159 +349,264 @@ export default function EuropeCityDetail() {
               </div>
             </div>
 
-            <div className="photo-gallery">
-              {(() => {
-                const images = getCurrentImages();
-                if (images && images.length > 0) {
-                  return images.map((img: any, index: number) => {
-                    const imageName = typeof img === 'string' ? img : img.imageName;
-                    const title = typeof img === 'object' && img.title ? img.title : '';
-                    const isVideo = isVideoFile(imageName);
-                    
-                    if (isVideo) {
-                      return (
-                        <div key={index} className="photo-main">
-                          <video
-                            className="photo-main-image"
-                            controls
-                            src={`${AdminURL}/images/cityimages/${imageName}`}
-                          >
-                            브라우저가 비디오 태그를 지원하지 않습니다.
-                          </video>
+            {/* 소개 탭일 때는 도시 정보 표시, 나머지 탭은 이미지 표시 */}
+            {activeTab === 0 ? (
+              <>
+                {/* 도시 소개 섹션 */}
+                <div className="city-intro-section">
+                  <div className="city-intro-tagline">
+                    유럽의 아름다운 문화와 역사를 경험할 수 있는 최고의 여행지
+                  </div>
+                  <div className="city-intro-name">
+                    {cityInfo?.cityEn || cityInfo?.cityKo || '도시명'}
+                  </div>
+                  <div className="city-intro-description">
+                    <p>중세 시대의 건축물과 현대적인 시설이 조화롭게 어우러져 있어 방문객들에게 잊을 수 없는 추억을 선사합니다.</p>
+                    <p>특히 구시가지는 유네스코 세계문화유산으로 지정되어 있어 역사적 가치가 높습니다.</p>
+                    <p>다양한 문화 행사와 축제가 연중 개최되어 활기찬 분위기를 자랑합니다.</p>
+                  </div>
+                </div>
+
+                <div className="highlight-section">
+                  <div className="section-title">핵심 포인트</div>
+                  <div className="highlight-list">
+                    {highlightItems.map(({ image, title }) => (
+                      <div className="highlight-item" key={title}>
+                        <div className="highlight-image-wrap">
+                          <img src={image} alt={title} />
                         </div>
-                      );
-                    }
-                    
+                        <div className="highlight-item-title">{title}</div>
+                        <div className="highlight-item-desc">
+                          도시의 주요 관광 명소와 문화적 가치
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`benefit-section`}>
+                  <div className="section-title">베네핏 & 포함사항</div>
+                  <div className="benefit-items">
+                    {benefitItems.map(({ title, text, image }, index) => (
+                      <div key={title} className="benefit-item">
+                        <img className="rectangle" alt="Rectangle" src={image} />
+                        <div className={`benefit-card benefit-card-${index + 1}`}>
+                          <div className="benefit-title">{title}</div>
+                          <div className="benefit-text">{text}</div>
+                        </div>
+                        <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
+                          실론투어
+                          <br />
+                          단독특전2
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="location-info-section">
+                  <div className="section-title">위치</div>
+                  <div className="location-content-wrapper">
+                     <div className="location-map-placeholder">
+                        <GoogleMap />
+                      </div>
+                  </div>
+                </div>
+
+                <div className="city-basic-images">
+                  <img src={`${AdminURL}/images/citymapinfo/${cityInfo.courseImage}`} alt={cityInfo.cityKo} />
+                </div>
+
+                {/* 각 탭의 첫 번째 이미지 미리보기 */}
+                <div className="tab-preview-images">
+                  {/* 가이드투어 탭 첫 번째 이미지 */}
+                  {imageNotice && imageNotice.length > 0 && (() => {
+                    const firstImage = imageNotice[0];
+                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+                    const isVideo = isVideoFile(imageName);
                     return (
-                      <div key={index} className="photo-main">
-                        <img
-                          className="photo-main-image"
-                          alt={title || `도시 이미지 ${index + 1}`}
-                          src={`${AdminURL}/images/cityimages/${imageName}`}
-                        />
+                      <div key="guide-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '가이드투어 이미지'}
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            />
+                          )}
+                        </div>
                       </div>
                     );
-                  });
-                }
-                return (
-                  <div className="photo-main">
-                    <img
-                      className="photo-main-image"
-                      alt="메인 이미지"
-                      src={rectangle580}
-                    />
-                  </div>
-                );
-              })()}
-            </div>
+                  })()}
 
-            <div className="location-info">
-              <div className="section-titlebox">
-                <span className="location-title">도시위치</span>
-                <span className="text-wrapper-11">도시 위치 보기</span>
-              </div>
-
-              {cityInfo?.cityAddress && (
-                <p className="text-wrapper-10">
-                  {cityInfo.cityAddress}
-                </p>
-              )}
-
-              <div className="flexcontainer">
-                {trafficInfo?.airplane && Array.isArray(trafficInfo.airplane) && trafficInfo.airplane.length > 0 && (
-                  <p className="text">
-                    <span className="span">
-                      공항: {trafficInfo.airplane.map((airport: any) => 
-                        `${airport.airport} (${airport.code})`
-                      ).join(', ')}
-                    </span>
-                  </p>
-                )}
-                {cityInfo?.tourNotice && (
-                  <p className="text">
-                    <span className="span">{cityInfo.tourNotice}</span>
-                  </p>
-                )}
-                {cityInfo?.weather && (
-                  <p className="text">
-                    <span className="span">{cityInfo.weather}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="highlight-section">
-              <div className="highlight-title">핵심 포인트</div>
-              <div className="highlight-list">
-                {highlightItems.map(({ image, title }) => (
-                  <div className="highlight-item" key={title}>
-                    <div className="highlight-image-wrap">
-                      <img src={image} alt={title} />
-                    </div>
-                    <div className="highlight-item-title">{title}</div>
-                    <div className="highlight-item-desc">
-                      도시의 주요 관광 명소와 문화적 가치
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className={`benefit-section`}>
-              <div className="div-wrapper">
-                <div className="text-wrapper">베네핏 & 포함사항</div>
-              </div>
-      
-              <div className="benefit-items">
-                {benefitItems.map(({ title, text, image }, index) => (
-                  <div key={title} className="benefit-item">
-                    <img className="rectangle" alt="Rectangle" src={image} />
-                    <div className={`benefit-card benefit-card-${index + 1}`}>
-                      <div className="benefit-title">{title}</div>
-                      <div className="benefit-text">{text}</div>
-                    </div>
-                    <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
-                      실론투어
-                      <br />
-                      단독특전2
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className='component'>
-              {/* 후기 및 평점 섹션 */}
-              <div className="review-section">
-                <h2 className="section-title">후기 및 평점</h2>
-                
-                <div className="review-list">
-                  {reviewItems.map((review) => (
-                    <div key={review.id} className="review-item">
-                      <img className="review-image" alt="후기 이미지" src={review.image} />
-                      <div className="review-content">
-                        <div className="review-header">
-                          <h3 className="review-title">{review.title}</h3>
-                          <div className="review-rating">
-                            <RatingBoard rating={review.rating} />
-                          </div>
+                  {imageGuide && imageGuide.length > 0 && (() => {
+                    const firstImage = imageGuide[0];
+                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+                    const isVideo = isVideoFile(imageName);
+                    return (
+                      <div key="guide-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '가이드투어 이미지'}
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            />
+                          )}
                         </div>
-                        
-                        <p className="review-text">
-                          {review.text.split('\n').map((line, index, arr) => (
-                            <React.Fragment key={index}>
-                              {line}
-                              {index < arr.length - 1 && <br />}
-                            </React.Fragment>
-                          ))}
-                        </p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    );
+                  })()}
 
-            </div>
+                  {/* 입장/체험 탭 첫 번째 이미지 */}
+                  {imageEnt && imageEnt.length > 0 && (() => {
+                    const firstImage = imageEnt[0];
+                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+                    const isVideo = isVideoFile(imageName);
+                    return (
+                      <div key="ent-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '입장/체험 이미지'}
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 경기/공연 탭 첫 번째 이미지 */}
+                  {imageEvent && imageEvent.length > 0 && (() => {
+                    const firstImage = imageEvent[0];
+                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+                    const isVideo = isVideoFile(imageName);
+                    return (
+                      <div key="event-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '경기/공연 이미지'}
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 레스토랑/카페 탭 첫 번째 이미지 */}
+                  {imageCafe && imageCafe.length > 0 && (() => {
+                    const firstImage = imageCafe[0];
+                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+                    const isVideo = isVideoFile(imageName);
+                    return (
+                      <div key="cafe-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '레스토랑/카페 이미지'}
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+              </>
+            ) : (
+              <div className="photo-gallery">
+                {(() => {
+                  const images = getCurrentImages();
+                  if (images && images.length > 0) {
+                    return images.map((img: any, index: number) => {
+                      const imageName = typeof img === 'string' ? img : img.imageName;
+                      const title = typeof img === 'object' && img.title ? img.title : '';
+                      const isVideo = isVideoFile(imageName);
+                      
+                      if (isVideo) {
+                        return (
+                          <div key={index} className="photo-main">
+                            <video
+                              className="photo-main-image"
+                              controls
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div key={index} className="photo-main">
+                          <img
+                            className="photo-main-image"
+                            alt={title || `도시 이미지 ${index + 1}`}
+                            src={`${AdminURL}/images/cityimages/${imageName}`}
+                          />
+                        </div>
+                      );
+                    });
+                  }
+                  return (
+                    <div className="photo-main">
+                      <img
+                        className="photo-main-image"
+                        alt="메인 이미지"
+                        src={rectangle580}
+                      />
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
 

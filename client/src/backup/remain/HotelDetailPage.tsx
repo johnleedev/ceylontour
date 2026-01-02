@@ -726,7 +726,7 @@ export default function PackagePage() {
                     <div className="additional__info__wrapper">
                       <p>{item.hotel}</p>
                       <div className="additional__rating__wrapper">
-                        <RatingBoard rating={parseInt(item.score)} />
+                        <RatingBoard rating={parseInt(item.score)} ratingSize={20} />
                       </div>
                     </div>
                   </div>

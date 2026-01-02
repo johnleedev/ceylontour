@@ -278,7 +278,8 @@ export default function EuropeScheduleCustom() {
                   {hotelInfo?.hotelNameEn || (stateProps?.selectedCities?.join(', ') || '')}
                 </div>
                 {hotelInfo && (
-                <RatingBoard
+                <RatingBoard  
+                  ratingSize={20}
                   rating={
                     hotelInfo && (hotelInfo.tripAdviser || hotelInfo.customerScore)
                       ? parseFloat(hotelInfo.tripAdviser || hotelInfo.customerScore)
@@ -489,7 +490,7 @@ export default function EuropeScheduleCustom() {
                         <div className="review-header">
                           <h3 className="review-title">{review.title}</h3>
                           <div className="review-rating">
-                            <RatingBoard rating={review.rating} />
+                            <RatingBoard ratingSize={20} rating={review.rating} />
                           </div>
                         </div>
                         

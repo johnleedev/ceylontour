@@ -17,7 +17,7 @@ import { IoMdClose } from "react-icons/io";
 export default function TourDetailSchedule(
   { 
     tourInfo, scheduleData 
-  }: { 
+  }: {    
     tourInfo?: any, scheduleData?: any
   }
 ) {
@@ -361,7 +361,7 @@ export default function TourDetailSchedule(
                       <div className="additional__info__wrapper">
                         <p>{dayItem.hotel}</p>
                         <div className="additional__rating__wrapper">
-                          <RatingBoard rating={parseInt(dayItem.score) || 0} />
+                          <RatingBoard ratingSize={20} rating={parseInt(dayItem.score) || 0} />
                         </div>
                       </div>
                     </div>

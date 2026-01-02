@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './EuropeTripPage.scss';
 import { AdminURL } from '../../../../MainURL';
 import { useNavigate } from 'react-router-dom';
+import { FaRegCalendarAlt } from 'react-icons/fa';
 import Image_bali from '../../../lastimages/counselrest/trip/image.png';
 import Image_phuket from '../../../lastimages/counselrest/trip/image-1.png';
 import Image_guam from '../../../lastimages/counselrest/trip/image-2.png';
@@ -49,6 +50,11 @@ export default function EuropeTripPage () {
   const [scheduleDataMap, setScheduleDataMap] = useState<{ [key: string]: any }>({}); // 국가명을 키로 하는 스케줄 데이터 맵
   const [scheduleFilter, setScheduleFilter] = useState('전체');
   const [scheduleSearch, setScheduleSearch] = useState('');
+  
+  // 일정만들기 모드용 상태
+  const [selectedCities, setSelectedCities] = useState<{ [key: string]: string[] }>({}); // 국가명: [도시명들]
+  const [createScheduleDays, setCreateScheduleDays] = useState(1);
+  const [regionFilter, setRegionFilter] = useState('전체');
   
   const highlightItems = [
     { id: 1, title: '포토스팟에서 인생샷', image: Image_bali },
@@ -237,13 +243,23 @@ export default function EuropeTripPage () {
             <div className="header-buttons">
               <button 
                 className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
-                onClick={() => setActiveButton('recommend')}
+                onClick={() => {
+                  setActiveButton('recommend');
+                  setSelectedCity(null);
+                  setSelectedCityData(null);
+                  setSelectedCities({});
+                }}
               >
                 추천일정
               </button>
               <button 
                 className={`btn-tap ${activeButton === 'create' ? 'active' : ''}`}
-                onClick={() => setActiveButton('create')}
+                onClick={() => {
+                  setActiveButton('create');
+                  setSelectedCity(null);
+                  setSelectedCityData(null);
+                  setSelectedCities({});
+                }}
               >
                 일정만들기
               </button>
@@ -286,49 +302,185 @@ export default function EuropeTripPage () {
           </div>
 
           {/* 나라 리스트 */}
-          <div className="nation-list-section">
-            <div className="nation-grid">
-              {loading ? (
-                <div className="loading-message">로딩 중...</div>
-              ) : destinations.length === 0 ? (
-                <div className="empty-message">데이터가 없습니다.</div>
-              ) : (
-                destinations.map((city) => (
-                  <div 
-                    key={city.id} 
-                    className={`nation-card ${selectedCity === city.name ? 'selected' : ''}`}
-                    onClick={() => {
-                      console.log(city.rawData);
-                      if (selectedCity === city.name) {
-                        setSelectedCity(null);
-                        setSelectedCityData(null);
-                      } else {
-                        setSelectedCity(city.name);
-                        setSelectedCityData(city.rawData);
-                        setActiveTab('info'); // 기본정보 탭 자동 선택
-                      }
+          {activeButton === 'recommend' && (
+            <div className="nation-list-section">
+              <div className="nation-grid">
+                {loading ? (
+                  <div className="loading-message">로딩 중...</div>
+                ) : destinations.length === 0 ? (
+                  <div className="empty-message">데이터가 없습니다.</div>
+                ) : (
+                  destinations.map((city) => (
+                    <div 
+                      key={city.id} 
+                      className={`nation-card ${selectedCity === city.name ? 'selected' : ''}`}
+                      onClick={() => {
+                        console.log(city.rawData);
+                        if (selectedCity === city.name) {
+                          setSelectedCity(null);
+                          setSelectedCityData(null);
+                        } else {
+                          setSelectedCity(city.name);
+                          setSelectedCityData(city.rawData);
+                          setActiveTab('info'); // 기본정보 탭 자동 선택
+                        }
+                      }}
+                    >
+                      <div className="nation-image-container">
+                        <img className="image" alt={city.name} src={`${AdminURL}/images/nationimages/${city.image}`} />
+                      </div>
+                      <div className="nation-info">
+                        <div className='nation-name'>{city.name}</div>
+                        <p className='nation-airTime'>
+                          <span className="text-wrapper-airtime-label">비행시간 약 </span>
+                          <span className="text-wrapper-airtime-value">{city.airTime}</span>
+                        </p>
+                        <div className='nation-departure'>인천출발ㅣ부산출발</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 일정만들기 모드: 여행지 선택 */}
+          {activeButton === 'create' && (
+            <div className="create-mode-content">
+              {/* 지역 필터 탭 */}
+              <div className="region-tabs" style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '20px',
+                padding: '0 20px'
+              }}>
+                {['전체', '서유럽', '동유럽', '북유럽'].map((region) => (
+                  <button
+                    key={region}
+                    className={`region-tab ${regionFilter === region ? 'active' : ''}`}
+                    onClick={() => setRegionFilter(region)}
+                    style={{
+                      padding: '8px 16px',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '4px',
+                      backgroundColor: regionFilter === region ? '#333' : '#fff',
+                      color: regionFilter === region ? '#fff' : '#666',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      transition: 'all 0.2s'
                     }}
                   >
-                    <div className="nation-image-container">
-                      <img className="image" alt={city.name} src={`${AdminURL}/images/nationimages/${city.image}`} />
-                    </div>
-                    <div className="nation-info">
-                      <div className='nation-name'>{city.name}</div>
-                      <p className='nation-airTime'>
-                        <span className="text-wrapper-airtime-label">비행시간 약 </span>
-                        <span className="text-wrapper-airtime-value">{city.airTime}</span>
-                      </p>
-                      <div className='nation-departure'>인천출발ㅣ부산출발</div>
-                    </div>
-                  </div>
-                ))
-              )}
+                    {region}
+                  </button>
+                ))}
+              </div>
+
+              {/* 여행지 카드 그리드 */}
+              <div className="create-destinations-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '16px',
+                padding: '0 20px'
+              }}>
+                {loading ? (
+                  <div className="loading-message" style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center' }}>로딩 중...</div>
+                ) : destinations.length === 0 ? (
+                  <div className="empty-message" style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center' }}>데이터가 없습니다.</div>
+                ) : (
+                  destinations.map((destination) => {
+                    // 도시 목록 (rawData에서 cities 정보 가져오기)
+                    const cities: string[] = [];
+                    if (destination.rawData?.cities && Array.isArray(destination.rawData.cities)) {
+                      destination.rawData.cities.forEach((city: any) => {
+                        if (city.cityName) {
+                          cities.push(city.cityName);
+                        }
+                      });
+                    }
+                    // 도시 정보가 없으면 기본값 사용
+                    if (cities.length === 0) {
+                      cities.push('파리', '베르사이유', '니스');
+                    }
+                    const selectedCitiesForCountry = selectedCities[destination.name] || [];
+
+                    return (
+                      <div key={destination.id} className="create-destination-card" style={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        overflow: 'hidden'
+                      }}>
+                        <div className="create-card-image" style={{
+                          width: '100%',
+                          height: '150px',
+                          overflow: 'hidden'
+                        }}>
+                          <img 
+                            src={`${AdminURL}/images/nationimages/${destination.image}`} 
+                            alt={destination.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        </div>
+                        <div className="create-card-content" style={{ padding: '12px' }}>
+                          <h3 className="create-card-country" style={{
+                            margin: '0 0 12px 0',
+                            fontSize: '16px',
+                            fontWeight: 700
+                          }}>{destination.name}</h3>
+                          <div className="create-card-cities" style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}>
+                            {cities.map((city, index) => {
+                              const isChecked = selectedCitiesForCountry.includes(city);
+                              return (
+                                <label key={index} className="city-checkbox-label" style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  cursor: 'pointer'
+                                }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const newSelectedCities = { ...selectedCities };
+                                      if (!newSelectedCities[destination.name]) {
+                                        newSelectedCities[destination.name] = [];
+                                      }
+                                      if (e.target.checked) {
+                                        newSelectedCities[destination.name] = [
+                                          ...newSelectedCities[destination.name],
+                                          city
+                                        ];
+                                      } else {
+                                        newSelectedCities[destination.name] = newSelectedCities[destination.name].filter(c => c !== city);
+                                      }
+                                      setSelectedCities(newSelectedCities);
+                                    }}
+                                  />
+                                  <span className="city-name" style={{ fontSize: '14px' }}>{city}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* 오른쪽 영역: 상세 정보 */}
-        {selectedCity && (
+        {/* 오른쪽 영역: 상세 정보 (추천일정 모드) */}
+        {activeButton === 'recommend' && selectedCity && (
           <div className="right-section">
             <div className="detail-section">
           <div className="detail-card">
@@ -1023,6 +1175,135 @@ export default function EuropeTripPage () {
             </div>
           </div>
         </div>
+          </div>
+        )}
+
+        {/* 일정만들기 모드: 일정 구성 패널 */}
+        {activeButton === 'create' && (
+          <div className="right-section create-schedule-panel">
+            <div className="detail-section">
+              <div className="detail-card">
+                <div className="create-schedule-container" style={{ padding: '20px' }}>
+                  {/* 여행기간 입력 */}
+                  <div className="travel-period-section" style={{ marginBottom: '30px' }}>
+                    <div className="travel-period-input-wrapper" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '4px'
+                    }}>
+                      <FaRegCalendarAlt style={{ fontSize: '20px', color: '#666' }} />
+                      <input
+                        type="number"
+                        className="travel-period-input"
+                        placeholder="여행기간"
+                        value={createScheduleDays}
+                        onChange={(e) => setCreateScheduleDays(parseInt(e.target.value) || 1)}
+                        style={{
+                          border: 'none',
+                          outline: 'none',
+                          fontSize: '16px',
+                          flex: 1
+                        }}
+                      />
+                      <span style={{ color: '#666', fontSize: '14px' }}>일</span>
+                    </div>
+                  </div>
+
+                  {/* 선택된 도시 목록 */}
+                  <div className="selected-cities-section" style={{ marginBottom: '30px' }}>
+                    <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 700 }}>선택된 도시</h3>
+                    {Object.values(selectedCities).flat().length === 0 ? (
+                      <div className="no-selected-cities" style={{
+                        padding: '40px',
+                        textAlign: 'center',
+                        color: '#999',
+                        border: '1px dashed #e0e0e0',
+                        borderRadius: '4px'
+                      }}>선택된 도시가 없습니다</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {Object.values(selectedCities).flat().map((city, index) => (
+                          <div key={index} className="selected-city-card" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '12px',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '4px'
+                          }}>
+                            <span className="city-name" style={{ fontSize: '14px', fontWeight: 500 }}>{city}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // 도시 제거
+                                const newSelectedCities = { ...selectedCities };
+                                Object.keys(newSelectedCities).forEach(country => {
+                                  newSelectedCities[country] = newSelectedCities[country].filter(c => c !== city);
+                                });
+                                setSelectedCities(newSelectedCities);
+                              }}
+                              style={{
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '18px',
+                                color: '#999',
+                                padding: '0',
+                                width: '24px',
+                                height: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 다음 버튼 */}
+                  <div className="create-next-button-wrapper">
+                    <button
+                      className="create-next-button"
+                      onClick={() => {
+                        // 다음 단계로 이동
+                        const allSelectedCities = Object.values(selectedCities).flat();
+                        if (allSelectedCities.length > 0) {
+                          navigate(`/counsel/europe/schedulecustom`, {
+                            state: {
+                              selectedCities: allSelectedCities,
+                              selectedCitiesByCountry: selectedCities,
+                              createScheduleDays: createScheduleDays
+                            }
+                          });
+                        }
+                      }}
+                      disabled={Object.values(selectedCities).flat().length === 0}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        backgroundColor: Object.values(selectedCities).flat().length === 0 ? '#e0e0e0' : '#333',
+                        color: '#fff',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        cursor: Object.values(selectedCities).flat().length === 0 ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      다음
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

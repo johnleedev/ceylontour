@@ -27,13 +27,14 @@ import RatingBoard from '../../../common/RatingBoard';
 import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
+import GoogleMap from '../../../common/GoogleMap';
 
 
 export default function RestHotelDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
-
+  console.log('stateProps', stateProps);
 
   const [hotelInfo, setHotelInfo] = React.useState<any | null>(null);
   const [imageAllView, setImageAllView] = React.useState<any[]>([]);
@@ -509,6 +510,7 @@ export default function RestHotelDetail() {
   ];
 
   const btnSolids = [
+    { text: '소개' },
     { text: '전경' },
     { text: '객실' },
     { text: '부대시설' }
@@ -544,54 +546,13 @@ export default function RestHotelDetail() {
     return null;
   }
 
-  // MORNING 섹션의 베네핏 옵션 데이터
-  const morningBenefitOptions = [
-    {
-      type: 'main',
-      label: '메인제안',
-      optionImage: rectangle600,
-      optionImageAlt: '레스토랑 점심',
-      firstTitle: '리조트 내 레스토랑 점심',
-      scheduleImage: rectangle601,
-      scheduleImageAlt: '아침 루틴 1',
-      secondTitle: '메뉴 예시, 분위기 설명',
-    },
-    {
-      type: 'select',
-      label: '선택 옵션',
-      optionImage: rectangle673,
-      optionImageAlt: '룸서비스 런치',
-      firstTitle: '룸서비스 런치',
-      scheduleImage: rectangle674,
-      scheduleImageAlt: '아침 루틴 2',
-      secondTitle: '주변 유명 맛집 픽업 포함(고객 선택 시 추가 요금)',
-    },
-  ];
 
-  // LUNCH 섹션의 경험 아이템 데이터
-  const experienceItems = [
-    {
-      image: rectangle675,
-      imageAlt: '핵심 경험 1',
-      title: '스파 60~90min',
-    },
-    {
-      image: rectangle676,
-      imageAlt: '핵심 경험 2',
-      title: '시그니처 트리트먼트 설명',
-    },
-    {
-      image: rectangle677,
-      imageAlt: '핵심 경험 3',
-      title: '프라이빗 풀빌라 투숙 시 에프터눈 티 서빙',
-    },
-  ];
-
-  // 현재 탭에 따른 이미지 리스트 (전경 / 객실 / 부대시설)
+  // 현재 탭에 따른 이미지 리스트 (소개 / 전경 / 객실 / 부대시설)
   const getCurrentImages = () => {
-    if (activeTab === 0) return imageAllView; // 전경
-    if (activeTab === 1) return imageRoomView; // 객실
-    return imageEtcView; // 수영장/다이닝/기타 → 부대시설 이미지 공통 사용
+    if (activeTab === 0) return []; // 소개 탭은 이미지 없음
+    if (activeTab === 1) return imageAllView; // 전경
+    if (activeTab === 2) return imageRoomView; // 객실
+    return imageEtcView; // 부대시설
   };
 
   // 파일이 동영상인지 확인
@@ -633,30 +594,18 @@ export default function RestHotelDetail() {
     },
   ];
 
-  const reviewItems = [
-    {
-      id: 1,
-      title: '후기제목을 적는 곳입니다',
-      rating: 5.0,
-      image: reviewimage,
-      text: `발리 누사두아의 황금빛 비치에 위치한 세인트 레지스 발리 리조트는 124개의
-스위트 및 빌라와 함께 프라이빗 라군풀, 전담 버틀러 서비스 등의 초호화
-설비를 갖춘 다섯 성급 리조트입니다.
-전면 백사장과 맞닿은 비치프런트 위치에 더해, 라군 빌라에서는 객실 문을
-열자마자 행복....`
-    },
-    {
-      id: 2,
-      title: '후기제목을 적는 곳입니다',
-      rating: 5.0,
-      image: reviewimage,
-      text: `발리 누사두아의 황금빛 비치에 위치한 세인트 레지스 발리 리조트는 124개의
-스위트 및 빌라와 함께 프라이빗 라군풀, 전담 버틀러 서비스 등의 초호화
-설비를 갖춘 다섯 성급 리조트입니다.
-전면 백사장과 맞닿은 비치프런트 위치에 더해, 라군 빌라에서는 객실 문을
-열자마자 행복....`
-    },
-  ];
+
+  // 헤더에 사용할 첫 번째 이미지 가져오기
+  const getHeaderImage = () => {
+    if (imageAllView && imageAllView.length > 0) {
+      const firstImage = imageAllView[0];
+      const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
+      if (imageName) {
+        return `${AdminURL}/images/hotelimages/${imageName}`;
+      }
+    }
+    return hotelmain; // 기본 이미지
+  };
 
   return (
     <div className="RestHotelDetail">
@@ -665,9 +614,44 @@ export default function RestHotelDetail() {
         <img
           className="header-image-media"
           alt="호텔 메인 이미지"
-          src={hotelmain}
+          src={getHeaderImage()}
         />
+        {/* 어두운 overlay */}
+        <div className="header-image-overlay"></div>
+        {/* 호텔 제목 정보 (이미지 중앙에 표시) */}
+        <div className="hotel-title-overlay">
+          <div className="hotel-title-content">
+            <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
+            <div className="text-subtitle">
+              {hotelInfo?.hotelNameEn || ''}
+            </div>
+            <div className="text-rating">
+              <RatingBoard
+                ratingSize={20}
+                rating={
+                  hotelInfo && hotelInfo.hotelLevel
+                    ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                    : 0
+                }
+              />
+            </div>
+            <div className="text-location">
+              <p>{hotelInfo?.nation || ''}</p>
+              <IoIosArrowForward />
+              <p>{hotelInfo?.city || ''}</p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* 왼쪽 상단 뒤로가기 버튼 */}
+      <button
+        type="button"
+        className="left-back-btn"
+        onClick={() => navigate(-1)}
+      >
+        <IoIosArrowBack />
+      </button>
 
       {/* 오른쪽 패널 토글 버튼 */}
       {!showRightPanel && (
@@ -684,31 +668,6 @@ export default function RestHotelDetail() {
         {/* 왼쪽 영역: 기존 내용 */}
         <div className="left-section">
           <div className="hotel-center-wrapper">
-            <div className="hotel-title-wrapper">
-              <IoIosArrowBack
-                className="arrow-back"
-                onClick={() => navigate(-1)}
-              />
-              <div className="hotel-title">
-                <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
-                <div className="text-subtitle">
-                  {hotelInfo?.hotelNameEn || ''}
-                </div>
-                <RatingBoard
-                  rating={
-                    hotelInfo && (hotelInfo.tripAdviser || hotelInfo.customerScore)
-                      ? parseFloat(hotelInfo.tripAdviser || hotelInfo.customerScore)
-                      : 0
-                  }
-                />
-
-                <div className="text-location">
-                  <p>{hotelInfo?.nation || ''}</p>
-                  <IoIosArrowForward />
-                  <p>{hotelInfo?.city || ''}</p>
-                </div>
-              </div>
-            </div>
 
             {/* <div className="tag-wrapper-container">
               {divWrappers.map(({ text }, index) => (
@@ -750,212 +709,275 @@ export default function RestHotelDetail() {
               </div>
             </div>
 
-            <div className="photo-gallery">
-              {(() => {
-                const images = getCurrentImages();
-                if (images && images.length > 0) {
-                  return images.map((img: any, index: number) => {
-                    const isVideo = isVideoFile(img.imageName);
-                    
-                    if (isVideo) {
-                      return (
-                        <div key={index} className="photo-main">
-                          <video
-                            className="photo-main-image"
-                            controls
-                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                          >
-                            브라우저가 비디오 태그를 지원하지 않습니다.
-                          </video>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div key={index} className="photo-main">
-                        <img
-                          className="photo-main-image"
-                          alt={img.title || `이미지 ${index + 1}`}
-                          src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                        />
-                      </div>
-                    );
-                  });
-                }
-                return (
-                  <div className="photo-main">
-                    <img
-                      className="photo-main-image"
-                      alt="메인 이미지"
-                      src={rectangle580}
+            {/* 소개 탭일 때는 호텔 정보 표시, 나머지 탭은 이미지 표시 */}
+            {activeTab === 0 ? (
+              <>
+                {/* 호텔 소개 섹션 */}
+                <div className="hotel-intro-section">
+                  <div className="hotel-intro-rating">
+                    <RatingBoard
+                      ratingSize={30}
+                      rating={
+                        hotelInfo && hotelInfo.hotelLevel
+                          ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                          : 0
+                      }
                     />
                   </div>
-                );
-              })()}
-            </div>
+                  <div className="hotel-intro-tagline">
+                    프라이빗 비치와 세심한 서비스가 완성하는 품격있는 휴식
+                  </div>
+                  <div className="hotel-intro-logo">
+                    <img src={`${AdminURL}/images/hotellogos/${hotelInfo?.logoImage}`} alt="호텔 로고" />
+                  </div>
+                  <div className="hotel-intro-entitle">
+                    <p>{hotelInfo?.hotelNameEn || ''}</p>
+                  </div>
+                  <div className="hotel-intro-description">
+                    <p>정교한 설계와 세심한 서비스는 허니문 동안 럭셔리 그 자체를 선사합니다.</p>
+                    <p>2017년 새롭게 단장을 마치고 모던 럭셔리를 지향하는 호텔로 거듭났습니다.</p>
+                    <p>모든 객실에 자쿠지와 개인용 풀장이 설치되어 있는 것이 특징입니다.</p>
+                  </div>
+                </div>
 
-            {/* <div className="photo-gallery">
-              <div className="photo-main">
+                <div className="highlight-section">
+                  <div className="section-title">핵심 포인트</div>
+                  <div className="highlight-list">
+                    {highlightItems.map(({ image, title }) => (
+                      <div className="highlight-item" key={title}>
+                        <div className="highlight-image-wrap">
+                          <img src={image} alt={title} />
+                        </div>
+                        <div className="highlight-item-title">{title}</div>
+                        <div className="highlight-item-desc">
+                          세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`benefit-section`}>
+                  <div className="section-title">베네핏 & 포함사항</div>
+                  <div className="benefit-items">
+                    {benefitItems.map(({ title, text, image }, index) => (
+                      <div key={title} className="benefit-item">
+                        <img className="rectangle" alt="Rectangle" src={image} />
+                        <div className={`benefit-card benefit-card-${index + 1}`}>
+                          <div className="benefit-title">{title}</div>
+                          <div className="benefit-text">{text}</div>
+                        </div>
+                        <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
+                          실론투어
+                          <br />
+                          단독특전2
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 후기 및 평점 섹션 */}
+                {/* <div className='component'>
+                 
+                  <div className="review-section">
+                    <h2 className="section-title">후기 및 평점</h2>
+                    
+                    <div className="review-list">
+                      {reviewItems.map((review) => (
+                        <div key={review.id} className="review-item">
+                          <img className="review-image" alt="후기 이미지" src={review.image} />
+                          <div className="review-content">
+                            <div className="review-header">
+                              <h3 className="review-title">{review.title}</h3>
+                              <div className="review-rating">
+                                <RatingBoard rating={review.rating} ratingSize={20} />
+                              </div>
+                            </div>
+                            
+                            <p className="review-text">
+                              {review.text.split('\n').map((line, index, arr) => (
+                                <React.Fragment key={index}>
+                                  {line}
+                                  {index < arr.length - 1 && <br />}
+                                </React.Fragment>
+                              ))}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div> */}
+
+                <div className="location-info-section">
+                  <div className="section-title">호텔위치</div>
+                  <div className="location-content-wrapper">
+                    <div className="location-text-panel">
+                      <div className="location-address">
+                        {hotelInfo?.hotelAddress || ''}
+                      </div>
+                      <div className="location-nearby-list">
+                        <div className="location-nearby-item">
+                          <span className="location-icon">◎</span>
+                          <span className="location-name">발리 국립 골프 클럽</span>
+                          <span className="location-time">도보 5분</span>
+                        </div>
+                        <div className="location-nearby-item">
+                          <span className="location-icon">◎</span>
+                          <span className="location-name">게러그비치</span>
+                          <span className="location-time">도보 12분</span>
+                        </div>
+                        <div className="location-nearby-item">
+                          <span className="location-icon">◎</span>
+                          <span className="location-name">발리 컬렉션 쇼핑센터</span>
+                          <span className="location-time">도보 17분</span>
+                        </div>
+                        <div className="location-nearby-item">
+                          <span className="location-icon">◎</span>
+                          <span className="location-name">웅우라라이 국제공항</span>
+                          <span className="location-time">차로 20분</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="location-map-panel">
+                      <div className="location-map-placeholder">
+                        <GoogleMap />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 각 탭의 첫 번째 이미지 미리보기 */}
+                <div className="tab-preview-images">
+                  {/* 전경 탭 첫 번째 이미지 */}
+                  {imageAllView && imageAllView.length > 0 && (() => {
+                    const firstImage = imageAllView[0];
+                    const isVideo = isVideoFile(firstImage.imageName);
+                    return (
+                      <div key="all-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/hotelimages/${firstImage.imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={firstImage.title || '전경 이미지'}
+                              src={`${AdminURL}/images/hotelimages/${firstImage.imageName}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 객실 탭 첫 번째 이미지 */}
+                  {imageRoomView && imageRoomView.length > 0 && (() => {
+                    const firstImage = imageRoomView[0];
+                    const isVideo = isVideoFile(firstImage.imageName);
+                    return (
+                      <div key="room-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/hotelimages/${firstImage.imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={firstImage.title || '객실 이미지'}
+                              src={`${AdminURL}/images/hotelimages/${firstImage.imageName}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 부대시설 탭 첫 번째 이미지 */}
+                  {imageEtcView && imageEtcView.length > 0 && (() => {
+                    const firstImage = imageEtcView[0];
+                    const isVideo = isVideoFile(firstImage.imageName);
+                    return (
+                      <div key="etc-view" className="preview-image-item">
+                        <div className="preview-image-wrapper">
+                          {isVideo ? (
+                            <video
+                              className="preview-image"
+                              controls
+                              src={`${AdminURL}/images/hotelimages/${firstImage.imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          ) : (
+                            <img
+                              className="preview-image"
+                              alt={firstImage.title || '부대시설 이미지'}
+                              src={`${AdminURL}/images/hotelimages/${firstImage.imageName}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+              </>
+            ) : (
+              <div className="photo-gallery">
                 {(() => {
                   const images = getCurrentImages();
                   if (images && images.length > 0) {
-                    const main = images[selectedMainImageIndex];
-                    const isVideo = isVideoFile(main.imageName);
-                    
-                    if (isVideo) {
+                    return images.map((img: any, index: number) => {
+                      const isVideo = isVideoFile(img.imageName);
+                      
+                      if (isVideo) {
+                        return (
+                          <div key={index} className="photo-main">
+                            <video
+                              className="photo-main-image"
+                              controls
+                              src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                            >
+                              브라우저가 비디오 태그를 지원하지 않습니다.
+                            </video>
+                          </div>
+                        );
+                      }
+                      
                       return (
-                        <video
-                          className="photo-main-image"
-                          controls
-                          src={`${AdminURL}/images/hotelimages/${main.imageName}`}
-                        >
-                          브라우저가 비디오 태그를 지원하지 않습니다.
-                        </video>
+                        <div key={index} className="photo-main">
+                          <img
+                            className="photo-main-image"
+                            alt={img.title || `이미지 ${index + 1}`}
+                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                          />
+                        </div>
                       );
-                    }
-                    
-                    return (
-                      <img
-                        className="photo-main-image"
-                        alt={main.title || '메인 이미지'}
-                        src={`${AdminURL}/images/hotelimages/${main.imageName}`}
-                      />
-                    );
+                    });
                   }
                   return (
-                    <img
-                      className="photo-main-image"
-                      alt="메인 이미지"
-                      src={rectangle580}
-                    />
+                    <div className="photo-main">
+                      <img
+                        className="photo-main-image"
+                        alt="메인 이미지"
+                        src={rectangle580}
+                      />
+                    </div>
                   );
                 })()}
               </div>
-
-              <div className="photo-thumbnails">
-                {getCurrentImages().map((img: any, index: number) => {
-                  const isVideo = isVideoFile(img.imageName);
-                  return (
-                    <div
-                      className={`photo-thumbnail ${selectedMainImageIndex === index ? 'active' : ''} ${isVideo ? 'video-thumbnail' : ''}`}
-                      key={index}
-                      onClick={() => setSelectedMainImageIndex(index)}
-                    >
-                      {isVideo ? (
-                        <div className="thumbnail-video-wrapper">
-                          <video
-                            className="thumbnail-video"
-                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                            muted
-                            preload="metadata"
-                          />
-                          <div className="video-play-icon">▶</div>
-                        </div>
-                      ) : (
-                        <img
-                          src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                          alt={img.title || `썸네일 ${index + 1}`}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div> */}
-
-
-            <div className="location-info">
-              <div className="section-titlebox">
-                <span className="location-title">호텔위치</span>
-                <span className="text-wrapper-11">호텔 위치 보기</span>
-              </div>
-
-              <p className="text-wrapper-address">
-                {hotelInfo?.hotelAddress || ''}
-              </p>
-
-              <div className="flexcontainer">
-                <span className="span">누사두아 게이티드 지역의 고급 라인업</span>
-                <span className="span">공항 → 20~25분</span>
-                <span className="span">발리 컬렉션 쇼핑센터 → 차량 5분</span>
-                <span className="span">
-                    주변: 무려프 비치클럽·워터블로우·BTDC 산책로
-                </span>
-              </div>
-            </div>
-
-            <div className="highlight-section">
-              <div className="highlight-title">핵심 포인트</div>
-              <div className="highlight-list">
-                {highlightItems.map(({ image, title }) => (
-                  <div className="highlight-item" key={title}>
-                    <div className="highlight-image-wrap">
-                      <img src={image} alt={title} />
-                    </div>
-                    <div className="highlight-item-title">{title}</div>
-                    <div className="highlight-item-desc">
-                      세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className={`benefit-section`}>
-              <div className="div-wrapper">
-                <div className="text-wrapper">베네핏 & 포함사항</div>
-              </div>
-      
-              <div className="benefit-items">
-                {benefitItems.map(({ title, text, image }, index) => (
-                  <div key={title} className="benefit-item">
-                    <img className="rectangle" alt="Rectangle" src={image} />
-                    <div className={`benefit-card benefit-card-${index + 1}`}>
-                      <div className="benefit-title">{title}</div>
-                      <div className="benefit-text">{text}</div>
-                    </div>
-                    <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
-                      실론투어
-                      <br />
-                      단독특전2
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className='component'>
-              {/* 후기 및 평점 섹션 */}
-              <div className="review-section">
-                <h2 className="section-title">후기 및 평점</h2>
-                
-                <div className="review-list">
-                  {reviewItems.map((review) => (
-                    <div key={review.id} className="review-item">
-                      <img className="review-image" alt="후기 이미지" src={review.image} />
-                      <div className="review-content">
-                        <div className="review-header">
-                          <h3 className="review-title">{review.title}</h3>
-                          <div className="review-rating">
-                            <RatingBoard rating={review.rating} />
-                          </div>
-                        </div>
-                        
-                        <p className="review-text">
-                          {review.text.split('\n').map((line, index, arr) => (
-                            <React.Fragment key={index}>
-                              {line}
-                              {index < arr.length - 1 && <br />}
-                            </React.Fragment>
-                          ))}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
+            )}
           </div>
         </div>
 

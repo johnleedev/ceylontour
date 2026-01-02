@@ -59,6 +59,22 @@ const EuropeScheduleRecommend: React.FC = () => {
   const [scheduleDetailList, setScheduleDetailList] = React.useState<any[]>([]);
   const [isLoadingScheduleDetail, setIsLoadingScheduleDetail] = React.useState<boolean>(false);
   
+  // 우측 패널 탭 상태
+  const [rightPanelTopTab, setRightPanelTopTab] = React.useState<'예약하기' | '수정하기'>('예약하기');
+  const [rightPanelSubTab, setRightPanelSubTab] = React.useState<'여행도시' | '여행루트' | '일정' | '예약정보'>('예약정보');
+  
+  // 예약하기 폼 상태
+  const [reservationForm, setReservationForm] = React.useState({
+    name: '',
+    travelType: '',
+    productName: '',
+    travelPeriod: '',
+    airline: '',
+    hotel: '',
+    pricePerPerson: '',
+    totalPrice: ''
+  });
+  
   // 각 탭별 데이터 개수 계산
   const tabCounts = React.useMemo(() => {
     const counts: { [key: string]: number } = {};
@@ -109,6 +125,74 @@ const EuropeScheduleRecommend: React.FC = () => {
     }
     return [];
   }, [stateProps?.productScheduleData]);
+
+  // productScheduleData에서 도시 정보 (도시명, 여행기간, 박수) 추출
+  const citiesWithInfo = React.useMemo(() => {
+    if (!stateProps?.productScheduleData) return [];
+    try {
+      const scheduleData = JSON.parse(stateProps.productScheduleData);
+      if (!Array.isArray(scheduleData)) return [];
+
+      // 시작 날짜 계산
+      let startDate: Date | null = null;
+      if (customerInfo.travelPeriod) {
+        const travelPeriod = customerInfo.travelPeriod.trim();
+        if (travelPeriod.includes('~')) {
+          const parts = travelPeriod.split('~').map(part => part.trim());
+          if (parts.length === 2) {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (dateRegex.test(parts[0])) {
+              startDate = new Date(parts[0]);
+            }
+          }
+        } else {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(travelPeriod)) {
+            startDate = new Date(travelPeriod);
+          }
+        }
+      }
+      
+      if (!startDate) {
+        startDate = new Date();
+      }
+
+      let currentDate = new Date(startDate);
+
+      return scheduleData.map((item: any) => {
+        const city = item.city || '';
+        const dayNight = item.dayNight || '';
+        const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
+        
+        const arrivalDate = new Date(currentDate);
+        const departureDate = new Date(currentDate);
+        
+        if (nights > 0) {
+          departureDate.setDate(departureDate.getDate() + nights);
+        }
+        
+        const formatDate = (date: Date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        
+        const travelPeriod = `${formatDate(arrivalDate)} ~ ${formatDate(departureDate)}`;
+        
+        currentDate = new Date(departureDate);
+        
+        return {
+          city,
+          travelPeriod,
+          nights
+        };
+      });
+    } catch (e) {
+      console.error('productScheduleData 파싱 오류:', e);
+      return [];
+    }
+  }, [stateProps?.productScheduleData, customerInfo.travelPeriod]);
 
   // 각 도시 정보 가져오기
   const fetchCityInfo = async (cityName: string) => {
@@ -279,6 +363,158 @@ const EuropeScheduleRecommend: React.FC = () => {
     }
   };
 
+  // 도시간 이동 교통 정보 렌더링 함수
+  const renderTransportSection = () => {
+    if (!stateProps?.productScheduleData) {
+      return (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
+          일정 데이터가 없습니다.
+        </div>
+      );
+    }
+    try {
+      const scheduleData = JSON.parse(stateProps.productScheduleData);
+      if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+        return (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
+            일정 데이터가 없습니다.
+          </div>
+        );
+      }
+
+      // 시작 날짜 계산
+      let startDate: Date | null = null;
+      if (customerInfo.travelPeriod) {
+        const travelPeriod = customerInfo.travelPeriod.trim();
+        if (travelPeriod.includes('~')) {
+          const parts = travelPeriod.split('~').map(part => part.trim());
+          if (parts.length === 2) {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (dateRegex.test(parts[0])) {
+              startDate = new Date(parts[0]);
+            }
+          }
+        } else {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(travelPeriod)) {
+            startDate = new Date(travelPeriod);
+          }
+        }
+      }
+      
+      // 시작 날짜가 없으면 현재 날짜 사용
+      if (!startDate) {
+        startDate = new Date();
+      }
+
+      let currentDate = new Date(startDate);
+
+      return (
+        <div className="transport-section">
+          <div className="transport-header">
+            <h3>도시간 이동 교통</h3>
+          </div>
+          <div className="transport-list">
+            {scheduleData.map((item: any, index: number) => {
+              const city = item.city || '';
+              const dayNight = item.dayNight || '';
+              const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
+              
+              // 첫 번째 도시는 시작 날짜, 이후 도시는 이전 도시의 출발 날짜
+              const arrivalDate = new Date(currentDate);
+              const departureDate = new Date(currentDate);
+              
+              // 박수가 있으면 출발 날짜 계산
+              if (nights > 0) {
+                departureDate.setDate(departureDate.getDate() + nights);
+              }
+              
+              const formatDate = (date: Date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                const weekday = weekdays[date.getDay()];
+                return `${year}-${month}-${day}(${weekday})`;
+              };
+              
+              // 다음 도시의 도착 날짜는 현재 도시의 출발 날짜
+              currentDate = new Date(departureDate);
+              
+              // 이동 수단 (API에서 가져오거나 기본값)
+              const transportType = item.transportType || item.traffic || (index < scheduleData.length - 1 ? ['버스', '국내선', '기차'][index % 3] : '');
+              const transportIcon = transportType === '버스' ? '🚌' : transportType === '국내선' ? '✈️' : transportType === '기차' ? '🚂' : '';
+              
+              // 도착/출발 시간 (API에서 가져오거나 기본값)
+              const arrivalTime = item.arrivalTime || (index === 0 ? '17:00' : '11:00');
+              const departureTime = item.departureTime || '09:00';
+              
+              return (
+                <React.Fragment key={index}>
+                  <div className="transport-city-card">
+                    <div className="transport-city-header">
+                      <div className="transport-city-name">{city}</div>
+                      <div className="transport-city-nights">
+                        <span className="nights-value">{nights}박</span>
+                      </div>
+                    </div>
+                    <div className="transport-city-details">
+                      <div className="transport-detail-row">
+                        <span className="transport-label">도착</span>
+                        <span className="transport-value arrival">{formatDate(arrivalDate)} {arrivalTime}</span>
+                      </div>
+                      <div className="transport-detail-row">
+                        <span className="transport-label">출발</span>
+                        <span className="transport-value departure">{formatDate(departureDate)} {departureTime}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {index < scheduleData.length - 1 && (
+                    <div className="transport-connector">
+                      <div className="transport-line"></div>
+                      <div className="transport-icon">{transportIcon}</div>
+                      <div className="transport-type">{transportType}</div>
+                      <div className="transport-line"></div>
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <div className="transport-footer" style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: '20px',
+            paddingTop: '20px'
+          }}>
+            <button 
+              className="add-destination-btn"
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #333',
+                borderRadius: '4px',
+                backgroundColor: '#fff',
+                color: '#333',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500
+              }}
+            >
+              여행지 추가 +
+            </button>
+          </div>
+        </div>
+      );
+    } catch (e) {
+      console.error('일정 데이터 파싱 오류:', e);
+      return (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
+          일정 데이터를 불러올 수 없습니다.
+        </div>
+      );
+    }
+  };
+
   // 파일이 동영상인지 확인
   const isVideoFile = (fileName: string) => {
     if (!fileName) return false;
@@ -335,19 +571,28 @@ const EuropeScheduleRecommend: React.FC = () => {
             <div className="main-tab-buttons" style={{ marginBottom: '20px' }}>
               <button 
                 className={`btn-tap ${mainTab === '여행도시' ? 'active' : ''}`}
-                onClick={() => setMainTab('여행도시')}
+                onClick={() => {
+                  setMainTab('여행도시');
+                  setRightPanelSubTab('여행도시');
+                }}
               >
                 여행도시
               </button>
               <button 
                 className={`btn-tap ${mainTab === '여행루트' ? 'active' : ''}`}
-                onClick={() => setMainTab('여행루트')}
+                onClick={() => {
+                  setMainTab('여행루트');
+                  setRightPanelSubTab('여행루트');
+                }}
               >
                 여행루트
               </button>
               <button 
                 className={`btn-tap ${mainTab === '일정표' ? 'active' : ''}`}
-                onClick={() => setMainTab('일정표')}
+                onClick={() => {
+                  setMainTab('일정표');
+                  setRightPanelSubTab('일정');
+                }}
               >
                 일정표
               </button>
@@ -502,6 +747,7 @@ const EuropeScheduleRecommend: React.FC = () => {
 
         {/* 우측 패널 */}
         {showRightPanel && (
+          <div className="right-panel-wrapper">
           <div className="right-panel">
             {/* 닫기 버튼 */}
             <button
@@ -513,438 +759,710 @@ const EuropeScheduleRecommend: React.FC = () => {
             </button>
             
             <div className="panel-content">
-              {/* 메인 탭에 따라 다른 내용 표시 */}
-              {mainTab === '여행도시' && (
-                <>
-                  {/* 도시 탭 버튼들 */}
-                  {cities.length > 0 && (
-                    <div className="city-tab-buttons">
-                      {cities.map((city: string) => (
-                        <button
-                          key={city}
-                          className={`city-tab-btn ${selectedCity === city ? 'active' : ''}`}
-                          onClick={() => setSelectedCity(city)}
-                        >
-                          {city}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+              {/* 최상단 탭: 예약하기 / 수정하기 */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                justifyContent: 'flex-end',
+                marginBottom: '20px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTopTab('예약하기')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                    border: '1px solid #333',
+                    backgroundColor: rightPanelTopTab === '예약하기' ? '#333' : '#fff',
+                    color: rightPanelTopTab === '예약하기' ? '#fff' : '#333',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  예약하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTopTab('수정하기')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                    border: '1px solid #ddd',
+                    backgroundColor: rightPanelTopTab === '수정하기' ? '#333' : '#fff',
+                    color: rightPanelTopTab === '수정하기' ? '#fff' : '#333',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  수정하기
+                </button>
+              </div>
 
-                  {/* 하이라이트 이미지 갤러리 */}
-                  <div className="highlight-grid">
-                    {(() => {
-                      // API에서 하이라이트 이미지 가져오기
-                      if (selectedCityInfo?.inputImage) {
-                        try {
-                          const images = JSON.parse(selectedCityInfo.inputImage || '[]');
-                          if (Array.isArray(images) && images.length > 0) {
-                            return images.slice(0, 4).map((image: string, index: number) => (
-                              <div key={index} className="highlight-card">
-                                <div className="highlight-image-wrap">
-                                  <img src={`${AdminURL}/images/nationimages/${image}`} alt={`${selectedCity} 하이라이트 ${index + 1}`} />
-                                </div>
-                                {selectedCityInfo?.highlightTitles && Array.isArray(selectedCityInfo.highlightTitles) && selectedCityInfo.highlightTitles[index] ? (
-                                  <div className="highlight-title">{selectedCityInfo.highlightTitles[index]}</div>
-                                ) : (
-                                  <div className="highlight-title">{selectedCity} 하이라이트 {index + 1}</div>
-                                )}
-                              </div>
-                            ));
-                          }
-                        } catch (e) {
-                          // 파싱 실패 시 기본 하이라이트 표시
-                        }
+              {/* 하위 탭: 여행도시 / 여행루트 / 일정 / 예약정보 */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '20px'
+              }}>
+                {['예약정보','여행도시', '여행루트', '일정'].map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => {
+                      setRightPanelSubTab(tab as typeof rightPanelSubTab);
+                      // 우측 패널 탭이 변경되면 좌측 패널 탭도 업데이트 (예약정보 제외)
+                      if (tab === '여행도시') {
+                        setMainTab('여행도시');
+                      } else if (tab === '여행루트') {
+                        setMainTab('여행루트');
+                      } else if (tab === '일정') {
+                        setMainTab('일정표');
                       }
-                      // 기본 하이라이트 표시
-                      return (
-                        <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-                          하이라이트 이미지가 없습니다.
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </>
-              )}
+                      // 예약정보 탭은 좌측 패널 탭 변경 없음
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '4px',
+                      backgroundColor: rightPanelSubTab === tab ? '#333' : '#fff',
+                      color: rightPanelSubTab === tab ? '#fff' : '#666',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
 
-              {mainTab === '여행루트' && (
-                <>
-                  {/* 도시간 이동 교통 정보 */}
-                  <div className="transport-section">
-                    <div className="transport-header">
-                      <h3>도시간 이동 교통</h3>
-                      <button
-                        type="button"
-                        className="transport-close-btn"
-                        onClick={() => {}}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <div className="transport-list">
-                      {(() => {
-                        if (!stateProps?.productScheduleData) {
-                          return (
-                            <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-                              일정 데이터가 없습니다.
-                            </div>
-                          );
-                        }
-                        try {
-                          const scheduleData = JSON.parse(stateProps.productScheduleData);
-                          if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
-                            return (
-                              <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-                                일정 데이터가 없습니다.
-                              </div>
-                            );
-                          }
-
-                          // 시작 날짜 계산
-                          let startDate: Date | null = null;
-                          if (customerInfo.travelPeriod) {
-                            const travelPeriod = customerInfo.travelPeriod.trim();
-                            if (travelPeriod.includes('~')) {
-                              const parts = travelPeriod.split('~').map(part => part.trim());
-                              if (parts.length === 2) {
-                                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                                if (dateRegex.test(parts[0])) {
-                                  startDate = new Date(parts[0]);
-                                }
-                              }
-                            } else {
-                              const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                              if (dateRegex.test(travelPeriod)) {
-                                startDate = new Date(travelPeriod);
-                              }
-                            }
-                          }
-                          
-                          // 시작 날짜가 없으면 현재 날짜 사용
-                          if (!startDate) {
-                            startDate = new Date();
-                          }
-
-                          let currentDate = new Date(startDate);
-
-                          return scheduleData.map((item: any, index: number) => {
-                            const city = item.city || '';
-                            const dayNight = item.dayNight || '';
-                            const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
-                            
-                            // 첫 번째 도시는 시작 날짜, 이후 도시는 이전 도시의 출발 날짜
-                            const arrivalDate = new Date(currentDate);
-                            const departureDate = new Date(currentDate);
-                            
-                            // 박수가 있으면 출발 날짜 계산
-                            if (nights > 0) {
-                              departureDate.setDate(departureDate.getDate() + nights);
-                            }
-                            
-                            const formatDate = (date: Date) => {
-                              const year = date.getFullYear();
-                              const month = String(date.getMonth() + 1).padStart(2, '0');
-                              const day = String(date.getDate()).padStart(2, '0');
-                              const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-                              const weekday = weekdays[date.getDay()];
-                              return `${year}-${month}-${day}(${weekday})`;
-                            };
-                            
-                            // 다음 도시의 도착 날짜는 현재 도시의 출발 날짜
-                            currentDate = new Date(departureDate);
-                            
-                            // 이동 수단 (API에서 가져오거나 기본값)
-                            const transportType = item.transportType || item.traffic || (index < scheduleData.length - 1 ? ['버스', '국내선', '기차'][index % 3] : '');
-                            const transportIcon = transportType === '버스' ? '🚌' : transportType === '국내선' ? '✈️' : transportType === '기차' ? '🚂' : '';
-                            
-                            // 도착/출발 시간 (API에서 가져오거나 기본값)
-                            const arrivalTime = item.arrivalTime || (index === 0 ? '17:00' : '11:00');
-                            const departureTime = item.departureTime || '09:00';
-                            
-                            return (
-                              <React.Fragment key={index}>
-                                <div className="transport-city-card">
-                                  <div className="transport-city-header">
-                                    <div className="transport-city-name">{city}</div>
-                                    <div className="transport-city-nights">
-                                      <button className="nights-control-btn">-</button>
-                                      <span className="nights-value">{nights}박</span>
-                                      <button className="nights-control-btn">+</button>
-                                    </div>
-                                  </div>
-                                  <div className="transport-city-details">
-                                    <div className="transport-detail-row">
-                                      <span className="transport-label">도착</span>
-                                      <span className="transport-value arrival">{formatDate(arrivalDate)} {arrivalTime}</span>
-                                    </div>
-                                    <div className="transport-detail-row">
-                                      <span className="transport-label">출발</span>
-                                      <span className="transport-value departure">{formatDate(departureDate)} {departureTime}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                {index < scheduleData.length - 1 && (
-                                  <div className="transport-connector">
-                                    <div className="transport-line"></div>
-                                    <div className="transport-icon">{transportIcon}</div>
-                                    <div className="transport-type">{transportType}</div>
-                                    <div className="transport-line"></div>
-                                  </div>
-                                )}
-                              </React.Fragment>
-                            );
-                          });
-                        } catch (e) {
-                          console.error('일정 데이터 파싱 오류:', e);
-                          return (
-                            <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-                              일정 데이터를 불러올 수 없습니다.
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                    <div className="transport-footer">
-                      <button className="add-destination-btn">
-                        여행지 추가 +
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {mainTab === '일정표' && (
-                <>
-                  {/* 도시 탭 버튼들 */}
-                  {cities.length > 0 && (
-                    <div className="city-tab-buttons">
-                      {cities.map((city: string) => (
-                        <button
-                          key={city}
-                          className={`city-tab-btn ${selectedCity === city ? 'active' : ''}`}
-                          onClick={() => setSelectedCity(city)}
-                        >
-                          {city}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* 탭 컨테이너 (도시베네핏 / 상세일정) */}
-                  <div className="right-tab-container">
-                    <div className="right-tab-left">
-                      <button
-                        type="button"
-                        className={`right-tab-button ${activeRightTab === 'benefit' ? 'active' : ''}`}
-                        onClick={() => setActiveRightTab('benefit')}
-                      >
-                        도시베네핏
-                      </button>
-                      <button
-                        type="button"
-                        className={`right-tab-button ${activeRightTab === 'schedule' ? 'active' : ''}`}
-                        onClick={() => setActiveRightTab('schedule')}
-                      >
-                        상세일정
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 탭 컨텐츠 */}
-                  <div className="right-tab-content">
-                    {activeRightTab === 'benefit' && (
-                      <div className="benefit-card-section">
-                        {/* 도시베네핏 콘텐츠는 추후 추가 예정 */}
-                        <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-                          도시베네핏 정보가 없습니다.
-                        </div>
+              {/* 탭별 컨텐츠 */}
+              {rightPanelSubTab === '여행도시' && (
+                <div style={{ marginTop: '20px' }}>
+                  <div className="selected-cities-section" style={{ marginBottom: '30px' }}>
+                    <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 700 }}>여행 도시</h3>
+                    {citiesWithInfo.length === 0 ? (
+                      <div className="no-selected-cities" style={{
+                        padding: '40px',
+                        textAlign: 'center',
+                        color: '#999',
+                        border: '1px dashed #e0e0e0',
+                        borderRadius: '4px'
+                      }}>여행 도시가 없습니다</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {citiesWithInfo.map((cityInfo, index) => (
+                          <div key={index} className="selected-city-card" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '20px',
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '10px',
+                            boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)'
+                          }}>
+                            <span className="city-name" style={{ fontSize: '14px', fontWeight: 500 }}>{cityInfo.city}</span>
+                            <span className="travel-period" style={{ fontSize: '14px', color: '#666', flex: 1, textAlign: 'center' }}>{cityInfo.travelPeriod}</span>
+                            <span className="nights" style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{cityInfo.nights}박</span>
+                          </div>
+                        ))}
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
 
-                    {activeRightTab === 'schedule' && (
-                      <div className="schedule-summary-content" style={{ marginTop: '20px' }}>
-                        <div className="summary-card">
-                          <div className="summary-header">
-                            <div className="summary-sub-tabs" style={{
-                              display: 'flex',
-                              gap: '12px',
-                              marginTop: '12px',
-                              flexWrap: 'wrap'
-                            }}>
-                              {['전체','호텔베네핏','익스커션','강습/클래스','스파마사지','식사/다이닝','바/클럽','스냅촬영','차량/가이드','편의사항','기타'].map(label => (
-                                <span
-                                  key={label}
-                                  className={`sub-tab ${summarySubTab === label ? 'active' : ''}`}
-                                  onClick={() => setSummarySubTab(label as typeof summarySubTab)}
-                                  style={{
-                                    padding: '6px 12px',
-                                    borderRadius: '4px',
-                                    backgroundColor: summarySubTab === label ? '#333' : '#f5f5f5',
-                                    color: summarySubTab === label ? '#fff' : '#666',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
+
+              {rightPanelSubTab === '여행루트' && (
+                <div style={{ marginTop: '20px' }}>
+                  <div className="selected-cities-section" style={{ marginBottom: '30px' }}>
+                    <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 700 }}>여행 루트</h3>
+                    {(() => {
+                      if (!stateProps?.productScheduleData) {
+                        return (
+                          <div className="no-selected-cities" style={{
+                            padding: '40px',
+                            textAlign: 'center',
+                            color: '#999',
+                            border: '1px dashed #e0e0e0',
+                            borderRadius: '4px'
+                          }}>여행 도시가 없습니다</div>
+                        );
+                      }
+                      try {
+                        const scheduleData = JSON.parse(stateProps.productScheduleData);
+                        if (!Array.isArray(scheduleData) || scheduleData.length === 0) {
+                          return (
+                            <div className="no-selected-cities" style={{
+                              padding: '40px',
+                              textAlign: 'center',
+                              color: '#999',
+                              border: '1px dashed #e0e0e0',
+                              borderRadius: '4px'
+                            }}>여행 도시가 없습니다</div>
+                          );
+                        }
+
+                        // 시작 날짜 계산
+                        let startDate: Date | null = null;
+                        if (customerInfo.travelPeriod) {
+                          const travelPeriod = customerInfo.travelPeriod.trim();
+                          if (travelPeriod.includes('~')) {
+                            const parts = travelPeriod.split('~').map(part => part.trim());
+                            if (parts.length === 2) {
+                              const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                              if (dateRegex.test(parts[0])) {
+                                startDate = new Date(parts[0]);
+                              }
+                            }
+                          } else {
+                            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                            if (dateRegex.test(travelPeriod)) {
+                              startDate = new Date(travelPeriod);
+                            }
+                          }
+                        }
+                        
+                        if (!startDate) {
+                          startDate = new Date();
+                        }
+
+                        let currentDate = new Date(startDate);
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                            {scheduleData.map((item: any, index: number) => {
+                              const city = item.city || '';
+                              const dayNight = item.dayNight || '';
+                              const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
+                              
+                              const arrivalDate = new Date(currentDate);
+                              const departureDate = new Date(currentDate);
+                              
+                              if (nights > 0) {
+                                departureDate.setDate(departureDate.getDate() + nights);
+                              }
+                              
+                              const formatDate = (date: Date) => {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                                const weekday = weekdays[date.getDay()];
+                                return `${year}-${month}-${day}(${weekday})`;
+                              };
+                              
+                              currentDate = new Date(departureDate);
+                              
+                              const arrivalTime = item.arrivalTime || (index === 0 ? '17:00' : '11:00');
+                              const departureTime = item.departureTime || '09:00';
+                              
+                              // 이동 수단
+                              const transportType = item.transportType || item.traffic || (index < scheduleData.length - 1 ? ['버스', '국내선', '기차'][index % 3] : '');
+                              const transportIcon = transportType === '버스' ? '🚌' : transportType === '국내선' ? '✈️' : transportType === '기차' ? '🚂' : '';
+
+                              return (
+                                <React.Fragment key={index}>
+                                  <div className="selected-city-card" style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '6px',
-                                  }}
-                                >
-                                  <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
-                                  <span style={{ fontSize: '14px' }}>
-                                    {tabCounts[label] || 0}
-                                  </span>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div className="summary-grid" style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                            gap: '16px',
-                            marginTop: '20px'
-                          }}>
-                            {isLoadingScheduleDetail ? (
-                              <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
-                                로딩 중...
-                              </div>
-                            ) : filteredScheduleDetailList.length === 0 ? (
-                              <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
-                                상세일정이 없습니다.
-                              </div>
-                            ) : (
-                              filteredScheduleDetailList.map((item: any) => {
-                                // inputImage가 JSON 배열 문자열인 경우 파싱
-                                let imageUrl = scheduleImg1; // 기본 이미지
-                                if (item.inputImage) {
-                                  try {
-                                    const imageArray = JSON.parse(item.inputImage);
-                                    if (Array.isArray(imageArray) && imageArray.length > 0) {
-                                      imageUrl = `${AdminURL}/images/scheduledetailboximages/${imageArray[0]}`;
-                                    }
-                                  } catch (e) {
-                                    // 파싱 실패 시 기본 이미지 사용
-                                    console.error('이미지 파싱 오류:', e);
-                                  }
-                                }
-                                
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className="summary-item"
-                                    style={{
-                                      border: '1px solid #e0e0e0',
-                                      borderRadius: '8px',
-                                      overflow: 'hidden',
-                                      cursor: 'pointer',
-                                      transition: 'all 0.2s'
-                                    }}
-                                    onClick={() => handleScheduleDetailItemClick(item)}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.borderColor = '#5fb7ef';
-                                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(95, 183, 239, 0.2)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.borderColor = '#e0e0e0';
-                                      e.currentTarget.style.boxShadow = 'none';
-                                    }}
-                                  >
-                                    <img className="summary-item-image" alt={item.productName || '상세일정'} src={imageUrl} style={{
-                                      width: '100%',
-                                      height: '150px',
-                                      objectFit: 'cover'
-                                    }} />
-                                    <div className="summary-item-content" style={{ padding: '12px' }}>
-                                      <p className="summary-item-title" style={{
-                                        margin: '0 0 8px 0',
-                                        fontSize: '16px',
-                                        fontWeight: 700,
-                                        color: '#333',
-                                        lineHeight: '1.4'
-                                      }}>
-                                        {item.productName || '-'}
-                                      </p>
-                                      <div className="summary-item-rating" style={{
-                                        marginBottom: '8px',
-                                        fontSize: '13px',
-                                        color: '#ff6b00'
-                                      }}>★ {item.scores || '5.0'}</div>
-                                      <div className="summary-item-price-row" style={{
-                                        display: 'flex',
-                                        alignItems: 'baseline',
-                                        gap: '4px'
-                                      }}>
-                                        <span className="summary-item-price" style={{
-                                          fontSize: '16px',
-                                          fontWeight: 'bold',
-                                          color: '#333'
-                                        }}>가격 문의</span>
-                                      </div>
-                                    </div>
+                                    justifyContent: 'space-between',
+                                    padding: '16px 20px',
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    marginBottom: index < scheduleData.length - 1 ? '0' : '0'
+                                  }}>
+                                    <span className="city-name" style={{ fontSize: '14px', fontWeight: 500, minWidth: '80px' }}>{city}</span>
+                                    <span className="nights" style={{ fontSize: '14px', fontWeight: 500, color: '#333', minWidth: '40px' }}>{nights}박</span>
+                                    <span className="arrival-time" style={{ fontSize: '14px', color: '#666', minWidth: '120px' }}>{formatDate(arrivalDate)} {arrivalTime}</span>
+                                    <span className="departure-time" style={{ fontSize: '14px', color: '#666', minWidth: '120px', textAlign: 'right' }}>{formatDate(departureDate)} {departureTime}</span>
                                   </div>
-                                );
-                              })
-                            )}
+                                  {index < scheduleData.length - 1 && (
+                                    <div className="transport-connector" style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      margin: '12px 0',
+                                      padding: '0 24px'
+                                    }}>
+                                      <div style={{
+                                        flex: 1,
+                                        height: 0,
+                                        borderTop: '2px dashed #ccc'
+                                      }}></div>
+                                      <div style={{
+                                        fontSize: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '44px',
+                                        height: '44px',
+                                        backgroundColor: '#fff',
+                                        borderRadius: '50%',
+                                        border: '1px solid #ddd',
+                                        flexShrink: 0
+                                      }}>{transportIcon}</div>
+                                      <div style={{
+                                        fontSize: '13px',
+                                        color: '#333',
+                                        padding: '6px 12px',
+                                        backgroundColor: '#f5f5f5',
+                                        borderRadius: '8px',
+                                        whiteSpace: 'nowrap',
+                                        fontWeight: 400
+                                      }}>{transportType}</div>
+                                      <div style={{
+                                        flex: 1,
+                                        height: 0,
+                                        borderTop: '2px dashed #ccc'
+                                      }}></div>
+                                    </div>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
                           </div>
+                        );
+                      } catch (e) {
+                        console.error('일정 데이터 파싱 오류:', e);
+                        return (
+                          <div className="no-selected-cities" style={{
+                            padding: '40px',
+                            textAlign: 'center',
+                            color: '#999',
+                            border: '1px dashed #e0e0e0',
+                            borderRadius: '4px'
+                          }}>여행 도시가 없습니다</div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {rightPanelSubTab === '일정' && (
+                <>
+                  {/* 도시 탭 버튼들 */}
+                  {cities.length > 0 && (
+                    <div className="city-tab-buttons" style={{ marginBottom: '20px' }}>
+                      {cities.map((city: string) => (
+                        <button
+                          key={city}
+                          className={`city-tab-btn ${selectedCity === city ? 'active' : ''}`}
+                          onClick={() => setSelectedCity(city)}
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 상세일정 그리드 */}
+                  <div className="schedule-summary-content" style={{ marginTop: '20px' }}>
+                    <div className="summary-card">
+                      <div className="summary-header">
+                        <div className="summary-sub-tabs" style={{
+                          display: 'flex',
+                          gap: '12px',
+                          marginTop: '12px',
+                          flexWrap: 'wrap'
+                        }}>
+                          {['전체','호텔베네핏','익스커션','강습/클래스','스파마사지','식사/다이닝','바/클럽','스냅촬영','차량/가이드','편의사항','기타'].map(label => (
+                            <span
+                              key={label}
+                              className={`sub-tab ${summarySubTab === label ? 'active' : ''}`}
+                              onClick={() => setSummarySubTab(label as typeof summarySubTab)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                backgroundColor: summarySubTab === label ? '#333' : '#f5f5f5',
+                                color: summarySubTab === label ? '#fff' : '#666',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                              }}
+                            >
+                              <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
+                              <span style={{ fontSize: '14px' }}>
+                                {tabCounts[label] || 0}
+                              </span>
+                            </span>
+                          ))}
                         </div>
                       </div>
-                    )}
+                      
+                      <div className="summary-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                        gap: '16px',
+                        marginTop: '20px'
+                      }}>
+                        {isLoadingScheduleDetail ? (
+                          <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
+                            로딩 중...
+                          </div>
+                        ) : filteredScheduleDetailList.length === 0 ? (
+                          <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
+                            상세일정이 없습니다.
+                          </div>
+                        ) : (
+                          filteredScheduleDetailList.map((item: any) => {
+                            // inputImage가 JSON 배열 문자열인 경우 파싱
+                            let imageUrl = scheduleImg1; // 기본 이미지
+                            if (item.inputImage) {
+                              try {
+                                const imageArray = JSON.parse(item.inputImage);
+                                if (Array.isArray(imageArray) && imageArray.length > 0) {
+                                  imageUrl = `${AdminURL}/images/scheduledetailboximages/${imageArray[0]}`;
+                                }
+                              } catch (e) {
+                                // 파싱 실패 시 기본 이미지 사용
+                                console.error('이미지 파싱 오류:', e);
+                              }
+                            }
+                            
+                            return (
+                              <div
+                                key={item.id}
+                                className="summary-item"
+                                style={{
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: '8px',
+                                  overflow: 'hidden',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                                onClick={() => handleScheduleDetailItemClick(item)}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = '#5fb7ef';
+                                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(95, 183, 239, 0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = '#e0e0e0';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
+                              >
+                                <img className="summary-item-image" alt={item.productName || '상세일정'} src={imageUrl} style={{
+                                  width: '100%',
+                                  height: '150px',
+                                  objectFit: 'cover'
+                                }} />
+                                <div className="summary-item-content" style={{ padding: '12px' }}>
+                                  <p className="summary-item-title" style={{
+                                    margin: '0 0 8px 0',
+                                    fontSize: '16px',
+                                    fontWeight: 700,
+                                    color: '#333',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {item.productName || '-'}
+                                  </p>
+                                  <div className="summary-item-rating" style={{
+                                    marginBottom: '8px',
+                                    fontSize: '13px',
+                                    color: '#ff6b00'
+                                  }}>★ {item.scores || '5.0'}</div>
+                                  <div className="summary-item-price-row" style={{
+                                    display: 'flex',
+                                    alignItems: 'baseline',
+                                    gap: '4px'
+                                  }}>
+                                    <span className="summary-item-price" style={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      color: '#333'
+                                    }}>가격 문의</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
+
+
+              {rightPanelSubTab === '예약정보' && (
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* 성명 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        성명 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.name}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="성명을 입력하세요"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 여행형태 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        여행형태 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.travelType}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, travelType: e.target.value }))}
+                        placeholder="여행형태를 입력하세요"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 상품명 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        상품명 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.productName}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, productName: e.target.value }))}
+                        placeholder="상품명을 입력하세요"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 여행기간 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        여행기간 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.travelPeriod}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, travelPeriod: e.target.value }))}
+                        placeholder="여행기간을 입력하세요 (예: 2024-01-01 ~ 2024-01-05)"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 이용항공 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        이용항공 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.airline}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, airline: e.target.value }))}
+                        placeholder="이용항공을 입력하세요"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 이용호텔 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        이용호텔 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.hotel}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, hotel: e.target.value }))}
+                        placeholder="이용호텔을 입력하세요"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 1인상품가 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        1인상품가 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.pricePerPerson}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, pricePerPerson: e.target.value }))}
+                        placeholder="1인상품가를 입력하세요 (예: 1,500,000)"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* 총요금 */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: '#333'
+                      }}>
+                        총요금 *
+                      </label>
+                      <input
+                        type="text"
+                        value={reservationForm.totalPrice}
+                        onChange={(e) => setReservationForm(prev => ({ ...prev, totalPrice: e.target.value }))}
+                        placeholder="총요금을 입력하세요 (예: 3,000,000)"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #ddd',
+                          fontSize: '14px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            
-            {/* 하단 버튼 - 일정표 탭일 때만 표시 */}
-            {mainTab === '일정표' && (
-              <div className="cost-schedule-btn-wrapper">
-              <button
-                className="cost-schedule-btn"
-                onClick={() => {
-                  if (!selectedSchedule) {
-                    alert('일정을 선택해주세요.');
-                    return;
-                  }
+          </div>
+          
+          {/* 하단 버튼 */}
+          <div className="cost-schedule-btn-wrapper">
+            <button className="cost-schedule-btn"
+              onClick={() => {
+                if (!selectedSchedule) {
+                  alert('일정을 선택해주세요.');
+                  return;
+                }
 
-                  // 선택된 일정의 정보 추출
-                  const airlineData = selectedSchedule.airlineData;
-                  const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
+                // 선택된 일정의 정보 추출
+                const airlineData = selectedSchedule.airlineData;
+                const scheduleDetailData = selectedSchedule.scheduleDetailData || [];
 
-                  setSelectedScheduleData({
-                    productInfo: {
-                      id: stateProps?.id,
-                      productName: stateProps?.productName,
-                      scheduleSort: stateProps?.scheduleSort,
-                      costType: stateProps?.costType,
-                      tourPeriodData: stateProps?.tourPeriodData,
-                      includeNote: stateProps?.includeNote,
-                      notIncludeNote: stateProps?.notIncludeNote,
-                      productScheduleData: stateProps?.productScheduleData
-                    },
-                    scheduleDetails: {
-                      airlineData: airlineData,
-                      scheduleList: [selectedSchedule],
-                      selectedIndex: selectedScheduleIndex
-                    },
-                    selectedSchedule: selectedSchedule,
-                    selectedItems: [],
-                    totalPrice: 0,
-                    guestCount: 2
-                  });
-                  alert('일정이 담겼습니다.');
-                }}
-              >
-                일정담기
-              </button>
-              <button
-                className="cost-schedule-btn"
-                onClick={() => {
-                  navigate('/counsel/europe/hotel', { state: stateProps });
-                  window.scrollTo(0, 0);
-                }}
-              >
-                호텔바로가기
-              </button>
-              </div>
-            )}
+                setSelectedScheduleData({
+                  productInfo: {
+                    id: stateProps?.id,
+                    productName: stateProps?.productName,
+                    scheduleSort: stateProps?.scheduleSort,
+                    costType: stateProps?.costType,
+                    tourPeriodData: stateProps?.tourPeriodData,
+                    includeNote: stateProps?.includeNote,
+                    notIncludeNote: stateProps?.notIncludeNote,
+                    productScheduleData: stateProps?.productScheduleData
+                  },
+                  scheduleDetails: {
+                    airlineData: airlineData,
+                    scheduleList: [selectedSchedule],
+                    selectedIndex: selectedScheduleIndex
+                  },
+                  selectedSchedule: selectedSchedule,
+                  selectedItems: [],
+                  totalPrice: 0,
+                  guestCount: 2
+                });
+                alert('일정이 담겼습니다.');
+              }}
+            >일정담기</button>
+            <button className="cost-schedule-btn"
+              onClick={() => {
+                navigate('/counsel/europe/hotel', { state: stateProps });
+                window.scrollTo(0, 0);
+              }}
+            >호텔바로가기</button>
+          </div>
           </div>
         )}
       </div>

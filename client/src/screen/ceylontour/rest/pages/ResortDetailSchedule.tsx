@@ -537,7 +537,7 @@ export default function ResortDetailSchedule(
                         <div className="additional__info__wrapper">
                           <p>{dayItem.hotel}</p>
                           <div className="additional__rating__wrapper">
-                            <RatingBoard rating={parseInt(dayItem.score) || 0} />
+                            <RatingBoard ratingSize={20} rating={parseInt(dayItem.score) || 0} />
                           </div>
                         </div>
                       </div>

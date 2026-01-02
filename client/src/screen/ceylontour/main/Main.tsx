@@ -405,7 +405,7 @@ export default function Main() {
                 <div className="recommend__card__info">
                   <span>{item.location}</span>
                   <div className="recommend__rating__wrapper">
-                    <RatingBoard rating={item.rating} />
+                    <RatingBoard ratingSize={20} rating={item.rating} />
                   </div>
                 </div>
               </div>
