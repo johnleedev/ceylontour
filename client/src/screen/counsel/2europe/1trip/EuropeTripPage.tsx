@@ -39,8 +39,8 @@ interface ScheduleItem {
 export default function EuropeTripPage () {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [selectedCityData, setSelectedCityData] = useState<any>(null);
+  const [selectedNation, setSelectedNation] = useState<string | null>(null);
+  const [selectedNationData, setSelectedNationData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'info' | 'product' | 'highlight' | 'entry'>('info');
   const [isSingleCity, setIsSingleCity] = useState(true);
   const [isMultiCity, setIsMultiCity] = useState(false);
@@ -68,9 +68,10 @@ export default function EuropeTripPage () {
       setLoading(true);
       
       // 두 개의 API를 병렬로 호출
+      const locationType = '유럽';
       const [scheduleResponse, nationResponse] = await Promise.all([
-        fetch(`${AdminURL}/ceylontour/getschedulelisteurope`),
-        fetch(`${AdminURL}/ceylontour/getnationlisteurope`)
+        fetch(`${AdminURL}/ceylontour/getschedulelisttour/${locationType}`),
+        fetch(`${AdminURL}/ceylontour/getnationlisttour/${locationType}`)
       ]);
       
       if (!scheduleResponse.ok || !nationResponse.ok) {
@@ -163,10 +164,10 @@ export default function EuropeTripPage () {
 
   // schedule 데이터 파싱 및 그룹화
   const getGroupedSchedules = () => {
-    if (!selectedCity) return {};
+    if (!selectedNation) return {};
     
     // scheduleDataMap에서 선택된 국가의 스케줄 데이터 가져오기
-    const scheduleData = scheduleDataMap[selectedCity];
+    const scheduleData = scheduleDataMap[selectedNation];
     if (!scheduleData || !scheduleData.schedule || !Array.isArray(scheduleData.schedule)) {
       return {};
     }
@@ -207,16 +208,16 @@ export default function EuropeTripPage () {
     }
 
     // 탭 필터
-    if (!selectedCity) return {};
+    if (!selectedNation) return {};
     
     if (scheduleFilter.includes('온니')) {
-      filtered = filtered.filter(s => s.nation.length === 1 && s.nation[0] === selectedCity);
+      filtered = filtered.filter(s => s.nation.length === 1 && s.nation[0] === selectedNation);
     } else if (scheduleFilter.includes('외 1개국')) {
-      filtered = filtered.filter(s => s.nation.length === 2 && s.nation.includes(selectedCity));
+      filtered = filtered.filter(s => s.nation.length === 2 && s.nation.includes(selectedNation));
     } else if (scheduleFilter.includes('외 2개국')) {
-      filtered = filtered.filter(s => s.nation.length === 3 && s.nation.includes(selectedCity));
+      filtered = filtered.filter(s => s.nation.length === 3 && s.nation.includes(selectedNation));
     } else if (scheduleFilter.includes('외 3개국')) {
-      filtered = filtered.filter(s => s.nation.length === 4 && s.nation.includes(selectedCity));
+      filtered = filtered.filter(s => s.nation.length === 4 && s.nation.includes(selectedNation));
     }
 
     // 그룹화 (nation 배열을 기준으로)
@@ -235,7 +236,7 @@ export default function EuropeTripPage () {
 
   return (
     <div className="trip-page-wrapper">
-      <div className={`trip-container ${selectedCity ? 'detail-open' : ''}`}>
+      <div className={`trip-container ${selectedNation ? 'detail-open' : ''}`}>
         {/* 왼쪽 영역: 헤더 + 나라 리스트 */}
         <div className="left-section">
           {/* 헤더 영역 */}
@@ -245,8 +246,8 @@ export default function EuropeTripPage () {
                 className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
                 onClick={() => {
                   setActiveButton('recommend');
-                  setSelectedCity(null);
-                  setSelectedCityData(null);
+                  setSelectedNation(null);
+                  setSelectedNationData(null);
                   setSelectedCities({});
                 }}
               >
@@ -256,8 +257,8 @@ export default function EuropeTripPage () {
                 className={`btn-tap ${activeButton === 'create' ? 'active' : ''}`}
                 onClick={() => {
                   setActiveButton('create');
-                  setSelectedCity(null);
-                  setSelectedCityData(null);
+                  setSelectedNation(null);
+                  setSelectedNationData(null);
                   setSelectedCities({});
                 }}
               >
@@ -313,15 +314,16 @@ export default function EuropeTripPage () {
                   destinations.map((city) => (
                     <div 
                       key={city.id} 
-                      className={`nation-card ${selectedCity === city.name ? 'selected' : ''}`}
+                      className={`nation-card ${selectedNation === city.name ? 'selected' : ''}`}
                       onClick={() => {
                         console.log(city.rawData);
-                        if (selectedCity === city.name) {
-                          setSelectedCity(null);
-                          setSelectedCityData(null);
+                        if (selectedNation === city.name) {
+                          setSelectedNation(null);
+                          setSelectedNationData(null);
                         } else {
-                          setSelectedCity(city.name);
-                          setSelectedCityData(city.rawData);
+                          setSelectedNation(city.name);
+                          setSelectedNationData(city.rawData);
+                          console.log('city.rawData', city.rawData);
                           setActiveTab('info'); // 기본정보 탭 자동 선택
                         }
                       }}
@@ -480,13 +482,13 @@ export default function EuropeTripPage () {
         </div>
 
         {/* 오른쪽 영역: 상세 정보 (추천일정 모드) */}
-        {activeButton === 'recommend' && selectedCity && (
+        {activeButton === 'recommend' && selectedNation && (
           <div className="right-section">
             <div className="detail-section">
           <div className="detail-card">
             <div className="detail-header">
-              <h2 className="detail-title">{selectedCityData?.nationKo || selectedCity || '국가 정보'}</h2>
-              <div className="detail-subtitle">{selectedCityData?.nationEn || ''}</div>
+              <h2 className="detail-title">{selectedNationData?.nationKo || selectedNation || '국가 정보'}</h2>
+              <div className="detail-subtitle">{selectedNationData?.nationEn || ''}</div>
             </div>
 
             <div className="detail-tabs">
@@ -520,7 +522,7 @@ export default function EuropeTripPage () {
                   <button
                     type="button"
                     className="tab-map-button"
-                    onClick={() => navigate(`/counsel/europe/city`, { state : {nationData: selectedCityData, nationName: selectedCity}})}
+                    onClick={() => navigate(`/counsel/europe/city`, { state : {cityData: selectedNationData.cities}})}
                   >
                     도시보기
                   </button>
@@ -534,26 +536,26 @@ export default function EuropeTripPage () {
                   <div className="detail-main-image">
                     {(() => {
                       // basicinfoImage 우선, 없으면 inputImage의 첫 번째 이미지 사용
-                      if (selectedCityData?.basicinfoImage) {
-                        return <img className="image-detail-main" alt={selectedCity || 'Image'} src={`${AdminURL}/images/citymapinfo/${selectedCityData.basicinfoImage}`} />;
+                      if (selectedNationData?.basicinfoImage) {
+                        return <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/citymapinfo/${selectedNationData.basicinfoImage}`} />;
                       }
-                      if (selectedCityData?.inputImage) {
+                      if (selectedNationData?.inputImage) {
                         try {
-                          const images = JSON.parse(selectedCityData.inputImage || '[]');
+                          const images = JSON.parse(selectedNationData.inputImage || '[]');
                           const mainImage = Array.isArray(images) && images.length > 0 ? images[0] : Image_morisus;
-                          return <img className="image-detail-main" alt={selectedCity || 'Image'} src={`${AdminURL}/images/nationimages/${mainImage}`} />;
+                          return <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/nationimages/${mainImage}`} />;
                         } catch (e) {
-                          return <img className="image-detail-main" alt={selectedCity || 'Image'} src={Image_morisus} />;
+                          return <img className="image-detail-main" alt={selectedNation || 'Image'} src={Image_morisus} />;
                         }
                       }
-                      return <img className="image-detail-main" alt={selectedCity || 'Image'} src={Image_morisus} />;
+                      return <img className="image-detail-main" alt={selectedNation || 'Image'} src={Image_morisus} />;
                     })()}
                   </div>
                   <div className="detail-info-grid">
                     {(() => {
                       // timezoneInfo 파싱
                       try {
-                        const timezoneInfo = selectedCityData?.timezoneInfo ? JSON.parse(selectedCityData.timezoneInfo) : null;
+                        const timezoneInfo = selectedNationData?.timezoneInfo ? JSON.parse(selectedNationData.timezoneInfo) : null;
                         if (timezoneInfo?.timeDifference) {
                           return (
                             <div className="info-item">
@@ -580,7 +582,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // visaInfo 파싱
                       try {
-                        const visaInfo = selectedCityData?.visaInfo ? JSON.parse(selectedCityData.visaInfo) : null;
+                        const visaInfo = selectedNationData?.visaInfo ? JSON.parse(selectedNationData.visaInfo) : null;
                         if (visaInfo?.info) {
                           return (
                             <div className="info-item">
@@ -607,7 +609,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // languageInfo 파싱
                       try {
-                        const languageInfo = selectedCityData?.languageInfo ? JSON.parse(selectedCityData.languageInfo) : null;
+                        const languageInfo = selectedNationData?.languageInfo ? JSON.parse(selectedNationData.languageInfo) : null;
                         if (languageInfo?.languages && Array.isArray(languageInfo.languages) && languageInfo.languages.length > 0) {
                           return (
                             <div className="info-item">
@@ -632,7 +634,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // additionalInfo에서 로밍 정보 파싱
                       try {
-                        const additionalInfo = selectedCityData?.additionalInfo ? JSON.parse(selectedCityData.additionalInfo) : null;
+                        const additionalInfo = selectedNationData?.additionalInfo ? JSON.parse(selectedNationData.additionalInfo) : null;
                         if (additionalInfo?.휴대폰 && Array.isArray(additionalInfo.휴대폰) && additionalInfo.휴대폰.length > 0) {
                           return (
                             <div className="info-item">
@@ -652,7 +654,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // exrateInfo 파싱
                       try {
-                        const exrateInfo = selectedCityData?.exrateInfo ? JSON.parse(selectedCityData.exrateInfo) : null;
+                        const exrateInfo = selectedNationData?.exrateInfo ? JSON.parse(selectedNationData.exrateInfo) : null;
                         if (exrateInfo?.exchangeRate) {
                           return (
                             <div className="info-item">
@@ -679,7 +681,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // tipInfo 파싱
                       try {
-                        const tipInfo = selectedCityData?.tipInfo ? JSON.parse(selectedCityData.tipInfo) : null;
+                        const tipInfo = selectedNationData?.tipInfo ? JSON.parse(selectedNationData.tipInfo) : null;
                         if (tipInfo?.info) {
                           return (
                             <div className="info-item">
@@ -706,7 +708,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // plugInfo 파싱
                       try {
-                        const plugInfo = selectedCityData?.plugInfo ? JSON.parse(selectedCityData.plugInfo) : null;
+                        const plugInfo = selectedNationData?.plugInfo ? JSON.parse(selectedNationData.plugInfo) : null;
                         if (plugInfo?.voltage) {
                           return (
                             <div className="info-item">
@@ -731,7 +733,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // priceInfo 파싱
                       try {
-                        const priceInfo = selectedCityData?.priceInfo ? JSON.parse(selectedCityData.priceInfo) : null;
+                        const priceInfo = selectedNationData?.priceInfo ? JSON.parse(selectedNationData.priceInfo) : null;
                         if (priceInfo?.priceLevel) {
                           return (
                             <div className="info-item">
@@ -758,7 +760,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // weatherInfo 파싱
                       try {
-                        const weatherInfo = selectedCityData?.weatherInfo ? JSON.parse(selectedCityData.weatherInfo) : null;
+                        const weatherInfo = selectedNationData?.weatherInfo ? JSON.parse(selectedNationData.weatherInfo) : null;
                         if (weatherInfo && (weatherInfo.minTemp || weatherInfo.maxTemp || (weatherInfo.details && Array.isArray(weatherInfo.details) && weatherInfo.details.length > 0))) {
                           return (
                             <div className="info-item">
@@ -792,12 +794,12 @@ export default function EuropeTripPage () {
 
                     {(() => {
                       // caution 또는 additionalInfo에서 주의사항 파싱
-                      if (selectedCityData?.caution && selectedCityData.caution.trim() !== '') {
+                      if (selectedNationData?.caution && selectedNationData.caution.trim() !== '') {
                         return (
                           <div className="info-item">
                             <div className="info-label">주의사항</div>
                             <div className="info-multiline">
-                              {selectedCityData.caution.split('\n').map((line: string, index: number) => (
+                              {selectedNationData.caution.split('\n').map((line: string, index: number) => (
                                 <p key={index} className="info-text">{line}</p>
                               ))}
                             </div>
@@ -810,7 +812,7 @@ export default function EuropeTripPage () {
                     {(() => {
                       // additionalInfo 파싱
                       try {
-                        const additionalInfo = selectedCityData?.additionalInfo ? JSON.parse(selectedCityData.additionalInfo) : null;
+                        const additionalInfo = selectedNationData?.additionalInfo ? JSON.parse(selectedNationData.additionalInfo) : null;
                         if (!additionalInfo) return null;
 
                         const sections: Array<{ title: string; content: string[] }> = [];
@@ -907,7 +909,7 @@ export default function EuropeTripPage () {
 
                   <div
                     className="detail-button"
-                    onClick={() => navigate(`/counsel/europe/city`, { state : {nationData: selectedCityData, nationName: selectedCity}})}
+                    onClick={() => navigate(`/counsel/europe/city`, { state : {nationData: selectedNationData, nationName: selectedNation}})}
                   >
                     <div className="group-product-button">
                       <div className="text-wrapper-product-button">상품보기</div>
@@ -919,11 +921,11 @@ export default function EuropeTripPage () {
               {activeTab === 'product' && (
                 <div className="schedule-list-container">
                   {/* 나라 제목 */}
-                  <h2 className="selected-nation-title">{selectedCity}</h2>
+                  <h2 className="selected-nation-title">{selectedNation}</h2>
 
                   {/* 탭 네비게이션 */}
                   <div className="schedule-tabs">
-                    {['전체', `${selectedCity}온니`, `${selectedCity}외 1개국`, `${selectedCity}외 2개국`, `${selectedCity}외 3개국`].map((tab) => (
+                    {['전체', `${selectedNation}온니`, `${selectedNation}외 1개국`, `${selectedNation}외 2개국`, `${selectedNation}외 3개국`].map((tab) => (
                       <button
                         key={tab}
                         className={`schedule-tab ${scheduleFilter === tab ? 'active' : ''}`}
@@ -980,7 +982,7 @@ export default function EuropeTripPage () {
                                   </h4>
                                   <p className="schedule-item-detail">{detailText}</p>
                                 </div>
-                                {index === 0 && groupKey === selectedCity && (
+                                {index === 0 && groupKey === selectedNation && (
                                   <button className="schedule-item-badge recommend">추천상품</button>
                                 )}
                                 {index === 0 && groupKey.includes('스위스') && (
@@ -1002,8 +1004,8 @@ export default function EuropeTripPage () {
                     {(() => {
                       // cities 배열의 첫 번째 도시에서 trafficCode 추출
                       try {
-                        if (selectedCityData?.cities && Array.isArray(selectedCityData.cities) && selectedCityData.cities.length > 0) {
-                          const firstCity = selectedCityData.cities[0];
+                        if (selectedNationData?.cities && Array.isArray(selectedNationData.cities) && selectedNationData.cities.length > 0) {
+                          const firstCity = selectedNationData.cities[0];
                           const trafficCode = JSON.parse(firstCity.trafficCode || '{}');
                           if (trafficCode.airplane && Array.isArray(trafficCode.airplane) && trafficCode.airplane.length > 0) {
                             const airports = trafficCode.airplane.map((airport: any) => 
@@ -1022,10 +1024,10 @@ export default function EuropeTripPage () {
                       }
                       return null;
                     })()}
-                    {selectedCityData?.timeDifference && (
+                    {selectedNationData?.timeDifference && (
                       <div className="entry-row">
                         <div className="entry-label">시차</div>
-                        <div className="entry-value">{selectedCityData.timeDifference}</div>
+                        <div className="entry-value">{selectedNationData.timeDifference}</div>
                       </div>
                     )}
                   </div>
@@ -1139,19 +1141,19 @@ export default function EuropeTripPage () {
                 <div className="highlight-grid">
                   {(() => {
                     // API에서 하이라이트 이미지 가져오기
-                    if (selectedCityData?.inputImage) {
+                    if (selectedNationData?.inputImage) {
                       try {
-                        const images = JSON.parse(selectedCityData.inputImage || '[]');
+                        const images = JSON.parse(selectedNationData.inputImage || '[]');
                         if (Array.isArray(images) && images.length > 0) {
                           return images.slice(0, 4).map((image: string, index: number) => (
                             <div key={index} className="highlight-card">
                               <div className="highlight-image-wrap">
-                                <img src={`${AdminURL}/images/nationimages/${image}`} alt={`${selectedCity} 하이라이트 ${index + 1}`} />
+                                <img src={`${AdminURL}/images/nationimages/${image}`} alt={`${selectedNation} 하이라이트 ${index + 1}`} />
                               </div>
-                              {selectedCityData?.highlightTitles && Array.isArray(selectedCityData.highlightTitles) && selectedCityData.highlightTitles[index] ? (
-                                <div className="highlight-title">{selectedCityData.highlightTitles[index]}</div>
+                              {selectedNationData?.highlightTitles && Array.isArray(selectedNationData.highlightTitles) && selectedNationData.highlightTitles[index] ? (
+                                <div className="highlight-title">{selectedNationData.highlightTitles[index]}</div>
                               ) : (
-                                <div className="highlight-title">{selectedCity} 하이라이트 {index + 1}</div>
+                                <div className="highlight-title">{selectedNation} 하이라이트 {index + 1}</div>
                               )}
                             </div>
                           ));

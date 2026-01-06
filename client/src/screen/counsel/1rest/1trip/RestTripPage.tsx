@@ -44,11 +44,11 @@ export default function RestTripPage () {
     { id: 4, title: '우붓 정글탐험', image: Image_maldives },
   ];
 
-  const locationType = '휴양지'
+  
   const fetchDestinations = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${AdminURL}/ceylontour/getcitylist/${locationType}`);
+      const response = await fetch(`${AdminURL}/ceylontour/getcitylistrest`);
       
       if (!response.ok) {
         throw new Error('데이터를 가져오는데 실패했습니다.');
@@ -62,11 +62,9 @@ export default function RestTripPage () {
       const formattedDestinations: Destination[] = Array.isArray(data) 
         ? data
             .filter((item: any) => {
-              // isView가 'true'이고 schedule이 존재하며 빈 배열이 아닌 것만 필터링
+              // isView가 'true'이고 locationType이 '휴양지'인 것만 필터링
               return item.isView === 'true' && 
-                     item.schedule && 
-                     Array.isArray(item.schedule) && 
-                     item.schedule.length > 0;
+                     item.locationType === '휴양지';
             })
             .map((item: any) => {
               // inputImage 파싱 (JSON 배열 문자열)
@@ -80,16 +78,46 @@ export default function RestTripPage () {
                 // 파싱 실패 시 기본 이미지 사용
               }
 
-              // schedule 개수 계산
-              const scheduleCount = Array.isArray(item.schedule) ? item.schedule.length : 0;
+              // airlineInfo에서 출발지와 비행시간 추출
+              let departure: string[] = ['인천', '김포']; // 기본값
+              let airTime: string = '7시간 30분'; // 기본값
+              
+              try {
+                if (item.airlineInfo) {
+                  const airlineInfo = JSON.parse(item.airlineInfo);
+                  if (airlineInfo.departure?.city) {
+                    departure = [airlineInfo.departure.city];
+                  }
+                  if (airlineInfo.duration) {
+                    airTime = airlineInfo.duration;
+                  }
+                }
+              } catch (e) {
+                // 파싱 실패 시 기본값 사용
+              }
+
+              // trafficCode에서 추가 출발지 정보 추출
+              try {
+                if (item.trafficCode) {
+                  const trafficCode = JSON.parse(item.trafficCode);
+                  if (trafficCode.airplane && Array.isArray(trafficCode.airplane)) {
+                    // airplane 정보가 있으면 사용 (departure는 airlineInfo 우선)
+                  }
+                }
+              } catch (e) {
+                // 파싱 실패 시 무시
+              }
+
+              // scheduleCount는 0으로 설정 (제공된 데이터에 schedule 필드가 없음)
+              const scheduleCount = 0;
 
               return {
                 id: String(item.id),
                 name: item.cityKo || item.nation || '',
                 image: imageUrl,
                 selected: false,
-                departure: ['인천', '김포'], // API에 없으므로 기본값
-                airTime: '7시간 30분', // API에 없으므로 기본값
+                departure: departure,
+                airTime: airTime,
                 scheduleCount: scheduleCount,
                 rawData: item // 원본 데이터 저장
               };
@@ -103,8 +131,8 @@ export default function RestTripPage () {
           // 같은 이름이 없으면 추가
           acc.push(current);
         } else {
-          // 같은 이름이 있으면 scheduleCount가 더 많은 것으로 교체
-          if (current.scheduleCount > acc[existingIndex].scheduleCount) {
+          // 같은 이름이 있으면 id가 더 작은 것으로 교체 (더 오래된 데이터 우선)
+          if (parseInt(current.id) < parseInt(acc[existingIndex].id)) {
             acc[existingIndex] = current;
           }
         }
@@ -209,7 +237,7 @@ export default function RestTripPage () {
                     }}
                   >
                     <div className="nation-image-container">
-                      <img className="image" alt={city.name} src={`${AdminURL}/images/citycustomimages/${city.image}`} />
+                      <img className="image" alt={city.name} src={`${AdminURL}/images/cityimages/${city.image}`} />
                     </div>
                     <div className="nation-info">
                       <div className='nation-name'>{city.name}</div>
@@ -217,7 +245,12 @@ export default function RestTripPage () {
                         <span className="text-wrapper-airtime-label">비행시간 약 </span>
                         <span className="text-wrapper-airtime-value">{city.airTime}</span>
                       </p>
-                      <div className='nation-departure'>인천출발ㅣ부산출발</div>
+                      <div className='nation-departure'>
+                        {city.departure.length > 0 
+                          ? city.departure.map((dep, idx) => `${dep}출발`).join('ㅣ')
+                          : '인천출발ㅣ부산출발'
+                        }
+                      </div>
                     </div>
                   </div>
                 ))
@@ -802,27 +835,58 @@ export default function RestTripPage () {
                 <div className="highlight-grid">
                   {(() => {
                     // API에서 하이라이트 이미지 가져오기
-                    if (selectedCityData?.inputImage) {
-                      try {
-                        const images = JSON.parse(selectedCityData.inputImage || '[]');
-                        if (Array.isArray(images) && images.length > 0) {
-                          return images.slice(0, 4).map((image: string, index: number) => (
-                            <div key={index} className="highlight-card">
-                              <div className="highlight-image-wrap">
-                                <img src={`${AdminURL}/images/nationimages/${image}`} alt={`${selectedCity} 하이라이트 ${index + 1}`} />
-                              </div>
-                              {selectedCityData?.highlightTitles && Array.isArray(selectedCityData.highlightTitles) && selectedCityData.highlightTitles[index] ? (
-                                <div className="highlight-title">{selectedCityData.highlightTitles[index]}</div>
-                              ) : (
-                                <div className="highlight-title">{selectedCity} 하이라이트 {index + 1}</div>
-                              )}
-                            </div>
-                          ));
+                    const allImages: Array<{imageName: string, title: string, notice: string}> = [];
+                    
+                    // 각 이미지 필드에서 이미지 수집
+                    const imageFields = [
+                      'imageNamesNotice',
+                      'imageNamesGuide',
+                      'imageNamesEnt',
+                      'imageNamesEvent',
+                      'imageNamesCafe',
+                      'imageNamesMainPoint'
+                    ];
+                    
+                    imageFields.forEach((field) => {
+                      if (selectedCityData?.[field]) {
+                        try {
+                          const parsed = JSON.parse(selectedCityData[field] || '[]');
+                          if (Array.isArray(parsed)) {
+                            parsed.forEach((item: any) => {
+                              if (item.imageName) {
+                                allImages.push({
+                                  imageName: item.imageName,
+                                  title: item.title || '',
+                                  notice: item.notice || ''
+                                });
+                              }
+                            });
+                          }
+                        } catch (e) {
+                          console.error(`파싱 에러 (${field}):`, e);
                         }
-                      } catch (e) {
-                        // 파싱 실패 시 기본 하이라이트 표시
                       }
+                    });
+                    
+                    // 이미지가 있으면 표시 (모든 이미지)
+                    if (allImages.length > 0) {
+                      return allImages.map((item, index) => (
+                        <div key={index} className="highlight-card">
+                          <div className="highlight-image-wrap">
+                            <img 
+                              src={`${AdminURL}/images/cityimages/${item.imageName}`} 
+                              alt={item.title || `${selectedCity} 하이라이트 ${index + 1}`} 
+                            />
+                          </div>
+                          {/* {item.title && (
+                            <div className="highlight-title">
+                              {item.title}
+                            </div>
+                          )} */}
+                        </div>
+                      ));
                     }
+                    
                     // 기본 하이라이트 표시
                     return highlightItems.map((item) => (
                       <div key={item.id} className="highlight-card">

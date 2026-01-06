@@ -145,18 +145,82 @@
       aspect-ratio: 16 / 12;
       overflow: hidden;
       border-radius: 5px;
+      position: relative;
 
       .card-image {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
+        transition: transform 0.3s ease;
       }
-    }
-    .card-image-wrap:hover {
-      cursor: pointer;
-      transform: scale(1.05);
-      transition: transform 0.3s ease;
+
+      .card-hover-buttons {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background-color: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        border-radius: 5px;
+      }
+
+      .hover-button {
+        padding: 10px 20px;
+        border: 2px solid #fff;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+
+        &:hover {
+          background-color: #fff;
+          transform: scale(1.05);
+        }
+
+        &.hover-button-add {
+          color: #fff;
+          border:1px solid #4da9ff;
+          background: transparent;
+
+          &:hover {
+            background-color: #4da9ff;
+          }
+        }
+
+        &.hover-button-detail {
+          background: transparent;
+          border:1px solid #fff;
+          color: #fff;
+
+          &:hover {
+            background-color: #fff;
+            color: #333;
+          }
+        }
+      }
+
+      &:hover {
+        .card-image {
+          transform: scale(1.05);
+        }
+
+        .card-hover-buttons {
+          opacity: 1;
+          visibility: visible;
+        }
+      }
     }
 
     .card-body {

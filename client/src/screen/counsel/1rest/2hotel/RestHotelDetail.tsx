@@ -33,8 +33,10 @@ import GoogleMap from '../../../common/GoogleMap';
 export default function RestHotelDetail() {
   const navigate = useNavigate();
   const location = useLocation();
-  const stateProps = location.state;
-  console.log('stateProps', stateProps);
+  const urlParams = new URLSearchParams(location.search);
+  const ID = urlParams.get("id");
+  const CITY = urlParams.get("city");
+  
 
   const [hotelInfo, setHotelInfo] = React.useState<any | null>(null);
   const [imageAllView, setImageAllView] = React.useState<any[]>([]);
@@ -42,38 +44,70 @@ export default function RestHotelDetail() {
   const [imageEtcView, setImageEtcView] = React.useState<any[]>([]);
   const [roomTypes, setRoomTypes] = React.useState<any[]>([]);
   const [products, setProducts] = React.useState<any[]>([]);
+  const [logoImageError, setLogoImageError] = React.useState<boolean>(false);
 
-  // 호텔 리스트 가져오기 (NewPriceHotelSelected.tsx 참조)
-  const fetchHotels = async () => {
-    try {
-      let hotels: any[] = [];
+  useEffect(() => {
+    const fetchHotelInfo = async () => {
+      if (!ID) return;
       
-      // 도시가 있으면 해당 도시의 호텔만 가져오기
-      if (stateProps?.city) {
-        const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${stateProps.city}`);
-        if (res.data && res.data !== false) {
-          hotels = Array.isArray(res.data) ? res.data : [res.data];
+      // 호텔 정보가 변경될 때 로고 이미지 에러 상태 초기화
+      setLogoImageError(false);
+      
+      try {
+        const res = await axios.get(`${AdminURL}/ceylontour/gethotelinfobyid/${ID}`);
+        if (res.data) {
+          const copy = [...res.data][0];
+          setHotelInfo(copy);
+          const imageNamesAllViewCopy = copy.imageNamesAllView ? JSON.parse(copy.imageNamesAllView) : [];
+          setImageAllView(imageNamesAllViewCopy);
+          const imageNamesRoomViewCopy = copy.imageNamesRoomView ? JSON.parse(copy.imageNamesRoomView) : [];
+          setImageRoomView(imageNamesRoomViewCopy);
+          const imageNamesEtcViewCopy = copy.imageNamesEtcView ? JSON.parse(copy.imageNamesEtcView) : [];
+          setImageEtcView(imageNamesEtcViewCopy);
+        } else {
+          setHotelInfo(null);
+          setImageAllView([]);
+          setImageRoomView([]);
+          setImageEtcView([]);
         }
-      } else {
-        // 도시가 없으면 전체 호텔 가져오기
-        const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
-        if (res.data && res.data !== false) {
-          hotels = Array.isArray(res.data) ? res.data : [res.data];
+        const response = await axios.post(`${AdminURL}/ceylontour/getcityschedule`, { city: CITY });
+        if (response.data) {
+          const copy = [...response.data];
+          setProducts(copy);
+        } else {
+          setProducts([]);
         }
+        if (CITY) {
+          const res = await axios.get(`${AdminURL}/hotel/gethotelcity/${CITY}`);
+          if (res.data && res.data !== false) {
+            setAllHotels(Array.isArray(res.data) ? res.data : [res.data]);
+          }
+        } else {
+          // 도시가 없으면 전체 호텔 가져오기
+          const res = await axios.get(`${AdminURL}/hotel/gethotelsall`);
+          if (res.data && res.data !== false) {
+            setAllHotels(Array.isArray(res.data) ? res.data : [res.data]);
+          }
+        }
+      } catch (error) {
+        console.error('나라별 여행상품을 가져오는 중 오류 발생:', error);
+        setHotelInfo(null);
+        setImageAllView([]);
+        setImageRoomView([]);
+        setImageEtcView([]);
+        setProducts([]);
       }
+    };
 
-      setAllHotels(hotels);
-    } catch (error) {
-      console.error('호텔 리스트 가져오기 오류:', error);
-      setAllHotels([]);
-    }
-  };
+    fetchHotelInfo();
+  }, [ID, CITY]);
+
 
 
   // productScheduleData를 파싱하여 선택된 호텔 정보 생성 (RestHotelCost.tsx로 전달용)
   const getSelectedHotelsFromSchedule = async (product: any): Promise<Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>> => {
-    const currentHotelType = stateProps?.hotelInfo?.hotelType || stateProps?.hotelInfo?.hotelSort;
-    const currentHotel = stateProps?.hotelInfo;
+    const currentHotelType = hotelInfo?.hotelType || hotelInfo?.hotelSort;
+    const currentHotel = hotelInfo;
 
     // 미니멈스테이인 경우 productScheduleData가 없어도 현재 호텔을 선택
     if (!product.productScheduleData) {
@@ -93,10 +127,10 @@ export default function RestHotelDetail() {
               
               // allHotels에도 이미지 데이터가 없으면 API로 전체 호텔 데이터 가져오기
               if ((!hotelWithFullData || !hotelWithFullData.imageNamesAllView || hotelWithFullData.imageNamesAllView === '[]') && 
-                  currentHotel.hotelNameKo && stateProps?.city) {
+                  currentHotel.hotelNameKo && CITY) {
                 try {
                   const hotelName = encodeURIComponent(currentHotel.hotelNameKo);
-                  const city = encodeURIComponent(stateProps.city);
+                  const city = encodeURIComponent(CITY);
                   const res = await axios.get(`${AdminURL}/hotel/gethoteldata/${city}/${hotelName}`);
                   if (res.data && res.data !== false) {
                     const hotelData = Array.isArray(res.data) ? res.data[0] : res.data;
@@ -258,10 +292,10 @@ export default function RestHotelDetail() {
             
             // allHotels에도 이미지 데이터가 없으면 API로 전체 호텔 데이터 가져오기
             if ((!hotelWithFullData || !hotelWithFullData.imageNamesAllView || hotelWithFullData.imageNamesAllView === '[]') && 
-                selectedHotel.hotelNameKo && stateProps?.city) {
+                selectedHotel.hotelNameKo && CITY) {
               try {
                 const hotelName = encodeURIComponent(selectedHotel.hotelNameKo);
-                const city = encodeURIComponent(stateProps.city);
+                const city = encodeURIComponent(CITY);
                 const res = await axios.get(`${AdminURL}/hotel/gethoteldata/${city}/${hotelName}`);
                 if (res.data && res.data !== false) {
                   const hotelData = Array.isArray(res.data) ? res.data[0] : res.data;
@@ -318,10 +352,10 @@ export default function RestHotelDetail() {
               
               // allHotels에도 이미지 데이터가 없으면 API로 전체 호텔 데이터 가져오기
               if ((!hotelWithFullData || !hotelWithFullData.imageNamesAllView || hotelWithFullData.imageNamesAllView === '[]') && 
-                  currentHotel.hotelNameKo && stateProps?.city) {
+                  currentHotel.hotelNameKo && CITY) {
                 try {
                   const hotelName = encodeURIComponent(currentHotel.hotelNameKo);
-                  const city = encodeURIComponent(stateProps.city);
+                  const city = encodeURIComponent(CITY);
                   const res = await axios.get(`${AdminURL}/hotel/gethoteldata/${city}/${hotelName}`);
                   if (res.data && res.data !== false) {
                     const hotelData = Array.isArray(res.data) ? res.data[0] : res.data;
@@ -373,8 +407,8 @@ export default function RestHotelDetail() {
         return product.productName || product.scheduleName || product.hotelNameKo || '';
       }
 
-      const currentHotelType = stateProps?.hotelInfo?.hotelType || stateProps?.hotelInfo?.hotelSort;
-      const currentHotel = stateProps?.hotelInfo;
+      const currentHotelType = hotelInfo?.hotelType || hotelInfo?.hotelSort;
+      const currentHotel = hotelInfo;
 
       // '리조트 + 풀빌라' 조합인지 확인 (리조트와 풀빌라가 모두 포함되어 있는지 확인)
       const hasResort = scheduleData.some((item: any) => item.hotelSort === '리조트');
@@ -485,21 +519,6 @@ export default function RestHotelDetail() {
     }
   };
 
-  // 선택된 나라의 관련 여행상품(일정) 조회
-  const fetchNationProducts = async (nationCopy:string) => {
-    try {
-      const response = await axios.post(`${AdminURL}/ceylontour/getcityschedule`, { city: stateProps.city });
-      if (response.data) {
-        const copy = [...response.data];
-        setProducts(copy);
-      } else {
-        setProducts([]);
-      }
-    } catch (error) {
-      console.error('나라별 여행상품을 가져오는 중 오류 발생:', error);
-      setProducts([]);
-    }
-  };
 
   const divWrappers = [
     { text: '#누사두아 최고급리조트' },
@@ -522,20 +541,7 @@ export default function RestHotelDetail() {
   const [selectedMainImageIndex, setSelectedMainImageIndex] = React.useState(0);
   const [allHotels, setAllHotels] = React.useState<any[]>([]);
 
-  useEffect(() => {
-    fetchNationProducts(stateProps.nation);
-    fetchHotels();
-    setHotelInfo(stateProps.hotelInfo);
-    const imageCopy = JSON.parse(stateProps.hotelInfo.imageNamesAllView);
-    setImageAllView(imageCopy);
-    const imageRoomCopy = JSON.parse(stateProps.hotelInfo.imageNamesRoomView);
-    setImageRoomView(imageRoomCopy);
-    const imageEtcCopy = JSON.parse(stateProps.hotelInfo.imageNamesEtcView);
-    setImageEtcView(imageEtcCopy);
-    const roomTypesCopy = JSON.parse(stateProps.hotelInfo.hotelRoomTypes);
-    setRoomTypes(roomTypesCopy);
-  }, []);
-
+  
   // 탭 변경 시 선택된 메인 이미지를 첫번째로 리셋
   useEffect(() => {
     setSelectedMainImageIndex(0);
@@ -727,9 +733,15 @@ export default function RestHotelDetail() {
                   <div className="hotel-intro-tagline">
                     프라이빗 비치와 세심한 서비스가 완성하는 품격있는 휴식
                   </div>
-                  <div className="hotel-intro-logo">
-                    <img src={`${AdminURL}/images/hotellogos/${hotelInfo?.logoImage}`} alt="호텔 로고" />
-                  </div>
+                  {hotelInfo?.logoImage && !logoImageError && (
+                    <div className="hotel-intro-logo">
+                      <img 
+                        src={`${AdminURL}/images/hotellogos/${hotelInfo.logoImage}`} 
+                        alt="호텔 로고"
+                        onError={() => setLogoImageError(true)}
+                      />
+                    </div>
+                  )}
                   <div className="hotel-intro-entitle">
                     <p>{hotelInfo?.hotelNameEn || ''}</p>
                   </div>
@@ -1031,7 +1043,7 @@ export default function RestHotelDetail() {
                         // 헤더 텍스트
                         const headerText =
                           product.headerText ||
-                          `${product.nation || stateProps.nation || ''} 추천상품`;
+                          `${product.nation || ''} 추천상품`;
                         
                         // 상품명 (productScheduleData 기반으로 생성)
                         const productName = getProductNameFromSchedule(product);
@@ -1051,7 +1063,7 @@ export default function RestHotelDetail() {
                                 state: {
                                   hotelInfo: hotelInfo,
                                   productInfo: product,
-                                  city: stateProps?.city,
+                                  city: CITY,
                                   selectedHotels: selectedHotels
                                 }
                               });

@@ -32,9 +32,10 @@ import GoogleMap from '../../../common/GoogleMap';
 export default function EuropeCityDetail() {
   const navigate = useNavigate();
   const location = useLocation();
-  const stateProps = location.state;
-  console.log('stateProps222', stateProps);
-  
+  const queryParams = new URLSearchParams(location.search);
+  const ID = queryParams.get("id");
+  const NATION = queryParams.get("nation");
+
   const [cityInfo, setCityInfo] = React.useState<any | null>(null);
   const [imageNotice, setImageNotice] = React.useState<any[]>([]); // 소개
   const [imageGuide, setImageGuide] = React.useState<any[]>([]); // 가이드투어
@@ -43,39 +44,41 @@ export default function EuropeCityDetail() {
   const [imageCafe, setImageCafe] = React.useState<any[]>([]); // 레스토랑/카페
   const [products, setProducts] = React.useState<any[]>([]);
 
-  // 도시 관련 상품 가져오기 (EuropeTripPage와 동일한 방식)
-  const fetchCityProducts = async (cityName: string) => {
-    try {
-      const response = await axios.get(`${AdminURL}/ceylontour/getschedulelisteurope`);
-      if (response.data && Array.isArray(response.data)) {
-        // 해당 국가의 데이터 찾기
-        const nationData = response.data.find((item: any) => 
-          item.nationKo === stateProps?.nationName && 
-          item.isView === 'true' && 
-          item.schedule && 
-          Array.isArray(item.schedule) && 
-          item.schedule.length > 0
-        );
-        
-        if (nationData && nationData.schedule) {
-          // schedule 배열을 products에 설정 (EuropeTripPage와 동일)
-          setProducts(nationData.schedule);
+
+
+  useEffect(() => {
+    const fetchHotelInfo = async () => {
+      if (!ID) return;
+      
+      try {
+        const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${ID}`);
+        if (res.data) {
+          const copy = [...res.data][0];
+          setCityInfo(copy);
+        } else {
+          setCityInfo(null);
+        }
+        const response = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${NATION}`);
+        if (response.data) {
+          const copy = [...response.data];
+          setProducts(copy);
         } else {
           setProducts([]);
         }
-      } else {
+      } catch (error) {
+        console.error('나라별 여행상품을 가져오는 중 오류 발생:', error);
+        setCityInfo(null);
         setProducts([]);
       }
-    } catch (error) {
-      console.error('도시별 여행상품을 가져오는 중 오류 발생:', error);
-      setProducts([]);
-    }
-  };
+    };
+
+    fetchHotelInfo();
+  }, [ID, NATION]);
 
   // schedule 데이터 파싱 및 그룹화 (도시 기준, EuropeTripPage와 동일한 로직)
   const getGroupedSchedules = () => {
     // 국가명을 사용 (EuropeTripPage와 동일하게 selectedCity 대신 nationName 사용)
-    const selectedNation = stateProps?.nationName || '';
+    const selectedNation = cityInfo?.nation || '';
     if (!selectedNation || !products || products.length === 0) return {};
 
     const schedules = products.map((item: any) => {
@@ -156,51 +159,50 @@ export default function EuropeCityDetail() {
   const [scheduleSearch, setScheduleSearch] = React.useState('');
 
   useEffect(() => {
-    if (stateProps?.cityData) {
-      setCityInfo(stateProps.cityData);
+    if (cityInfo) {
       
       // 도시 이미지 파싱 (탭별로 분리)
       try {
-        const noticeImages = JSON.parse(stateProps.cityData.imageNamesNotice || '[]');
+        const noticeImages = JSON.parse(cityInfo.imageNamesNotice || '[]');
         setImageNotice(Array.isArray(noticeImages) ? noticeImages : []);
       } catch (e) {
         setImageNotice([]);
       }
 
       try {
-        const guideImages = JSON.parse(stateProps.cityData.imageNamesGuide || '[]');
+        const guideImages = JSON.parse(cityInfo.imageNamesGuide || '[]');
         setImageGuide(Array.isArray(guideImages) ? guideImages : []);
       } catch (e) {
         setImageGuide([]);
-      }
+      } 
 
       try {
-        const entImages = JSON.parse(stateProps.cityData.imageNamesEnt || '[]');
+        const entImages = JSON.parse(cityInfo.imageNamesEnt || '[]');
         setImageEnt(Array.isArray(entImages) ? entImages : []);
       } catch (e) {
         setImageEnt([]);
       }
 
       try {
-        const eventImages = JSON.parse(stateProps.cityData.imageNamesEvent || '[]');
+        const eventImages = JSON.parse(cityInfo.imageNamesEvent || '[]');
         setImageEvent(Array.isArray(eventImages) ? eventImages : []);
       } catch (e) {
         setImageEvent([]);
       }
 
       try {
-        const cafeImages = JSON.parse(stateProps.cityData.imageNamesCafe || '[]');
+        const cafeImages = JSON.parse(cityInfo.imageNamesCafe || '[]');
         setImageCafe(Array.isArray(cafeImages) ? cafeImages : []);
       } catch (e) {
         setImageCafe([]);
       }
 
       // 도시 관련 상품 가져오기
-      if (stateProps.city) {
-        fetchCityProducts(stateProps.city);
+      if (cityInfo.city) {
+        // fetchCityProducts(cityInfo.city);
       }
     }
-  }, [stateProps]);
+  }, [cityInfo]);
 
   // 탭 변경 시 선택된 메인 이미지를 첫번째로 리셋
   useEffect(() => {
@@ -296,7 +298,7 @@ export default function EuropeCityDetail() {
               {cityInfo?.cityEn || ''}
             </div>
             <div className="text-location">
-              <p>{stateProps?.nationName || ''}</p>
+              <p>{cityInfo?.nation || ''}</p>
               <IoIosArrowForward />
               <p>{cityInfo?.cityKo || ''}</p>
             </div>
@@ -1023,12 +1025,12 @@ export default function EuropeCityDetail() {
               {activeRightTab === 'product' && (
                 <div className="schedule-list-container">
                   {/* 국가 제목 (EuropeTripPage와 동일) */}
-                  <h2 className="selected-nation-title">{stateProps?.nationName || cityInfo?.cityKo || stateProps?.city || ''}</h2>
+                  <h2 className="selected-nation-title">{cityInfo?.nation || cityInfo?.cityKo || ''}</h2>
 
                   {/* 탭 네비게이션 (EuropeTripPage와 동일하게 국가명 사용) */}
                   <div className="schedule-tabs">
                     {(() => {
-                      const selectedNation = stateProps?.nationName || '';
+                      const selectedNation = cityInfo?.nation || '';
                       return ['전체', `${selectedNation}온니`, `${selectedNation}외 1개국`, `${selectedNation}외 2개국`, `${selectedNation}외 3개국`].map((tab) => (
                         <button
                           key={tab}
@@ -1087,7 +1089,7 @@ export default function EuropeCityDetail() {
                                   </h4>
                                   <p className="schedule-item-detail">{detailText}</p>
                                 </div>
-                                {index === 0 && groupKey === (stateProps?.nationName || '') && (
+                                {index === 0 && groupKey === (cityInfo?.nation || '') && (
                                   <button className="schedule-item-badge recommend">추천상품</button>
                                 )}
                                 {index === 0 && groupKey.includes('스위스') && (

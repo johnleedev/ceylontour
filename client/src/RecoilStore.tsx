@@ -178,4 +178,26 @@ export const recoilSelectedScheduleData = atom<ScheduleData>({
   }
 });
 
+export interface HotelCartItem {
+  id: number;
+  hotelNameKo: string;
+  city: string;
+}
+
+export const recoilHotelCart = atom<HotelCartItem[]>({
+  key: "hotelCart",
+  default: []
+});
+
+export interface CityCartItem {
+  id: number;
+  cityKo: string;
+  nation: string;
+}
+
+export const recoilCityCart = atom<CityCartItem[]>({
+  key: "cityCart",
+  default: []
+});
+
 

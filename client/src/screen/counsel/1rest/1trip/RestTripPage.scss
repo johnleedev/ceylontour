@@ -496,6 +496,7 @@
               display: grid;
               grid-template-columns: repeat(2, minmax(0, 1fr));
               gap: 16px;
+              align-items: start;
 
               .highlight-card {
                 background: #ffffff;
@@ -513,20 +514,21 @@
 
                 .highlight-image-wrap {
                   width: 100%;
-                  aspect-ratio: 3 / 4;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                   overflow: hidden;
 
                   img {
                     width: 100%;
-                    height: 100%;
-                    object-fit: cover;
+                    height: auto;
+                    object-fit: contain;
                     display: block;
                   }
                 }
 
                 .highlight-title {
                   padding: 10px 12px 14px;
-  
                   font-size: 14px;
                   font-weight: 500;
                   color: #111111;

@@ -3,17 +3,38 @@ import './RestHotelPage.scss';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
+import { useSetRecoilState } from 'recoil';
+import { recoilHotelCart, HotelCartItem } from '../../../../RecoilStore';
 
 export default function RestHotelPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
   const selectedCity = stateProps?.city || '';
-  console.log('selectedCity', selectedCity);
+  const setHotelCart = useSetRecoilState(recoilHotelCart);
+  
   const [loading, setLoading] = useState<boolean>(true);
   const [hotels, setHotels] = useState<any[]>([]);
   const [originalHotels, setOriginalHotels] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const addToCart = (hotel: any) => {
+    setHotelCart((prevCart) => {
+      // 이미 장바구니에 있는지 확인
+      const existingIndex = prevCart.findIndex(item => item.id === hotel.id);
+      if (existingIndex === -1) {
+        // 장바구니에 없으면 추가
+        const newItem: HotelCartItem = {
+          id: hotel.id,
+          hotelNameKo: hotel.hotelNameKo,
+          city: selectedCity || hotel.city || ''
+        };
+        return [...prevCart, newItem];
+      }
+      // 이미 있으면 그대로 반환
+      return prevCart;
+    });
+  };
 
 
   const fetchDestinations = async () => {
@@ -22,7 +43,6 @@ export default function RestHotelPage() {
       const response = await axios.post(`${AdminURL}/ceylontour/gethotelsbycity`, { city: selectedCity });
       if (response.data !== false) {
         const copy = [...response.data];
-        console.log('copy', copy);
         setHotels(copy);
         setOriginalHotels(copy);
       } else {
@@ -57,22 +77,22 @@ export default function RestHotelPage() {
 
 
 
-  const areaFilters = [
-    { label: '전체', active: true },
-    { label: '쿠타', active: false },
-    { label: '스미냑', active: false },
-    { label: '우붓', active: false },
-    { label: '짱구', active: false },
-  ];
+  // const areaFilters = [
+  //   { label: '전체', active: true },
+  //   { label: '쿠타', active: false },
+  //   { label: '스미냑', active: false },
+  //   { label: '우붓', active: false },
+  //   { label: '짱구', active: false },
+  // ];
 
-  const typeFilters = [
-    { label: '전체', active: true },
-    { label: '선투숙', active: false },
-    { label: '풀빌라', active: false },
-    { label: '평점순', active: false },
-    { label: '가격순', active: false },
-    { label: '예약순', active: false },
-  ];
+  // const typeFilters = [
+  //   { label: '전체', active: true },
+  //   { label: '선투숙', active: false },
+  //   { label: '풀빌라', active: false },
+  //   { label: '평점순', active: false },
+  //   { label: '가격순', active: false },
+  //   { label: '예약순', active: false },
+  // ];
 
   return (
     <div className="RestHotelPage">
@@ -161,10 +181,6 @@ export default function RestHotelPage() {
               <div
                 key={hotel.id}
                 className="div-wrapper"
-                onClick={() => {
-                  navigate(`/counsel/rest/hoteldetail`, { state : {hotelInfo: hotel, city: selectedCity}});
-                  window.scrollTo(0, 0);
-                }}
               >
                 <div className="card-image-wrap">
                   <img
@@ -172,8 +188,38 @@ export default function RestHotelPage() {
                     alt={hotel.hotelNameKo}
                     src={mainImage || ''}
                   />
+                  <div className="card-hover-buttons">
+                    <button
+                      type="button"
+                      className="hover-button hover-button-add"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(hotel);
+                      }}
+                    >
+                      담기
+                    </button>
+                    <button
+                      type="button"
+                      className="hover-button hover-button-detail"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/counsel/rest/hoteldetail?id=${hotel.id}&city=${selectedCity}`);
+                        window.scrollTo(0, 0);
+                      }}
+                    >
+                      상세보기
+                    </button>
+                  </div>
                 </div>
-                <div className="card-body">
+                <div 
+                  className="card-body"
+                  onClick={() => {
+                    navigate(`/counsel/rest/hoteldetail?id=${hotel.id}&city=${selectedCity}`);
+                    window.scrollTo(0, 0);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className="hotel-name">{hotel.hotelNameKo}</div>
                   <div className="hotel-location-row">
                     <span className="hotel-location">

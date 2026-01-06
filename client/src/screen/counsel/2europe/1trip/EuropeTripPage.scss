@@ -138,10 +138,10 @@
           background: #fff;
           display: flex;
           flex-direction: column;
+          padding: 5px;
 
           &:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #00ace7;
           }
 
           &.selected {
