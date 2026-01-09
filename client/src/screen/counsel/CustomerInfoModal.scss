@@ -40,14 +40,15 @@
   flex: 1;
   min-height: 0;
   background-color: #fff;
+  padding: 25px;
+  box-sizing: border-box;
 
   h1 {
     font-size: 20px;
     font-weight: 700;
     color: #333;
-    padding: 16px 20px 12px;
+    padding: 5px 20px 0px;
     margin: 0;
-    border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
   }
 
@@ -265,8 +266,7 @@
   }
 
   .modal-footer {
-    padding: 12px 20px;
-    border-top: 1px solid #e0e0e0;
+    padding: 5px 20px;
     display: flex;
     gap: 12px;
     justify-content: flex-end;

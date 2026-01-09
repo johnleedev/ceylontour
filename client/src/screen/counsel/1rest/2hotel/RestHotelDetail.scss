@@ -1,100 +1,11 @@
 .RestHotelDetail {
-  margin-top: 100px;
+  margin-top: 80px;
   width: 100%;
   box-sizing: border-box;
   background-color: #fff;
+  height: calc(100vh - 100px);
+  overflow: hidden;
 
-  // 상단 헤더 이미지
-  .hotel-header-image {
-    width: 100%;
-    height: 300px;
-    overflow: hidden;
-    position: relative;
-    margin-bottom: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .header-image-media {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    // 어두운 overlay
-    .header-image-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.6);
-      z-index: 1;
-    }
-
-    // 호텔 제목 정보 (이미지 중앙)
-    .hotel-title-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2;
-
-      .hotel-title-content {
-        text-align: center;
-        color: #fff;
-
-        .text-title {
-          font-size: 40px;
-          font-weight: bold;
-          margin-bottom: 3px;
-          color: #fff;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .text-subtitle {
-          font-size: 30px;
-          margin-bottom: 5px;
-          color: #fff;
-          opacity: 0.95;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        .text-rating {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        
-        }
-
-        .text-location {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 12px;
-          color: #fff;
-          font-size: 16px;
-          opacity: 0.9;
-
-          p {
-            margin: 0;
-            color: #fff;
-          }
-
-          svg {
-            color: #fff;
-          }
-        }
-      }
-    }
-  }
 
   // 왼쪽 상단 뒤로가기 버튼
   .left-back-btn {
@@ -155,30 +66,17 @@
 
   .hotel-container {
     display: flex;
-    gap: 20px;
     width: 100%;
-    min-height: calc(100vh - 100px);
+    height: 100%;
     margin: 0 auto;
-    padding: 0 50px;
     transition: all 0.3s ease;
 
-    // 오른쪽 패널이 없을 때: 전체 스크롤 사용
+    // 오른쪽 패널이 없을 때: 독립 스크롤 사용
     &.without-right-panel {
       justify-content: center;
 
       .left-section {
-        max-width: 1100px;
         width: 100%;
-        overflow-y: visible; // 전체 스크롤
-      }
-    }
-
-    // 오른쪽 패널이 있을 때: 각각 독립 스크롤
-    &.with-right-panel {
-      height: 100vh;
-      overflow: hidden;
-
-      .left-section {
         overflow-y: auto; // 독립 스크롤
         height: 100%;
         -ms-overflow-style: none; /* IE and Edge */
@@ -190,11 +88,173 @@
       }
     }
 
+    // 오른쪽 패널이 있을 때: 각각 독립 스크롤
+    &.with-right-panel {
+      height: 100%;
+      overflow: hidden;
+      max-width: 1920px;
+      margin: 0 auto;
+
+      .left-section {
+        overflow-y: auto; // 독립 스크롤
+        height: 100%;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        padding: 0 50px;
+        
+        &::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+      }
+    }
+
     // 왼쪽 영역: 기존 내용
     .left-section {
       flex: 6;
-      padding: 20px;
       box-sizing: border-box;
+      overflow-y: auto;
+      height: 100%;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
+
+      // 상단 헤더 이미지 (왼쪽 패널만 있을 때, 스크롤에 포함)
+      .hotel-header-image {
+        width: 100vw;
+        height: 300px;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 40px;
+        margin-top: 0;
+
+        .header-image-media {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          display: block;
+        }
+
+        // 어두운 overlay
+        .header-image-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.6);
+          z-index: 1;
+        }
+
+        // 도시 제목 정보 (이미지 중앙)
+        .hotel-title-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+
+          .hotel-title-content {
+            text-align: center;
+            color: #fff;
+
+            .text-title {
+              font-size: 40px;
+              font-weight: bold;
+              margin-bottom: 3px;
+              color: #fff;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .text-subtitle {
+              font-size: 30px;
+              margin-bottom: 5px;
+              color: #fff;
+              opacity: 0.95;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            .text-rating {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            .text-location {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              margin-top: 12px;
+              color: #fff;
+              font-size: 16px;
+              opacity: 0.9;
+
+              p {
+                margin: 0;
+                color: #fff;
+              }
+
+              svg {
+                color: #fff;
+              }
+            }
+          }
+        }
+      }
+
+      // 도시 탭 컨테이너
+      .hotel-tabs-container {
+        margin-bottom: 50px;
+        border-bottom: 1px solid #e0e0e0;
+
+        .hotel-tabs-left {
+          display: flex;
+          gap: 20px;
+          align-items: center;
+        }
+
+        .hotel-tab-button {
+          flex: 1;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          position: relative;
+          color: #333;
+          font-size: 18px;
+          font-weight: 400;
+          padding: 8px 0;
+          transition: all 0.3s ease;
+          white-space: nowrap;
+
+          &:hover {
+            font-weight: bold;
+          }
+
+          &.active {
+            font-weight: bold;
+
+            &::after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              height: 2px;
+              background-color: #333;
+            }
+          }
+        }
+      }
     }
 
     // 오른쪽 영역: 비워둠
@@ -204,6 +264,14 @@
       box-sizing: border-box;
       position: relative;
       animation: slideInRight 0.3s ease;
+      overflow-y: auto;
+      height: 100%;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
 
       // 닫기 버튼
       .right-panel-close-btn {
@@ -250,7 +318,7 @@
     margin: 0 auto;
   }
 
-  // 호텔 소개 섹션
+  // 도시 소개 섹션
   .hotel-intro-section {
     width: 100%;
     max-width: 1100px;
@@ -263,33 +331,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 40px;
-
-      .rating__board__wrapper {
-        gap: 6px;
-      }
-
-      .rating__icon {
-        width: 28px;
-        height: 28px;
-
-        svg {
-          width: 28px;
-          height: 28px;
-        }
-
-        .filled__star {
-          fill: rgba(252, 196, 0, 1);
-          color: rgba(252, 196, 0, 1);
-        }
-
-        .empty__star {
-          fill: rgba(119, 119, 119, 1);
-          color: rgba(119, 119, 119, 1);
-        }
-      }
+      margin-bottom: 20px;
     }
-
     .hotel-intro-tagline {
       font-size: 36px;
       font-weight: 700;
@@ -297,30 +340,32 @@
       margin-bottom: 20px;
       line-height: 1.4;
     }
-
     .hotel-intro-logo {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 25px;
-
+      margin-bottom: 20px;
       img {
         max-width: 300px;
-        max-height: 300px;
+        max-height: 200px;
         object-fit: cover;
-        border-radius: 50%;
+        border-radius: 10px;
       }
-
     }
     .hotel-intro-entitle {
       font-size: 35px;
       font-weight: 700;
       color: #8B8B8B;
-      margin-bottom: 20px;
+      margin-bottom: 40px;
       line-height: 1.4;
     }
-
-
+    .hotel-intro-name {
+      font-size: 35px;
+      font-weight: 700;
+      color: #8B8B8B;
+      margin-bottom: 40px;
+      line-height: 1.4;
+    }
 
     .hotel-intro-description {
       text-align: center;
@@ -438,6 +483,10 @@
         height: 15px;
         background-color: #ccc;
       }
+      .weather-text {
+        white-space: nowrap;
+        color: #666;
+      }
       .video-button {
         padding: 5px 22px;
         border-radius: 3px;
@@ -513,7 +562,112 @@
 
   
   
+  .location-info-section {
+    margin-top: 60px;
+    margin-bottom: 100px;
+    width: 100%;
+    max-width: 1200px;
+    text-align: center;
 
+    .location-content-wrapper {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      background-color: #f4f4f4;
+
+      @media (max-width: 968px) {
+        flex-direction: column;
+        gap: 30px;
+      }
+    }
+
+
+    .location-map-placeholder {
+        width: 100%;
+        height: 100px;
+        min-height: 400px;
+        background-color: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      
+      }
+  }
+  .hotel-basic-images {
+    width: 100%;
+    height: fit-content;
+    margin: 0 auto;
+    text-align: center;
+    
+    img {
+      width: 100%;
+      height: fit-content;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  // 각 탭의 첫 번째 이미지 미리보기
+  .tab-preview-images {
+    display: flex;
+    gap: 20px;
+    margin-top: 60px;
+    margin-bottom: 60px;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .preview-image-item {
+      flex: 1;
+      min-width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      @media (max-width: 768px) {
+        min-width: 100%;
+      }
+
+      .preview-image-label {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+      }
+
+      .preview-image-wrapper {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        background-color: #f5f5f5;
+
+        .preview-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        video.preview-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }
+  }
+
+
+  
 
   .section-title {
     font-size: 35px;
@@ -586,7 +740,6 @@
     color: #333;
     text-align: center;
 
-
     .benefit-items {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -646,151 +799,6 @@
 
       .benefit-items {
         grid-template-columns: minmax(0, 1fr);
-      }
-    }
-  }
-
-
-  .location-info-section {
-    margin-top: 60px;
-    margin-bottom: 100px;
-    width: 100%;
-    max-width: 1200px;
-    text-align: center;
-
-    .location-content-wrapper {
-      display: flex;
-      gap: 40px;
-      align-items: flex-start;
-      background-color: #f4f4f4;
-
-      @media (max-width: 968px) {
-        flex-direction: column;
-        gap: 30px;
-      }
-    }
-
-    .location-text-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 30px;
-      padding: 30px;
-
-      .location-address {
-        font-size: 16px;
-        font-weight: 500;
-        color: #333;
-        line-height: 1.6;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #e0e0e0;
-      }
-
-      .location-nearby-list {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-
-        .location-nearby-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 15px;
-          color: #333;
-
-          .location-icon {
-            font-size: 18px;
-            color: #666;
-            flex-shrink: 0;
-          }
-
-          .location-name {
-            flex: 1;
-            font-weight: 400;
-          }
-
-          .location-time {
-            color: #666;
-            font-size: 14px;
-            flex-shrink: 0;
-          }
-        }
-      }
-    }
-
-    .location-map-panel {
-      flex: 1;
-      min-height: 400px;
-
-      .location-map-placeholder {
-        width: 100%;
-        max-width: 500px;
-        height: 100px;
-        min-height: 400px;
-        background-color: #f5f5f5;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        overflow: hidden;
-      
-      }
-    }
-  }
-
-  // 각 탭의 첫 번째 이미지 미리보기
-  .tab-preview-images {
-    display: flex;
-    gap: 20px;
-    margin-top: 60px;
-    margin-bottom: 60px;
-    flex-wrap: wrap;
-
-    @media (max-width: 768px) {
-      flex-direction: column;
-      gap: 30px;
-    }
-
-    .preview-image-item {
-      flex: 1;
-      min-width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-
-      @media (max-width: 768px) {
-        min-width: 100%;
-      }
-
-      .preview-image-label {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        text-align: center;
-      }
-
-      .preview-image-wrapper {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        overflow: hidden;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        background-color: #f5f5f5;
-
-        .preview-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-
-        video.preview-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
       }
     }
   }
@@ -1148,8 +1156,8 @@
     position: sticky;
     top: 0;
     align-self: flex-start;
-    height: 100vh;
-    max-height: 100vh;
+    height: calc(100vh - 100px);
+    max-height: calc(100vh - 100px);
     overflow-y: auto;
     padding-top: 0;
     -ms-overflow-style: none; /* IE and Edge */
@@ -1225,6 +1233,223 @@
       
       &::-webkit-scrollbar {
         display: none; /* Chrome, Safari, Opera */
+      }
+
+      // 도시정보 섹션
+      .detail-info-content {
+        .detail-main-image {
+          width: 100%;
+          margin-bottom: 20px;
+          overflow: hidden;
+
+          .image-detail-main {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            aspect-ratio: 1.39;
+          }
+        }
+
+        .detail-info-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+
+          .info-item {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            .info-label {
+              flex: 0 0 90px;
+              color: #000000;
+              font-size: 18px;
+              font-weight: 500;
+              margin: 0;
+            }
+
+            .info-value,
+            .info-multiline {
+              flex: 1;
+              color: #090909;
+              font-size: 15px;
+              line-height: 1.6;
+              margin: 0;
+            }
+
+            .info-strong {
+              font-weight: 500;
+            }
+
+            .info-multiline {
+              display: block;
+            }
+
+            .info-text {
+              margin: 0 0 4px 0;
+            }
+          }
+        }
+      }
+
+      // 여행상품 섹션 (EuropeTripPage 스타일)
+      .schedule-list-container {
+        padding: 0;
+
+        .selected-nation-title {
+          font-size: 28px;
+          font-weight: 700;
+          color: #333;
+          margin: 0 0 20px 0;
+        }
+
+        .schedule-tabs {
+          display: flex;
+          gap: 0;
+          border-bottom: 1px solid #e0e0e0;
+          margin-bottom: 20px;
+
+          .schedule-tab {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+
+            &.active {
+              color: #333;
+              font-weight: 600;
+              border-bottom-color: #333;
+            }
+
+            &:hover:not(.active) {
+              color: #333;
+            }
+          }
+        }
+
+        .schedule-search {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 30px;
+
+          .schedule-search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+
+            &:focus {
+              border-color: #2FB4E2;
+            }
+
+            &::placeholder {
+              color: #999;
+            }
+          }
+
+          .schedule-search-btn {
+            padding: 12px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+
+            &:hover {
+              background: #555;
+            }
+          }
+        }
+
+        .schedule-sections {
+          .no-schedules {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 16px;
+          }
+
+          .schedule-section {
+            margin-bottom: 30px;
+
+            .schedule-section-header {
+              background: #666;
+              color: white;
+              padding: 12px 16px;
+              font-size: 16px;
+              font-weight: 600;
+              margin-bottom: 10px;
+            }
+
+            .schedule-item {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 16px;
+              border-bottom: 1px solid #f0f0f0;
+              transition: background 0.2s ease;
+
+              &:hover {
+                background: #f8f8f8;
+              }
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              .schedule-item-content {
+                flex: 1;
+
+                .schedule-item-title {
+                  font-size: 16px;
+                  font-weight: 600;
+                  color: #333;
+                  margin: 0 0 6px 0;
+                }
+
+                .schedule-item-detail {
+                  font-size: 14px;
+                  color: #666;
+                  margin: 0;
+                }
+              }
+
+              .schedule-item-badge {
+                padding: 6px 12px;
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                flex-shrink: 0;
+                margin-left: 16px;
+
+                &.recommend {
+                  background: #ff6b35;
+                  color: white;
+                }
+
+                &.special {
+                  background: #2FB4E2;
+                  color: white;
+                }
+              }
+            }
+          }
+        }
       }
 
       // 여행상품 섹션 (원래 디자인 유지)
@@ -1341,12 +1566,137 @@
     // 실론투어 베네핏 카드 섹션
     .benefit-card-section {
       background-color: #ffffff;
-      box-shadow: 0px 4px 9px rgba(0, 0, 0, 0.08);
       border-radius: 8px;
-      padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 20px;
+
+      .hotel-cards-section {
+        margin-bottom: 20px;
+
+        .hotel-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+
+          .hotel-card {
+            height: 80px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+
+            .hotel-card-day {
+              width: 20%;
+              color: #555555;
+              font-size: 14px;
+              font-weight: 400;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .hotel-card-header {
+              width: 40%;
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 10px;
+
+              .hotel-card-badge {
+                min-width: 80px;
+                padding: 4px 12px;
+                border: 1px solid #999999;
+                border-radius: 5px;
+                color: #888888;
+                font-size: 14px;
+                font-weight: 400;
+                text-align: center;
+                background-color: #f9f9f9;
+              }
+
+              .hotel-card-title {
+                color: #010101;
+                font-size: 17px;
+                font-weight: 400;
+                flex: 1;
+              }
+            }
+
+            .hotel-card-content {
+              width: 40%;
+              display: flex;
+              justify-content: flex-end;
+              align-items: center;
+
+              .hotel-card-nights-control {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+
+                .nights-btn {
+                  width: 24px;
+                  height: 24px;
+                  border: 1px solid #ddd;
+                  border-radius: 4px;
+                  background: #fff;
+                  color: #333;
+                  font-size: 16px;
+                  font-weight: 400;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  padding: 0;
+                  transition: all 0.2s ease;
+
+                  &:hover:not(:disabled) {
+                    background: #f5f5f5;
+                  }
+
+                  &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                  }
+                }
+
+                .nights-value {
+                  color: #222222;
+                  font-size: 14px;
+                  font-weight: 400;
+                  min-width: 30px;
+                  text-align: center;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .save-button-section {
+        display: flex;
+        justify-content: center;
+
+        .save-button {
+          padding: 12px 40px;
+          border: none;
+          border-radius: 8px;
+          background-color: #333;
+          color: #fff;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: #555;
+          }
+        }
+      }
 
       .benefit-options {
         display: flex;
@@ -1869,6 +2219,17 @@
     .hotel-container {
       .left-section {
         padding: 15px;
+
+        .hotel-tabs-container {
+          .hotel-tabs-left {
+            gap: 15px;
+          }
+
+          .hotel-tab-button {
+            font-size: 14px;
+            padding: 6px 0;
+          }
+        }
       }
 
       .right-section {
@@ -2045,6 +2406,19 @@
   }
 
   @media (max-width: 480px) {
+    .left-section {
+      .hotel-tabs-container {
+        .hotel-tabs-left {
+          gap: 12px;
+        }
+
+        .hotel-tab-button {
+          padding: 6px 0;
+          font-size: 14px;
+        }
+      }
+    }
+
     .right-section {
       gap: 16px;
 

@@ -109,6 +109,7 @@ export interface SelectedHotelData {
   hotelInfo: HotelInfo | null;
   productInfo: ProductInfo | null;
   scheduleCards: any[];
+  selectedHotels?: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>;
   periodText: string;
   includeItems: string[];
   excludeItems: string[];
@@ -182,6 +183,7 @@ export interface HotelCartItem {
   id: number;
   hotelNameKo: string;
   city: string;
+  nights: number; // 박수 (기본값: 2)
 }
 
 export const recoilHotelCart = atom<HotelCartItem[]>({
@@ -193,11 +195,145 @@ export interface CityCartItem {
   id: number;
   cityKo: string;
   nation: string;
+  nights: number; // 박수 (기본값: 2)
+  // 도시 정보 필드들
+  isView?: string;
+  locationType?: string;
+  cityEn?: string;
+  trafficCode?: string;
+  tourNotice?: string;
+  eventExpo?: string;
+  resortCategory?: string;
+  scheduleCategory?: string;
+  hotelCategory?: string;
+  serviceCategory?: string;
+  taxRefundPlace?: string;
+  inputImage?: string;
+  courseImage?: string;
+  basicinfoImage?: string;
+  detailmapImage?: string;
+  tourPreviewImage?: string | null;
+  airlineInfo?: string;
+  visaInfo?: string;
+  exrateInfo?: string;
+  plugInfo?: string;
+  weatherInfo?: string;
+  languageInfo?: string;
+  timezoneInfo?: string;
+  tipInfo?: string;
+  priceInfo?: string;
+  additionalInfo?: string;
+  imageNamesNotice?: string;
+  imageNamesGuide?: string;
+  imageNamesEnt?: string;
+  imageNamesEvent?: string;
+  imageNamesCafe?: string;
+  imageNamesMainPoint?: string;
+  [key: string]: any; // 기타 모든 도시 정보 필드 허용
 }
 
 export const recoilCityCart = atom<CityCartItem[]>({
   key: "cityCart",
   default: []
+});
+
+// 상품명 저장
+export const recoilProductName = atom<string>({
+  key: "productName",
+  default: ""
+});
+
+// 일정 데이터 저장
+export interface ScheduleInfo {
+  airlineData: {
+    sort: string;
+    airlineCode: string[];
+  };
+  scheduleDetailData: Array<{
+    breakfast: string;
+    lunch: string;
+    dinner: string;
+    hotel: string;
+    score: string;
+    scheduleDetail: Array<{
+      id: number;
+      sort?: string;
+      st?: string;
+      isViewLocation: boolean;
+      locationIcon?: string;
+      location: string;
+      isUseMainContent: boolean;
+      mainContent?: string;
+      locationDetail: Array<{
+        subLocation: string;
+        isUseContent: boolean;
+        subLocationContent: string;
+        subLocationDetail: number[];
+      }>;
+      airlineData?: any;
+      trainData?: any;
+      busData?: any;
+      shipData?: any;
+    }>;
+  }>;
+}
+
+export const recoilScheduleInfo = atom<ScheduleInfo | null>({
+  key: "scheduleInfo",
+  default: null
+});
+
+// 선택된 일정 상품 정보 저장 (EuropeCityDetail에서 선택한 일정)
+export interface SelectedScheduleProduct {
+  id?: number;
+  productName?: string;
+  scheduleSort?: string;
+  costType?: string;
+  tourPeriodData?: {
+    periodNight?: string;
+    periodDay?: string;
+  };
+  includeNote?: string;
+  notIncludeNote?: string;
+  productScheduleData?: string;
+  nation?: string[];
+  tourmapImage?: string;
+  [key: string]: any;
+}
+
+export const recoilSelectedScheduleProduct = atom<SelectedScheduleProduct | null>({
+  key: "selectedScheduleProduct",
+  default: null
+});
+
+// 호텔 리스트 및 선택된 호텔 정보 저장 (EuropeScheduleCost에서 사용)
+export interface HotelListData {
+  hotels: any[];
+  hotelCities: string[];
+  activeHotelCity: string | null;
+  selectedHotel: any | null;
+  showPhotoGallery: boolean;
+  activePhotoTab: number;
+  selectedMainImageIndex: number;
+  imageAllView: any[];
+  imageRoomView: any[];
+  imageEtcView: any[];
+}
+
+export const recoilHotelListData = atom<HotelListData>({
+  key: "hotelListData",
+  default: {
+    hotels: [],
+    hotelCities: [],
+    activeHotelCity: null,
+    selectedHotel: null,
+    showPhotoGallery: false,
+    activePhotoTab: 0,
+    selectedMainImageIndex: 0,
+    imageAllView: [],
+    imageRoomView: [],
+    imageEtcView: []
+  }
 });
 
 

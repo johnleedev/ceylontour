@@ -13,7 +13,6 @@ const CounselTourHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const customerInfoFormData = useRecoilValue(recoilCustomerInfoFormData);
   const cityCart = useRecoilValue(recoilCityCart);
   const setCityCart = useSetRecoilState(recoilCityCart);
@@ -47,9 +46,18 @@ const CounselTourHeader: React.FC = () => {
 
 
   const isActiveMenu = (path: string) => {
-    if (path === '/counsel/tour') {
-      // 기본 경로는 정확히 일치할 때만 활성화
-      return location.pathname === '/counsel/tour' || location.pathname === '/counsel/europe/';
+    if (path === '/counsel/europe') {
+      // 여행지 경로: /counsel/europe만 정확히 일치할 때 활성화 (EuropeTripPage.tsx)
+      return location.pathname === '/counsel/europe' || location.pathname === '/counsel/europe/';
+    } else if (path === '/counsel/europe/city') {
+      // 도시 경로: /counsel/europe/city 또는 /counsel/europe/citydetail로 시작하는 경우 (EuropeCityPage.tsx, EuropeCityDetail.tsx)
+      return location.pathname.startsWith('/counsel/europe/city');
+    } else if (path === '/counsel/europe/schedule') {
+      // 일정 경로: /counsel/europe/schedule로 시작하는 경우 (EuropeScheduleCost.tsx)
+      return location.pathname.startsWith('/counsel/europe/schedule');
+    } else if (path === '/counsel/europe/estimate') {
+      // 견적 경로: /counsel/europe/estimate로 시작하는 경우
+      return location.pathname.startsWith('/counsel/europe/estimate');
     }
     return location.pathname.startsWith(path);
   };
@@ -81,84 +89,23 @@ const CounselTourHeader: React.FC = () => {
     return customerText;
   };
 
-  // 완료 버튼 클릭 시 도시 정보 전달
-  const handleComplete = async () => {
-    if (cityCart.length === 0) return;
-
-    try {
-      setIsLoadingComplete(true);
-      
-      // 담은 모든 도시 정보 가져오기
-      const citiesWithDetails = await Promise.all(
-        cityCart.map(async (cartItem) => {
-          try {
-            const cityRes = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${cartItem.id}`);
-            if (cityRes.data && cityRes.data.length > 0) {
-              return cityRes.data[0];
-            }
-            return null;
-          } catch (error) {
-            console.error(`도시 ${cartItem.id} 정보 가져오기 오류:`, error);
-            return null;
-          }
-        })
-      );
-
-      // null 값 제거
-      const validCities = citiesWithDetails.filter((city): city is NonNullable<typeof city> => city !== null);
-
-      if (validCities.length === 0) {
-        alert('도시 정보를 가져올 수 없습니다.');
-        setIsLoadingComplete(false);
-        return;
-      }
-
-      // 첫 번째 도시의 국가 정보로 상품 리스트 가져오기
-      const firstCity = validCities[0];
-      const nation = firstCity.nation || '';
-
-      if (!nation) {
-        alert('도시의 국가 정보가 없습니다.');
-        setIsLoadingComplete(false);
-        return;
-      }
-
-      // 국가별 상품 리스트 가져오기
-      const productRes = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${nation}`);
-      
-      if (!productRes.data || productRes.data.length === 0) {
-        alert('해당 국가의 여행상품이 없습니다.');
-        setIsLoadingComplete(false);
-        return;
-      }
-
-      // 첫 번째 상품 선택
-      const productInfo = productRes.data[0];
-
-      // 일정 페이지로 이동 (도시 정보 전달)
-      navigate('/counsel/europe/schedule', {
-        state: {
-          selectedCities: validCities,
-          cityCart: cityCart,
-          productInfo: productInfo,
-          nation: nation
-        }
-      });
-      window.scrollTo(0, 0);
-    } catch (error) {
-      console.error('완료 처리 중 오류 발생:', error);
-      alert('도시 정보를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoadingComplete(false);
+  // GO 버튼 클릭 시 EuropeCityDetail로 이동 (첫 번째 도시)
+  const handleScheduleEdit = () => {
+    if (cityCart.length === 0) {
+      alert('장바구니에 도시가 없습니다.');
+      return;
     }
+    // 첫 번째 도시의 ID와 nation을 사용하여 EuropeCityDetail로 이동
+    const firstCity = cityCart[0];
+    navigate(`/counsel/europe/citydetail?id=${firstCity.id}&nation=${firstCity.nation || ''}&fromGo=true`);
+    window.scrollTo(0, 0);
   };
 
   // 네비게이션 메뉴 항목
   const navMenuItems = [
-    { id: 'trip', name: '여행상품', path: '/counsel/tour' },
+    { id: 'trip', name: '여행지', path: '/counsel/europe' },
+    { id: 'city', name: '도시', path: '/counsel/europe/city' },
     { id: 'schedule', name: '일정', path: '/counsel/europe/schedule' },
-    { id: 'hotel', name: '호텔', path: '/counsel/europe/hotel' },
-    { id: 'flight', name: '항공', path: '/counsel/europe/flight' },
     { id: 'estimate', name: '견적', path: '/counsel/europe/estimate' },
   ];
 
@@ -208,12 +155,6 @@ const CounselTourHeader: React.FC = () => {
 
           {/* 도시 장바구니 표시 */}
           {cityCart.length > 0 && (() => {
-            // 현재 보고 있는 도시 ID 확인
-            const queryParams = new URLSearchParams(location.search);
-            const currentCityId = queryParams.get('id');
-            const isOnDetailPage = location.pathname.startsWith('/counsel/europe/citydetail');
-            const currentId = isOnDetailPage && currentCityId ? parseInt(currentCityId, 10) : null;
-
             return (
               <div className="header-city-cart" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
                 <span style={{ fontSize: '14px', color: '#333' }}>
@@ -221,7 +162,6 @@ const CounselTourHeader: React.FC = () => {
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {cityCart.map((item) => {
-                    const isCurrentCity = currentId !== null && item.id === currentId;
                     return (
                       <div
                         key={item.id}
@@ -237,30 +177,24 @@ const CounselTourHeader: React.FC = () => {
                           alignItems: 'center',
                           gap: '4px',
                           padding: '4px 8px',
-                          backgroundColor: isCurrentCity ? '#4da9ff' : '#f0f0f0',
-                          color: isCurrentCity ? '#fff' : '#333',
+                          backgroundColor: '#f0f0f0',
+                          color: '#333',
                           borderRadius: '4px',
                           fontSize: '16px',
                           cursor: 'pointer',
                           transition: 'background-color 0.2s ease',
-                          border: isCurrentCity ? '1px solid #4da9ff' : 'none',
-                          fontWeight: isCurrentCity ? '600' : '400'
+                          border: 'none',
+                          fontWeight: '400'
                         }}
                         onMouseEnter={(e) => {
-                          if (!isCurrentCity) {
-                            e.currentTarget.style.backgroundColor = '#e0e0e0';
-                          }
+                          e.currentTarget.style.backgroundColor = '#e0e0e0';
                         }}
                         onMouseLeave={(e) => {
-                          if (!isCurrentCity) {
-                            e.currentTarget.style.backgroundColor = '#f0f0f0';
-                          } else {
-                            e.currentTarget.style.backgroundColor = '#4da9ff';
-                          }
+                          e.currentTarget.style.backgroundColor = '#f0f0f0';
                         }}
                       >
                         <span>{item.cityKo}</span>
-                        {item.nation && <span style={{ color: isCurrentCity ? 'rgba(255, 255, 255, 0.8)' : '#666' }}>({item.nation})</span>}
+                        {item.nation && <span style={{ color: '#666' }}>({item.nation})</span>}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -273,7 +207,7 @@ const CounselTourHeader: React.FC = () => {
                             padding: '0',
                             marginLeft: '4px',
                             fontSize: '14px',
-                            color: isCurrentCity ? 'rgba(255, 255, 255, 0.8)' : '#999'
+                            color: '#999'
                           }}
                         >
                           ×
@@ -283,8 +217,7 @@ const CounselTourHeader: React.FC = () => {
                   })}
                 </div>
                 <button
-                  onClick={handleComplete}
-                  disabled={isLoadingComplete}
+                  onClick={handleScheduleEdit}
                   style={{
                     padding: '6px 16px',
                     borderRadius: '6px',
@@ -293,25 +226,20 @@ const CounselTourHeader: React.FC = () => {
                     fontSize: '14px',
                     fontWeight: '500',
                     backgroundColor: '#fff',
-                    cursor: isLoadingComplete ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    opacity: isLoadingComplete ? 0.6 : 1,
                     transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isLoadingComplete) {
-                      e.currentTarget.style.backgroundColor = '#555';
-                      e.currentTarget.style.color = '#fff';
-                    }
+                    e.currentTarget.style.backgroundColor = '#555';
+                    e.currentTarget.style.color = '#fff';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isLoadingComplete) {
-                      e.currentTarget.style.backgroundColor = '#fff';
-                      e.currentTarget.style.color = '#333';
-                    }
+                    e.currentTarget.style.backgroundColor = '#fff';
+                    e.currentTarget.style.color = '#333';
                   }}
                 >
-                  {isLoadingComplete ? '로딩 중...' : '완료'}
+                  GO
                 </button>
                 <button
                   onClick={() => {

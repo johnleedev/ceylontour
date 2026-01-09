@@ -27,6 +27,8 @@ import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
 import Image_morisus from '../../../lastimages/counselrest/trip/mapimage.png';
 import GoogleMap from '../../../common/GoogleMap';
+import { useSetRecoilState, useRecoilValue } from 'recoil';
+import { recoilProductName, recoilSelectedScheduleProduct, recoilCityCart, CityCartItem } from '../../../../RecoilStore';
 
 
 export default function EuropeCityDetail() {
@@ -35,8 +37,24 @@ export default function EuropeCityDetail() {
   const queryParams = new URLSearchParams(location.search);
   const ID = queryParams.get("id");
   const NATION = queryParams.get("nation");
+  const fromDetail = queryParams.get("fromDetail") === 'true';
+  const fromGo = queryParams.get("fromGo") === 'true';
+  const setProductName = useSetRecoilState(recoilProductName);
+  const setSelectedScheduleProduct = useSetRecoilState(recoilSelectedScheduleProduct);
+  const setCityCart = useSetRecoilState(recoilCityCart);
+  const cityCart = useRecoilValue(recoilCityCart);
+  const setSavedProductName = useSetRecoilState(recoilProductName);
 
   const [cityInfo, setCityInfo] = React.useState<any | null>(null);
+  const [selectedCityTab, setSelectedCityTab] = React.useState<number | null>(null);
+  const [cityDetails, setCityDetails] = React.useState<Array<{
+    id: number;
+    cityKo: string;
+    cityEn?: string;
+    nation?: string;
+    nights: number;
+  }>>([]);
+  const [selectedNights, setSelectedNights] = React.useState<{ [key: number]: number }>({});
   const [imageNotice, setImageNotice] = React.useState<any[]>([]); // 소개
   const [imageGuide, setImageGuide] = React.useState<any[]>([]); // 가이드투어
   const [imageEnt, setImageEnt] = React.useState<any[]>([]); // 입장/체험
@@ -54,6 +72,7 @@ export default function EuropeCityDetail() {
         const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${ID}`);
         if (res.data) {
           const copy = [...res.data][0];
+          console.log(copy);
           setCityInfo(copy);
         } else {
           setCityInfo(null);
@@ -74,6 +93,143 @@ export default function EuropeCityDetail() {
 
     fetchHotelInfo();
   }, [ID, NATION]);
+
+  // 장바구니에서 도시 목록 가져오기 (GO 버튼으로 진입한 경우)
+  useEffect(() => {
+    const fetchCityDetails = async () => {
+      if (fromDetail || !fromGo || cityCart.length === 0) {
+        return;
+      }
+
+      try {
+        const details = await Promise.all(
+          cityCart.map(async (item) => {
+            try {
+              const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${item.id}`);
+              if (res.data && res.data.length > 0) {
+                const city = res.data[0];
+                return {
+                  id: item.id,
+                  cityKo: city.cityKo || item.cityKo,
+                  cityEn: city.cityEn,
+                  nation: city.nation || item.nation,
+                  nights: item.nights || 2
+                };
+              }
+              return {
+                id: item.id,
+                cityKo: item.cityKo,
+                cityEn: item.cityEn,
+                nation: item.nation,
+                nights: item.nights || 2
+              };
+            } catch (error) {
+              console.error(`도시 ${item.id} 정보 가져오기 오류:`, error);
+              return {
+                id: item.id,
+                cityKo: item.cityKo,
+                cityEn: item.cityEn,
+                nation: item.nation,
+                nights: item.nights || 2
+              };
+            }
+          })
+        );
+
+        setCityDetails(details);
+        
+        // 초기 박수 설정
+        const initialNights: { [key: number]: number } = {};
+        details.forEach((city) => {
+          initialNights[city.id] = city.nights;
+        });
+        setSelectedNights(initialNights);
+        
+        // 첫 번째 도시를 기본 선택 (현재 ID와 일치하는 도시가 있으면 그것을 선택)
+        const currentCityIndex = details.findIndex(c => c.id === Number(ID));
+        if (currentCityIndex !== -1) {
+          setSelectedCityTab(currentCityIndex);
+        } else if (details.length > 0) {
+          setSelectedCityTab(0);
+        }
+      } catch (error) {
+        console.error('도시 정보 가져오기 오류:', error);
+      }
+    };
+
+    fetchCityDetails();
+  }, [cityCart, ID, fromDetail, fromGo]);
+
+  // 선택된 도시 탭에 따라 도시 정보 업데이트
+  useEffect(() => {
+    if (fromDetail || !fromGo || cityDetails.length === 0 || selectedCityTab === null) {
+      return;
+    }
+
+    const selectedCity = cityDetails[selectedCityTab];
+    if (!selectedCity) return;
+
+    const fetchSelectedCityInfo = async () => {
+      try {
+        const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${selectedCity.id}`);
+        if (res.data && res.data.length > 0) {
+          const city = res.data[0];
+          setCityInfo(city);
+          
+          // 도시 이미지 파싱
+          try {
+            const noticeImages = JSON.parse(city.imageNamesNotice || '[]');
+            setImageNotice(Array.isArray(noticeImages) ? noticeImages : []);
+          } catch (e) {
+            setImageNotice([]);
+          }
+
+          try {
+            const guideImages = JSON.parse(city.imageNamesGuide || '[]');
+            setImageGuide(Array.isArray(guideImages) ? guideImages : []);
+          } catch (e) {
+            setImageGuide([]);
+          }
+
+          try {
+            const entImages = JSON.parse(city.imageNamesEnt || '[]');
+            setImageEnt(Array.isArray(entImages) ? entImages : []);
+          } catch (e) {
+            setImageEnt([]);
+          }
+
+          try {
+            const eventImages = JSON.parse(city.imageNamesEvent || '[]');
+            setImageEvent(Array.isArray(eventImages) ? eventImages : []);
+          } catch (e) {
+            setImageEvent([]);
+          }
+
+          try {
+            const cafeImages = JSON.parse(city.imageNamesCafe || '[]');
+            setImageCafe(Array.isArray(cafeImages) ? cafeImages : []);
+          } catch (e) {
+            setImageCafe([]);
+          }
+          
+          // 선택된 도시의 국가로 상품 가져오기
+          if (city.nation) {
+            const response = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${city.nation}`);
+            if (response.data) {
+              const copy = [...response.data];
+              setProducts(copy);
+            } else {
+              setProducts([]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('선택된 도시 정보 가져오기 오류:', error);
+      }
+    };
+
+    fetchSelectedCityInfo();
+  }, [selectedCityTab, cityDetails, fromDetail, fromGo]);
 
   // schedule 데이터 파싱 및 그룹화 (도시 기준, EuropeTripPage와 동일한 로직)
   const getGroupedSchedules = () => {
@@ -142,17 +298,184 @@ export default function EuropeCityDetail() {
     return grouped;
   };
 
+  const handleNightsChange = (cityId: number, delta: number) => {
+    setSelectedNights((prev) => {
+      const currentNights = prev[cityId] || cityDetails.find(c => c.id === cityId)?.nights || 2;
+      const newNights = Math.max(1, currentNights + delta);
+      return {
+        ...prev,
+        [cityId]: newNights
+      };
+    });
+  };
+
+  // 도시와 박수를 기반으로 일정 데이터 생성
+  const createScheduleFromCities = (cities: Array<{ index: number; city: any; nights: number }>) => {
+    let currentDay = 1;
+    const scheduleDetailData: any[] = [];
+
+    cities.forEach((cityItem) => {
+      const nights = cityItem.nights || 2;
+      const cityName = cityItem.city?.cityKo || '';
+
+      // 각 박수만큼 일정 일자 생성
+      for (let i = 0; i < nights; i++) {
+        scheduleDetailData.push({
+          breakfast: '',
+          lunch: '',
+          dinner: '',
+          hotel: '',
+          score: '',
+          scheduleDetail: [
+            {
+              id: 0,
+              idx: 0,
+              st: 'location',
+              isViewLocation: true,
+              locationIcon: '',
+              location: `${currentDay}일차 - ${cityName}`,
+              isUseContent: false,
+              locationContent: '',
+              locationDetail: [{
+                subLocation: '',
+                subLocationContent: '',
+                subLocationDetail: [],
+                isUseContent: false
+              }],
+              airlineData: null
+            }
+          ]
+        });
+        currentDay++;
+      }
+    });
+
+    return {
+      airlineData: {
+        sort: '',
+        airlineCode: []
+      },
+      scheduleDetailData: scheduleDetailData
+    };
+  };
+
+  const handleSave = async () => {
+    if (cityDetails.length === 0) {
+      alert('도시 정보가 없습니다.');
+      return;
+    }
+
+    try {
+      // 장바구니의 박수 업데이트
+      const updatedCart = cityCart.map((item) => {
+        const nights = selectedNights[item.id] || item.nights || 2;
+        return {
+          ...item,
+          nights: nights
+        };
+      });
+      setCityCart(updatedCart);
+
+      // 각 도시의 상세 정보를 가져와서 selectedCities 형식으로 변환
+      const selectedCities = await Promise.all(
+        cityDetails.map(async (city, index) => {
+          try {
+            const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${city.id}`);
+            const cityDetail = res.data && res.data.length > 0 ? res.data[0] : null;
+            if (cityDetail) {
+              const nights = selectedNights[city.id] || city.nights || 2;
+              
+              return {
+                index: index,
+                city: cityDetail,
+                nights: nights
+              };
+            }
+            return null;
+          } catch (error) {
+            console.error(`도시 ${city.id} 정보 가져오기 오류:`, error);
+            return null;
+          }
+        })
+      );
+
+      // null 값 제거
+      const validSelectedCities = selectedCities.filter((city): city is NonNullable<typeof city> => city !== null);
+
+      if (validSelectedCities.length === 0) {
+        alert('도시 정보를 가져올 수 없습니다.');
+        return;
+      }
+
+      // 첫 번째 도시 정보 가져오기
+      const firstCity = validSelectedCities[0].city;
+      if (!firstCity) {
+        alert('도시 정보를 가져올 수 없습니다.');
+        return;
+      }
+
+      // 국가별 첫 번째 상품 가져오기 (없으면 null)
+      let productInfo = null;
+      const firstNation = cityDetails[0]?.nation || NATION || '';
+      if (firstNation) {
+        try {
+          const response = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${firstNation}`);
+          if (response.data && response.data.length > 0) {
+            productInfo = response.data[0];
+          }
+        } catch (error) {
+          console.error('상품 정보 가져오기 오류:', error);
+        }
+      }
+
+      // 상품명 생성
+      const nameParts = cityDetails.map((city) => {
+        const nights = selectedNights[city.id] || city.nights || 2;
+        return `${city.cityKo} ${nights}박`;
+      });
+      const productName = nameParts.join(' + ');
+
+      // 상품명을 RecoilStore에 저장
+      setSavedProductName(productName);
+
+      // 도시와 박수를 기반으로 새로운 일정 데이터 생성
+      const customScheduleInfo = createScheduleFromCities(validSelectedCities);
+
+      // productScheduleData 생성 (도시 탭 표시를 위해 필요)
+      const productScheduleData = validSelectedCities.map((cityItem) => ({
+        city: cityItem.city?.cityKo || cityItem.city?.city || '',
+        dayNight: `${cityItem.nights}박`
+      }));
+
+      // EuropeScheduleCost로 이동
+      navigate('/counsel/europe/schedulerecommend', {
+        state: {
+          selectedCities: validSelectedCities.map(sc => sc.city),
+          cityCart: updatedCart,
+          productInfo: productInfo,
+          nation: firstNation,
+          isFromMakeButton: true, // '만들기' 버튼에서 온 것임을 표시
+          customScheduleInfo: customScheduleInfo, // 도시 기반 일정 데이터
+          productScheduleData: JSON.stringify(productScheduleData) // 도시 탭 표시를 위한 데이터
+        }
+      });
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('저장 중 오류 발생:', error);
+      alert('저장 중 오류가 발생했습니다.');
+    }
+  };
+
   const btnSolids = [
     { text: '소개' },
-    { text: '기본사진' },
-    { text: '가이드투어' },
+    { text: '하이라이트' },
     { text: '입장/체험' },
     { text: '경기/공연' },
     { text: '레스토랑/카페' }
   ];
 
   const [activeTab, setActiveTab] = React.useState(0);
-  const [activeRightTab, setActiveRightTab] = React.useState<'info' | 'product'>('info');
+  const [activeRightTab, setActiveRightTab] = React.useState<'info' | 'product' | 'custom'>('product');
   const [showRightPanel, setShowRightPanel] = React.useState(false);
   const [selectedMainImageIndex, setSelectedMainImageIndex] = React.useState(0);
   const [scheduleFilter, setScheduleFilter] = React.useState('전체');
@@ -217,10 +540,9 @@ export default function EuropeCityDetail() {
   // 현재 탭에 따른 이미지 리스트
   const getCurrentImages = () => {
     if (activeTab === 0) return []
-    if (activeTab === 1) return imageNotice; 
-    if (activeTab === 2) return imageGuide; 
-    if (activeTab === 3) return imageEnt; 
-    if (activeTab === 4) return imageEvent;
+    if (activeTab === 1) return imageGuide; 
+    if (activeTab === 2) return imageEnt; 
+    if (activeTab === 3) return imageEvent;
     return imageCafe;
   };
 
@@ -281,31 +603,6 @@ export default function EuropeCityDetail() {
 
   return (
     <div className="EuropeCityDetail">
-      {/* 상단 헤더 이미지 */}
-      <div className="city-header-image">
-        <img
-          className="header-image-media"
-          alt="도시 메인 이미지"
-          src={getHeaderImage()}
-        />
-        {/* 어두운 overlay */}
-        <div className="header-image-overlay"></div>
-        {/* 도시 제목 정보 (이미지 중앙에 표시) */}
-        <div className="city-title-overlay">
-          <div className="city-title-content">
-            <div className="text-title">{cityInfo?.cityKo || '도시명'}</div>
-            <div className="text-subtitle">
-              {cityInfo?.cityEn || ''}
-            </div>
-            <div className="text-location">
-              <p>{cityInfo?.nation || ''}</p>
-              <IoIosArrowForward />
-              <p>{cityInfo?.cityKo || ''}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* 왼쪽 상단 뒤로가기 버튼 */}
       <button
         type="button"
@@ -329,6 +626,47 @@ export default function EuropeCityDetail() {
       <div className={`city-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
         {/* 왼쪽 영역: 기존 내용 */}
         <div className="left-section">
+          {/* 상단 헤더 이미지 (오른쪽 패널이 닫혀있을 때만 표시, 스크롤에 포함) */}
+          {!showRightPanel && (
+            <div className="city-header-image">
+              <img
+                className="header-image-media"
+                alt="도시 메인 이미지"
+                src={getHeaderImage()}
+              />
+              <div className="header-image-overlay"></div>
+              <div className="city-title-overlay">
+                <div className="city-title-content">
+                  <div className="text-title">{cityInfo?.cityKo || '도시명'}</div>
+                  <div className="text-subtitle">
+                    {cityInfo?.cityEn || ''}
+                  </div>
+                  <div className="text-location">
+                    <p>{cityInfo?.nation || ''}</p>
+                    <IoIosArrowForward />
+                    <p>{cityInfo?.cityKo || ''}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* 도시 탭 (GO 버튼으로 진입한 경우에만 표시) */}
+          {!fromDetail && fromGo && cityDetails.length > 0 && (
+            <div className="city-tabs-container">
+              <div className="city-tabs-left">
+                {cityDetails.map((city, index) => (
+                  <button
+                    key={city.id}
+                    type="button"
+                    className={`city-tab-button ${selectedCityTab === index ? 'active' : ''}`}
+                    onClick={() => setSelectedCityTab(index)}
+                  >
+                    {city.cityKo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="city-center-wrapper">
 
             <div className="room-container-wrapper">
@@ -419,152 +757,56 @@ export default function EuropeCityDetail() {
                   <img src={`${AdminURL}/images/citymapinfo/${cityInfo.courseImage}`} alt={cityInfo.cityKo} />
                 </div>
 
-                {/* 각 탭의 첫 번째 이미지 미리보기 */}
+                {/* imageNotice 이미지 전부 표시 */}
                 <div className="tab-preview-images">
-                  {/* 가이드투어 탭 첫 번째 이미지 */}
-                  {imageNotice && imageNotice.length > 0 && (() => {
-                    const firstImage = imageNotice[0];
-                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
-                    const isVideo = isVideoFile(imageName);
-                    return (
-                      <div key="guide-view" className="preview-image-item">
-                        <div className="preview-image-wrapper">
-                          {isVideo ? (
-                            <video
-                              className="preview-image"
-                              controls
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          ) : (
-                            <img
-                              className="preview-image"
-                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '가이드투어 이미지'}
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            />
-                          )}
+                  {imageNotice && imageNotice.length > 0 ? (
+                    imageNotice.map((img: any, index: number) => {
+                      const imageName = typeof img === 'string' ? img : img.imageName;
+                      const title = typeof img === 'object' && img.title ? img.title : '';
+                      const isVideo = isVideoFile(imageName);
+                      return (
+                        <div key={`notice-${index}`} className="preview-image-item">
+                          <div className="preview-image-wrapper">
+                            {isVideo ? (
+                              <video
+                                className="preview-image"
+                                controls
+                                src={`${AdminURL}/images/cityimages/${imageName}`}
+                              >
+                                브라우저가 비디오 태그를 지원하지 않습니다.
+                              </video>
+                            ) : (
+                              <img
+                                className="preview-image"
+                                alt={title || `소개 이미지 ${index + 1}`}
+                                src={`${AdminURL}/images/cityimages/${imageName}`}
+                              />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })()}
-
-                  {imageGuide && imageGuide.length > 0 && (() => {
-                    const firstImage = imageGuide[0];
-                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
-                    const isVideo = isVideoFile(imageName);
-                    return (
-                      <div key="guide-view" className="preview-image-item">
-                        <div className="preview-image-wrapper">
-                          {isVideo ? (
-                            <video
-                              className="preview-image"
-                              controls
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          ) : (
-                            <img
-                              className="preview-image"
-                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '가이드투어 이미지'}
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* 입장/체험 탭 첫 번째 이미지 */}
-                  {imageEnt && imageEnt.length > 0 && (() => {
-                    const firstImage = imageEnt[0];
-                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
-                    const isVideo = isVideoFile(imageName);
-                    return (
-                      <div key="ent-view" className="preview-image-item">
-                        <div className="preview-image-wrapper">
-                          {isVideo ? (
-                            <video
-                              className="preview-image"
-                              controls
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          ) : (
-                            <img
-                              className="preview-image"
-                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '입장/체험 이미지'}
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* 경기/공연 탭 첫 번째 이미지 */}
-                  {imageEvent && imageEvent.length > 0 && (() => {
-                    const firstImage = imageEvent[0];
-                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
-                    const isVideo = isVideoFile(imageName);
-                    return (
-                      <div key="event-view" className="preview-image-item">
-                        <div className="preview-image-wrapper">
-                          {isVideo ? (
-                            <video
-                              className="preview-image"
-                              controls
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          ) : (
-                            <img
-                              className="preview-image"
-                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '경기/공연 이미지'}
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* 레스토랑/카페 탭 첫 번째 이미지 */}
-                  {imageCafe && imageCafe.length > 0 && (() => {
-                    const firstImage = imageCafe[0];
-                    const imageName = typeof firstImage === 'string' ? firstImage : firstImage.imageName;
-                    const isVideo = isVideoFile(imageName);
-                    return (
-                      <div key="cafe-view" className="preview-image-item">
-                        <div className="preview-image-wrapper">
-                          {isVideo ? (
-                            <video
-                              className="preview-image"
-                              controls
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          ) : (
-                            <img
-                              className="preview-image"
-                              alt={typeof firstImage === 'object' && firstImage.title ? firstImage.title : '레스토랑/카페 이미지'}
-                              src={`${AdminURL}/images/cityimages/${imageName}`}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      minHeight: '400px',
+                      color: '#999',
+                      fontSize: '16px',
+                      fontWeight: 400,
+                      width: '100%'
+                    }}>
+                      이미지가 없습니다.
+                    </div>
+                  )}
                 </div>
 
               </>
             ) : (
               <div className="photo-gallery">
                 {(() => {
+                  // 현재 탭에 맞는 이미지 가져오기
                   const images = getCurrentImages();
                   if (images && images.length > 0) {
                     return images.map((img: any, index: number) => {
@@ -597,13 +839,18 @@ export default function EuropeCityDetail() {
                       );
                     });
                   }
+                  // 이미지가 없을 때 메시지 표시
                   return (
-                    <div className="photo-main">
-                      <img
-                        className="photo-main-image"
-                        alt="메인 이미지"
-                        src={rectangle580}
-                      />
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      minHeight: '400px',
+                      color: '#999',
+                      fontSize: '16px',
+                      fontWeight: 400
+                    }}>
+                      이미지가 없습니다.
                     </div>
                   );
                 })()}
@@ -629,13 +876,13 @@ export default function EuropeCityDetail() {
               {/* 탭 컨테이너 */}
               <div className="right-tab-container">
                 <div className="right-tab-left">
-                  <button
+                  {/* <button
                     type="button"
                     className={`right-tab-button right-tab-info ${activeRightTab === 'info' ? 'active' : ''}`}
                     onClick={() => setActiveRightTab('info')}
                   >
                     도시정보
-                  </button>
+                  </button> */}
                   <button
                     type="button"
                     className={`right-tab-button right-tab-product ${activeRightTab === 'product' ? 'active' : ''}`}
@@ -643,6 +890,14 @@ export default function EuropeCityDetail() {
                   >
                     여행상품
                   </button>
+                  <button
+                    type="button"
+                    className={`right-tab-button right-tab-custom ${activeRightTab === 'custom' ? 'active' : ''}`}
+                    onClick={() => setActiveRightTab('custom')}
+                  >
+                    일정만들기
+                  </button>
+                  
                 </div>
               </div>
               {activeRightTab === 'info' && (
@@ -657,7 +912,7 @@ export default function EuropeCityDetail() {
                         try {
                           const images = JSON.parse(cityInfo.inputImage || '[]');
                           const mainImage = Array.isArray(images) && images.length > 0 ? images[0] : Image_morisus;
-                          return <img className="image-detail-main" alt={cityInfo?.cityKo || 'Image'} src={`${AdminURL}/images/citycustomimages/${mainImage}`} />;
+                          return <img className="image-detail-main" alt={cityInfo?.cityKo || 'Image'} src={`${AdminURL}/images/cityimages/${mainImage}`} />;
                         } catch (e) {
                           return <img className="image-detail-main" alt={cityInfo?.cityKo || 'Image'} src={Image_morisus} />;
                         }
@@ -1075,10 +1330,23 @@ export default function EuropeCityDetail() {
                               <div 
                                 key={index} 
                                 className="schedule-item"
-                                onClick={() => {
+                                onClick={async () => {
                                   if (schedule.id) {
-                                    navigate(`/counsel/europe/schedulerecommend`, { state: schedule });
-                                    window.scrollTo(0, 0);
+                                    try {
+                                      // 상품명을 RecoilStore에 저장
+                                      const productNameToSave = schedule.productName || schedule.nation.join(' + ') + (schedule.tourPeriodData.periodNight && schedule.tourPeriodData.periodDay ? ` ${schedule.tourPeriodData.periodNight} ${schedule.tourPeriodData.periodDay}` : '');
+                                      setProductName(productNameToSave);
+                                      
+                                      // 전체 일정 정보를 RecoilStore에 저장
+                                      setSelectedScheduleProduct(schedule);
+                                    
+                                      // 페이지 전환
+                                      navigate(`/counsel/europe/schedulerecommend`, { state: schedule });
+                                      window.scrollTo(0, 0);
+                                    } catch (error) {
+                                      console.error('일정 선택 중 오류 발생:', error);
+                                      alert('일정을 불러오는 중 오류가 발생했습니다.');
+                                    }
                                   }
                                 }}
                                 style={{ cursor: 'pointer' }}
@@ -1101,6 +1369,55 @@ export default function EuropeCityDetail() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              )}
+
+              {activeRightTab === 'custom' && (
+                <div className="benefit-card-section">
+                  <div className="city-cards-section">
+                    <div className="city-cards">
+                      {cityDetails.map((city, index) => {
+                        const nights = selectedNights[city.id] || city.nights || 2;
+                        
+                        return (
+                          <div key={city.id} className="city-card">
+                            <div className="city-card-day">{index + 1}일차</div>
+                            <div className="city-card-header">
+                              <div className="city-card-badge">
+                                {city.nation || ''}
+                              </div>
+                              <div className="city-card-title">{city.cityKo}</div>
+                            </div>
+                            <div className="city-card-content">
+                              <div className="city-card-nights-control">
+                                <button
+                                  className="nights-btn"
+                                  onClick={() => handleNightsChange(city.id, -1)}
+                                  disabled={nights <= 1}
+                                >
+                                  -
+                                </button>
+                                <span className="nights-value">{nights}박</span>
+                                <button
+                                  className="nights-btn"
+                                  onClick={() => handleNightsChange(city.id, 1)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 저장 버튼 */}
+                  <div className="save-button-section">
+                    <button className="save-button" onClick={handleSave}>
+                      만들기
+                    </button>
                   </div>
                 </div>
               )}

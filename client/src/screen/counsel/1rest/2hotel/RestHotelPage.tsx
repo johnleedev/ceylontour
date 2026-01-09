@@ -23,11 +23,12 @@ export default function RestHotelPage() {
       // 이미 장바구니에 있는지 확인
       const existingIndex = prevCart.findIndex(item => item.id === hotel.id);
       if (existingIndex === -1) {
-        // 장바구니에 없으면 추가
+        // 장바구니에 없으면 추가 (기본 박수: 2박)
         const newItem: HotelCartItem = {
           id: hotel.id,
           hotelNameKo: hotel.hotelNameKo,
-          city: selectedCity || hotel.city || ''
+          city: selectedCity || hotel.city || '',
+          nights: 2 // 기본값 2박
         };
         return [...prevCart, newItem];
       }
@@ -126,40 +127,7 @@ export default function RestHotelPage() {
           </form>
         </div>
       </div>
-
-      {/* <div className="navbar-wrapper">
-        <div className="navbar">
-          {areaFilters.map((item, index) => (
-            <React.Fragment key={`area-${item.label}`}>
-              <button
-                type="button"
-                className={`nav-item ${item.active ? 'active' : ''}`}
-              >
-                {item.label}
-              </button>
-              {index < areaFilters.length - 1 && <span className="nav-separator" />}
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div className="navbar-2">
-          {typeFilters.map((item, index) => (
-            <React.Fragment key={`type-${item.label}`}>
-              <button
-                type="button"
-                className={`nav-item ${item.active ? 'active' : ''}`}
-              >
-                {item.label}
-              </button>
-              {index < typeFilters.length - 1 && (
-                <span className="nav-separator" />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div> */}
-
-      
+     
 
       <div className="hotel-card-grid">
         {loading ? (
@@ -204,7 +172,7 @@ export default function RestHotelPage() {
                       className="hover-button hover-button-detail"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/counsel/rest/hoteldetail?id=${hotel.id}&city=${selectedCity}`);
+                        navigate(`/counsel/rest/hoteldetail?id=${hotel.id}&city=${selectedCity}&fromDetail=true`);
                         window.scrollTo(0, 0);
                       }}
                     >

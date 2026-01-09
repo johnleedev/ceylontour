@@ -15,7 +15,6 @@ const CounselRestHeader: React.FC = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isLoadingComplete, setIsLoadingComplete] = useState(false);
   const customerInfoFormData = useRecoilValue(recoilCustomerInfoFormData);
   const hotelCart = useRecoilValue(recoilHotelCart);
   const setHotelCart = useSetRecoilState(recoilHotelCart);
@@ -52,6 +51,13 @@ const CounselRestHeader: React.FC = () => {
     if (path === '/counsel/rest') {
       // 기본 경로는 정확히 일치할 때만 활성화
       return location.pathname === '/counsel/rest' || location.pathname === '/counsel/rest/';
+    } else if (path === '/counsel/rest/hotel') {
+      // 호텔 경로: /counsel/rest/hotel 또는 /counsel/rest/hoteldetail로 시작하는 경우
+      return location.pathname.startsWith('/counsel/rest/hotel') && 
+             !location.pathname.startsWith('/counsel/rest/hotelcost');
+    } else if (path === '/counsel/rest/hotelcost') {
+      // 일정 경로: /counsel/rest/hotelcost로 시작하는 경우
+      return location.pathname.startsWith('/counsel/rest/hotelcost');
     }
     return location.pathname.startsWith(path);
   };
@@ -83,89 +89,23 @@ const CounselRestHeader: React.FC = () => {
     return customerText;
   };
 
-  // 완료 버튼 클릭 시 RestHotelCost로 이동
-  const handleComplete = async () => {
-    if (hotelCart.length === 0) return;
-
-    try {
-      setIsLoadingComplete(true);
-      
-      // 첫 번째 호텔 정보 가져오기
-      const firstHotel = hotelCart[0];
-      const hotelRes = await axios.get(`${AdminURL}/ceylontour/gethotelinfobyid/${firstHotel.id}`);
-      
-      if (!hotelRes.data || hotelRes.data.length === 0) {
-        alert('호텔 정보를 가져올 수 없습니다.');
-        setIsLoadingComplete(false);
-        return;
-      }
-
-      const hotelInfo = hotelRes.data[0];
-      const city = firstHotel.city || hotelInfo.city || '';
-
-      // 도시별 상품 리스트 가져오기
-      const productRes = await axios.post(`${AdminURL}/ceylontour/getcityschedule`, { city });
-      
-      if (!productRes.data || productRes.data.length === 0) {
-        alert('해당 도시의 여행상품이 없습니다.');
-        setIsLoadingComplete(false);
-        return;
-      }
-
-      // 첫 번째 상품 선택
-      const productInfo = productRes.data[0];
-
-      // 담은 모든 호텔들을 selectedHotels 형식으로 변환
-      const selectedHotels = await Promise.all(
-        hotelCart.map(async (cartItem, index) => {
-          try {
-            // 각 호텔의 상세 정보 가져오기
-            const hotelDetailRes = await axios.get(`${AdminURL}/ceylontour/gethotelinfobyid/${cartItem.id}`);
-            const hotelDetail = hotelDetailRes.data && hotelDetailRes.data.length > 0 ? hotelDetailRes.data[0] : null;
-            
-            if (hotelDetail) {
-              return {
-                index: index,
-                hotelSort: hotelDetail.hotelType || hotelDetail.hotelSort || '리조트',
-                dayNight: '3', // 기본값
-                hotel: hotelDetail
-              };
-            }
-            return null;
-          } catch (error) {
-            console.error(`호텔 ${cartItem.id} 정보 가져오기 오류:`, error);
-            return null;
-          }
-        })
-      );
-
-      // null 값 제거
-      const validSelectedHotels = selectedHotels.filter((hotel): hotel is NonNullable<typeof hotel> => hotel !== null);
-
-      // RestHotelCost로 이동
-      navigate('/counsel/rest/hotelcost', {
-        state: {
-          hotelInfo: hotelInfo,
-          productInfo: productInfo,
-          city: city,
-          selectedHotels: validSelectedHotels
-        }
-      });
-      window.scrollTo(0, 0);
-    } catch (error) {
-      console.error('완료 처리 중 오류 발생:', error);
-      alert('호텔 정보를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoadingComplete(false);
+  // GO 버튼 클릭 시 RestHotelDetail로 이동 (첫 번째 호텔)
+  const handleScheduleEdit = () => {
+    if (hotelCart.length === 0) {
+      alert('장바구니에 호텔이 없습니다.');
+      return;
     }
+    // 첫 번째 호텔의 ID와 city를 사용하여 RestHotelDetail로 이동
+    const firstHotel = hotelCart[0];
+    navigate(`/counsel/rest/hoteldetail?id=${firstHotel.id}&city=${firstHotel.city}&fromGo=true`);
+    window.scrollTo(0, 0);
   };
 
   // 네비게이션 메뉴 항목
   const navMenuItems = [
-    { id: 'trip', name: '여행상품', path: '/counsel/rest' },
+    { id: 'trip', name: '여행지', path: '/counsel/rest' },
     { id: 'hotel', name: '호텔', path: '/counsel/rest/hotel' },
-    { id: 'schedule', name: '일정', path: '/counsel/rest/schedule' },
-    { id: 'flight', name: '항공', path: '/counsel/rest/flight' },
+    { id: 'schedule', name: '일정', path: '/counsel/rest/hotelcost' },
     { id: 'estimate', name: '견적', path: '/counsel/rest/estimate' },
   ];
 
@@ -230,12 +170,6 @@ const CounselRestHeader: React.FC = () => {
 
           {/* 호텔 장바구니 표시 */}
           {hotelCart.length > 0 && (() => {
-            // 현재 보고 있는 호텔 ID 확인
-            const queryParams = new URLSearchParams(location.search);
-            const currentHotelId = queryParams.get('id');
-            const isOnDetailPage = location.pathname.startsWith('/counsel/rest/hoteldetail');
-            const currentId = isOnDetailPage && currentHotelId ? parseInt(currentHotelId, 10) : null;
-
             return (
               <div className="header-hotel-cart" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
                 <span style={{ fontSize: '14px', color: '#333' }}>
@@ -243,7 +177,6 @@ const CounselRestHeader: React.FC = () => {
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {hotelCart.map((item, index) => {
-                    const isCurrentHotel = currentId !== null && item.id === currentId;
                     return (
                       <div
                         key={item.id}
@@ -259,30 +192,24 @@ const CounselRestHeader: React.FC = () => {
                           alignItems: 'center',
                           gap: '4px',
                           padding: '4px 8px',
-                          backgroundColor: isCurrentHotel ? '#4da9ff' : '#f0f0f0',
-                          color: isCurrentHotel ? '#fff' : '#333',
+                          backgroundColor: '#f0f0f0',
+                          color: '#333',
                           borderRadius: '4px',
                           fontSize: '16px',
                           cursor: 'pointer',
                           transition: 'background-color 0.2s ease',
-                          border: isCurrentHotel ? '1px solid #4da9ff' : 'none',
-                          fontWeight: isCurrentHotel ? '600' : '400'
+                          border: 'none',
+                          fontWeight: '400'
                         }}
                         onMouseEnter={(e) => {
-                          if (!isCurrentHotel) {
-                            e.currentTarget.style.backgroundColor = '#e0e0e0';
-                          }
+                          e.currentTarget.style.backgroundColor = '#e0e0e0';
                         }}
                         onMouseLeave={(e) => {
-                          if (!isCurrentHotel) {
-                            e.currentTarget.style.backgroundColor = '#f0f0f0';
-                          } else {
-                            e.currentTarget.style.backgroundColor = '#4da9ff';
-                          }
+                          e.currentTarget.style.backgroundColor = '#f0f0f0';
                         }}
                       >
                         <span>{item.hotelNameKo}</span>
-                        {item.city && <span style={{ color: isCurrentHotel ? 'rgba(255, 255, 255, 0.8)' : '#666' }}>({item.city})</span>}
+                        {item.city && <span style={{ color: '#666' }}>({item.city})</span>}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -295,7 +222,7 @@ const CounselRestHeader: React.FC = () => {
                             padding: '0',
                             marginLeft: '4px',
                             fontSize: '14px',
-                            color: isCurrentHotel ? 'rgba(255, 255, 255, 0.8)' : '#999'
+                            color: '#999'
                           }}
                         >
                           ×
@@ -305,8 +232,7 @@ const CounselRestHeader: React.FC = () => {
                   })}
                 </div>
               <button
-                onClick={handleComplete}
-                disabled={isLoadingComplete}
+                onClick={handleScheduleEdit}
                 style={{
                   padding: '6px 16px',
                   borderRadius: '6px',
@@ -315,25 +241,20 @@ const CounselRestHeader: React.FC = () => {
                   fontSize: '14px',
                   fontWeight: '500',
                   backgroundColor: '#fff',
-                  cursor: isLoadingComplete ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                  opacity: isLoadingComplete ? 0.6 : 1,
                   transition: 'all 0.2s ease'
                 }}
                 onMouseEnter={(e) => {
-                  if (!isLoadingComplete) {
-                    e.currentTarget.style.backgroundColor = '#555';
-                    e.currentTarget.style.color = '#fff';
-                  }
+                  e.currentTarget.style.backgroundColor = '#555';
+                  e.currentTarget.style.color = '#fff';
                 }}
                 onMouseLeave={(e) => {
-                  if (!isLoadingComplete) {
-                    e.currentTarget.style.backgroundColor = '#fff';
-                    e.currentTarget.style.color = '#333';
-                  }
+                  e.currentTarget.style.backgroundColor = '#fff';
+                  e.currentTarget.style.color = '#333';
                 }}
               >
-                {isLoadingComplete ? '로딩 중...' : '완료'}
+                GO
               </button>
               <button
                 onClick={() => {

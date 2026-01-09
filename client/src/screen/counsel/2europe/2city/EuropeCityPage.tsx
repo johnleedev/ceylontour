@@ -12,7 +12,7 @@ export default function EuropeCityPage() {
   const setCityCart = useSetRecoilState(recoilCityCart);
   
   const cityData = stateProps?.cityData || null;
-  console.log('cityData', cityData);
+  
   
   const [loading, setLoading] = useState<boolean>(true);
   const [cities, setCities] = useState<any[]>([]);
@@ -23,10 +23,46 @@ export default function EuropeCityPage() {
     setCityCart((prevCart) => {
       const existingIndex = prevCart.findIndex(item => item.id === city.id);
       if (existingIndex === -1) {
+        // 도시 정보의 모든 필드를 개별적으로 저장
         const newItem: CityCartItem = {
           id: city.id,
           cityKo: city.cityKo || '',
-          nation: city.nation || ''
+          nation: city.nation || '',
+          nights: 2, // 기본값 2박
+          isView: city.isView,
+          locationType: city.locationType,
+          cityEn: city.cityEn,
+          trafficCode: city.trafficCode,
+          tourNotice: city.tourNotice,
+          eventExpo: city.eventExpo,
+          resortCategory: city.resortCategory,
+          scheduleCategory: city.scheduleCategory,
+          hotelCategory: city.hotelCategory,
+          serviceCategory: city.serviceCategory,
+          taxRefundPlace: city.taxRefundPlace,
+          inputImage: city.inputImage,
+          courseImage: city.courseImage,
+          basicinfoImage: city.basicinfoImage,
+          detailmapImage: city.detailmapImage,
+          tourPreviewImage: city.tourPreviewImage,
+          airlineInfo: city.airlineInfo,
+          visaInfo: city.visaInfo,
+          exrateInfo: city.exrateInfo,
+          plugInfo: city.plugInfo,
+          weatherInfo: city.weatherInfo,
+          languageInfo: city.languageInfo,
+          timezoneInfo: city.timezoneInfo,
+          tipInfo: city.tipInfo,
+          priceInfo: city.priceInfo,
+          additionalInfo: city.additionalInfo,
+          imageNamesNotice: city.imageNamesNotice,
+          imageNamesGuide: city.imageNamesGuide,
+          imageNamesEnt: city.imageNamesEnt,
+          imageNamesEvent: city.imageNamesEvent,
+          imageNamesCafe: city.imageNamesCafe,
+          imageNamesMainPoint: city.imageNamesMainPoint,
+          // 기타 모든 필드도 포함
+          ...city
         };
         return [...prevCart, newItem];
       }
@@ -109,12 +145,11 @@ export default function EuropeCityPage() {
             try {
               const images = JSON.parse(city.inputImage || '[]');
               if (Array.isArray(images) && images.length > 0 && images[0]) {
-                mainImage = `${AdminURL}/images/citycustomimages/${images[0]}`;
+                mainImage = `${AdminURL}/images/cityimages/${images[0]}`;
               }
             } catch (e) {
               // 파싱 실패 시 기본 이미지
             }
-
             // trafficCode에서 공항 정보 추출
             let airportInfo = '';
             try {
@@ -137,10 +172,7 @@ export default function EuropeCityPage() {
                   <img
                     className="card-image"
                     alt={city.cityKo}
-                    src={mainImage || `${AdminURL}/images/citycustomimages/default.png`}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `${AdminURL}/images/citycustomimages/default.png`;
-                    }}
+                    src={mainImage || `${AdminURL}/images/cityimages/${city.inputImage}`}
                   />
                   <div className="card-hover-buttons">
                     <button
@@ -149,6 +181,7 @@ export default function EuropeCityPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         addToCart(city);
+                        console.log(city)
                       }}
                     >
                       담기
@@ -158,7 +191,7 @@ export default function EuropeCityPage() {
                       className="hover-button hover-button-detail"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/counsel/europe/citydetail?id=${city.id}&nation=${city.nation}`);
+                        navigate(`/counsel/europe/citydetail?id=${city.id}&nation=${city.nation}&fromDetail=true`);
                         window.scrollTo(0, 0);
                       }}
                     >

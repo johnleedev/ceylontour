@@ -223,15 +223,17 @@ export const updateScheduleCards = (
 
     let currentDate = startDate ? new Date(startDate) : null;
 
-    const updatedCards = sched.map((s: any, idx: number) => {
-      const hotelSort = s.sort || s.hotelSort || '';
-      let hotelName = s.roomTypeName || hotelSort || '';
+    // selectedHotels가 있으면 그것을 기준으로 카드 생성, 없으면 productScheduleData 사용
+    const maxLength = selectedHotels.length > 0 ? selectedHotels.length : sched.length;
+    
+    const updatedCards = [];
+    for (let idx = 0; idx < maxLength; idx++) {
+      const s = sched[idx] || {};
+      const selectedHotel = selectedHotels[idx];
       
-      // selectedHotels에서 해당 인덱스의 호텔명 가져오기
-      const selectedHotel = selectedHotels.find(sh => sh.index === idx);
-      if (selectedHotel?.hotel) {
-        hotelName = selectedHotel.hotel.hotelNameKo || hotelName;
-      }
+      const hotelSort = selectedHotel?.hotelSort || s.sort || s.hotelSort || '';
+      const hotelName = selectedHotel?.hotel?.hotelNameKo || s.roomTypeName || hotelSort || '';
+      const dayNight = selectedHotel?.dayNight || s.dayNight || '';
       
       // 날짜 계산
       let dayText = `${idx + 1}일차`; // 기본값
@@ -239,7 +241,7 @@ export const updateScheduleCards = (
         dayText = formatDate(currentDate);
         
         // 다음 카드를 위한 날짜 계산 (현재 카드의 nights 일수 추가)
-        const nights = extractNightsNumber(s.dayNight || '');
+        const nights = extractNightsNumber(dayNight);
         if (nights > 0) {
           const nextDate = new Date(currentDate);
           nextDate.setDate(nextDate.getDate() + nights);
@@ -247,14 +249,14 @@ export const updateScheduleCards = (
         }
       }
       
-      return {
+      updatedCards.push({
         id: idx + 1,
         day: dayText,
         badge: hotelSort,
         title: hotelName,
-        nights: s.dayNight || '',
-      };
-    });
+        nights: dayNight,
+      });
+    }
     
     setScheduleCards(updatedCards);
 

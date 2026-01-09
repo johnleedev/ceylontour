@@ -233,6 +233,7 @@ export default function EuropeTripPage () {
     return grouped;
   };
 
+  console.log('selectedNationData', selectedNationData);
 
   return (
     <div className="trip-page-wrapper">
@@ -241,65 +242,24 @@ export default function EuropeTripPage () {
         <div className="left-section">
           {/* 헤더 영역 */}
           <div className="trip-header">
-            <div className="header-buttons">
-              <button 
-                className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveButton('recommend');
-                  setSelectedNation(null);
-                  setSelectedNationData(null);
-                  setSelectedCities({});
-                }}
-              >
-                추천일정
-              </button>
-              <button 
-                className={`btn-tap ${activeButton === 'create' ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveButton('create');
-                  setSelectedNation(null);
-                  setSelectedNationData(null);
-                  setSelectedCities({});
-                }}
-              >
-                일정만들기
-              </button>
-            </div>
-            <div className="header-filters">
-              <div className="filter-left">
-                <label className="filter-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={isSingleCity}
-                    onChange={(e) => {
-                      setIsSingleCity(e.target.checked);
-                      if (e.target.checked) setIsMultiCity(false);
-                    }}
-                  />
-                  <span className="filter-item">싱글시티</span>
-                </label>
-                <label className="filter-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={isMultiCity}
-                    onChange={(e) => {
-                      setIsMultiCity(e.target.checked);
-                      if (e.target.checked) setIsSingleCity(false);
-                    }}
-                  />
-                  <span className="filter-item">멀티시티</span>
-                </label>
-              </div>
-              <div className="filter-right">
-                <button
-                  type="button"
-                  className="worldmap-button"
-                  onClick={() => setIsWorldMapOpen(true)}
-                >
-                  세계지도 보기
-                </button>
-              </div>
-            </div>
+            <button 
+              className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveButton('recommend');
+                setSelectedNation(null);
+                setSelectedNationData(null);
+                setSelectedCities({});
+              }}
+            >
+              추천일정
+            </button>
+            <button
+              type="button"
+              className="worldmap-button"
+              onClick={() => setIsWorldMapOpen(true)}
+            >
+              세계지도 보기
+            </button>
           </div>
 
           {/* 나라 리스트 */}
@@ -534,22 +494,7 @@ export default function EuropeTripPage () {
               {activeTab === 'info' && (
                 <>
                   <div className="detail-main-image">
-                    {(() => {
-                      // basicinfoImage 우선, 없으면 inputImage의 첫 번째 이미지 사용
-                      if (selectedNationData?.basicinfoImage) {
-                        return <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/citymapinfo/${selectedNationData.basicinfoImage}`} />;
-                      }
-                      if (selectedNationData?.inputImage) {
-                        try {
-                          const images = JSON.parse(selectedNationData.inputImage || '[]');
-                          const mainImage = Array.isArray(images) && images.length > 0 ? images[0] : Image_morisus;
-                          return <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/nationimages/${mainImage}`} />;
-                        } catch (e) {
-                          return <img className="image-detail-main" alt={selectedNation || 'Image'} src={Image_morisus} />;
-                        }
-                      }
-                      return <img className="image-detail-main" alt={selectedNation || 'Image'} src={Image_morisus} />;
-                    })()}
+                   <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/nationcustomimage/${selectedNationData.noticeImage}`} />;
                   </div>
                   <div className="detail-info-grid">
                     {(() => {

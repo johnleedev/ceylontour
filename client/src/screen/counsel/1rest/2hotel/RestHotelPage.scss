@@ -6,6 +6,7 @@
   padding: 0 50px;
 
   .hotel-header {
+    max-width: 1920px;
     margin: 0 auto;
     box-sizing: border-box;
     display: flex;
@@ -125,6 +126,8 @@
   }
 
   .hotel-card-grid {
+    max-width: 1920px;
+    margin: 0 auto;
     position: relative;
     box-sizing: border-box;
     display: grid;

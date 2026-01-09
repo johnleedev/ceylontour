@@ -61,13 +61,23 @@ export default function RestEstimatePage() {
     }
     
     return selectedHotelData.scheduleCards.map((card: any, index: number) => {
-      // 호텔 이미지 가져오기 (이미지 배열이 있다면 첫 번째 이미지 사용)
+      // 각 카드에 해당하는 호텔 정보 찾기
+      // selectedHotels 배열에서 해당 인덱스의 호텔 정보를 찾거나, 없으면 기본 hotelInfo 사용
+      const selectedHotel = selectedHotelData.selectedHotels?.find(
+        (sh: any) => sh.index === index || sh.index === (card.id - 1)
+      );
+      const hotelInfoForCard = selectedHotel?.hotel || selectedHotelData.hotelInfo;
+
+      // 호텔 이미지 가져오기
       let hotelImage = index === 0 ? hotel1 : hotel2;
-      if (selectedHotelData.hotelInfo?.imageNamesAllView) {
+      if (hotelInfoForCard?.imageNamesAllView) {
         try {
-          const images = JSON.parse(selectedHotelData.hotelInfo.imageNamesAllView);
+          const images = JSON.parse(hotelInfoForCard.imageNamesAllView);
           if (images && images.length > 0) {
-            hotelImage = `${AdminURL}/images/hotelimages/${images[0].imageName}`;
+            const imageName = typeof images[0] === 'string' ? images[0] : images[0].imageName;
+            if (imageName) {
+              hotelImage = `${AdminURL}/images/hotelimages/${imageName}`;
+            }
           }
         } catch (e) {
           console.error('Failed to parse hotel images:', e);
@@ -75,22 +85,28 @@ export default function RestEstimatePage() {
       }
 
       // 평점 계산
-      const rating = selectedHotelData.hotelInfo?.tripAdviser || selectedHotelData.hotelInfo?.customerScore || '0';
+      const rating = hotelInfoForCard?.tripAdviser || hotelInfoForCard?.customerScore || hotelInfoForCard?.hotelLevel || '0';
       const ratingNum = parseFloat(rating);
-      const stars = '★'.repeat(Math.floor(ratingNum));
+      const stars = '★'.repeat(Math.max(1, Math.min(5, Math.floor(ratingNum))));
+
+      // 호텔명
+      const hotelName = card.title || hotelInfoForCard?.hotelNameKo || '호텔명';
+      
+      // 호텔 주소
+      const hotelAddress = hotelInfoForCard?.hotelAddress || selectedHotelData.hotelInfo?.hotelAddress || '호텔 설명이 없습니다.';
 
       return {
-        id: index + 1,
+        id: card.id || index + 1,
         image: hotelImage,
-        name: card.title || selectedHotelData.hotelInfo?.hotelNameKo || '호텔명',
+        name: hotelName,
         rating: stars || '★★★★★',
         roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || '객실',
         nights: selectedHotelData.selectedNights?.[card.id] 
           ? `${selectedHotelData.selectedNights[card.id]}박`
-          : card.nights || '',
+          : (card.nights || ''),
         description: (
           <>
-            {selectedHotelData.hotelInfo?.hotelAddress || '호텔 설명이 없습니다.'}
+            {hotelAddress}
           </>
         ),
       };
@@ -261,11 +277,14 @@ export default function RestEstimatePage() {
               {selectedScheduleData.selectedSchedule ? (
                 // 저장된 일정이 있으면 해당 일정만 표시
                 <ScheduleRederBox 
-                  id={selectedScheduleData.selectedSchedule?.id || stateProps?.id} 
+                  id={selectedScheduleData.selectedSchedule?.id || selectedScheduleData.productInfo?.id || stateProps?.id} 
                   scheduleInfo={selectedScheduleData.selectedSchedule}
                 />
               ) : (
-                <ScheduleRederBox id={stateProps?.id} />
+                // 일정 정보가 없으면 상품 ID로 일정 가져오기
+                <ScheduleRederBox 
+                  id={selectedScheduleData.productInfo?.id || selectedHotelData.productInfo?.id || stateProps?.id} 
+                />
               )}
             </div>
           </div>

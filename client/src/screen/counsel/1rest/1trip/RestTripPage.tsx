@@ -161,55 +161,19 @@ export default function RestTripPage () {
         <div className="left-section">
           {/* 헤더 영역 */}
           <div className="trip-header">
-            <div className="header-buttons">
-              <button 
-                className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
-                onClick={() => setActiveButton('recommend')}
-              >
-                추천일정
-              </button>
-              <button 
-                className={`btn-tap ${activeButton === 'create' ? 'active' : ''}`}
-                onClick={() => setActiveButton('create')}
-              >
-                일정만들기
-              </button>
-            </div>
-            <div className="header-filters">
-              <div className="filter-left">
-                <label className="filter-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={isSingleCity}
-                    onChange={(e) => {
-                      setIsSingleCity(e.target.checked);
-                      if (e.target.checked) setIsMultiCity(false);
-                    }}
-                  />
-                  <span className="filter-item">싱글시티</span>
-                </label>
-                <label className="filter-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={isMultiCity}
-                    onChange={(e) => {
-                      setIsMultiCity(e.target.checked);
-                      if (e.target.checked) setIsSingleCity(false);
-                    }}
-                  />
-                  <span className="filter-item">멀티시티</span>
-                </label>
-              </div>
-              <div className="filter-right">
-                <button
-                  type="button"
-                  className="worldmap-button"
-                  onClick={() => setIsWorldMapOpen(true)}
-                >
-                  세계지도 보기
-                </button>
-              </div>
-            </div>
+            <button 
+              className={`btn-tap ${activeButton === 'recommend' ? 'active' : ''}`}
+              onClick={() => setActiveButton('recommend')}
+            >
+              추천일정
+            </button>
+            <button
+              type="button"
+              className="worldmap-button"
+              onClick={() => setIsWorldMapOpen(true)}
+            >
+              세계지도 보기
+            </button>
           </div>
 
           {/* 나라 리스트 */}

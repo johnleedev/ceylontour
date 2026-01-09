@@ -4,12 +4,15 @@
   box-sizing: border-box;
   background-color: #fff;
   padding: 0 50px;
+  height: calc(100vh - 100px);
+  overflow: hidden;
 
   .trip-container {
     display: flex;
     gap: 20px;
     width: 100%;
-    min-height: calc(100vh - 80px);
+    height: 100%;
+    max-width: 1920px;
     margin: 0 auto;
 
     // 왼쪽 영역: 헤더 + 나라 리스트
@@ -18,105 +21,60 @@
       padding: 20px;
       box-sizing: border-box;
       overflow-y: auto;
+      height: 100%;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
      // 헤더 영역
       .trip-header {
         display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 30px;
 
-        .header-buttons {
-          display: flex;
-          gap: 15px;
+        .btn-tap {
+          border-radius: 7px;
+          padding: 8px 40px;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border: 1px solid #999999;
+          background-color: transparent;
+          color: #646464;
+          font-weight: 400;
 
-          .btn-tap {
-            border-radius: 7px;
-            padding: 8px 40px;
-            font-size: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid #999999;
-            background-color: transparent;
-            color: #646464;
-            font-weight: 400;
+          &:hover {
+            background-color: #f5f5f5;
+          }
+
+          &.active {
+            background-color: #020202;
+            border: 1px solid #020202;
+            color: #ffffff;
+            font-weight: 500;
 
             &:hover {
-              background-color: #f5f5f5;
-            }
-
-            &.active {
-              background-color: #020202;
-              border: 1px solid #020202;
-              color: #ffffff;
-              font-weight: 500;
-
-              &:hover {
-                background-color: #333;
-              }
+              background-color: #333;
             }
           }
         }
 
-        .header-filters {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          width: 100%;
+        .worldmap-button {
+          padding: 6px 18px;
+          border: 1px solid #ccc;
+          background-color: #ffffff;
+          color: #3e3e3e;
+          font-size: 14px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.3s ease;
 
-          .filter-left {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-
-            .filter-checkbox {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              cursor: pointer;
-
-              input[type="checkbox"] {
-                width: 19px;
-                height: 19px;
-                cursor: pointer;
-                accent-color: #0082ea;
-              }
-
-              .filter-item {
-                color: #3e3e3e;
-                font-size: 14px;
-                
-                cursor: pointer;
-                transition: color 0.3s ease;
-                user-select: none;
-
-                &:hover {
-                  color: #000;
-                }
-              }
-
-              input[type="checkbox"]:checked + .filter-item {
-                color: #000;
-                font-weight: 400;
-              }
-            }
-          }
-
-          .filter-right {
-            .worldmap-button {
-              padding: 6px 18px;
-              border: 1px solid #ccc;
-              background-color: #ffffff;
-              color: #3e3e3e;
-              font-size: 14px;
-              
-              cursor: pointer;
-              transition: all 0.3s ease;
-
-              &:hover {
-                background-color: #f5f5f5;
-                color: #000000;
-              }
-            }
+          &:hover {
+            background-color: #f5f5f5;
+            color: #000000;
           }
         }
       }
@@ -231,6 +189,13 @@
       flex: 0 0 40%;
       overflow-y: auto;
       background-color: #fff;
+      height: 100%;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+      }
 
       .detail-section {
         width: 100%;
@@ -871,16 +836,7 @@
         .trip-header {
           flex-direction: column;
           align-items: flex-start;
-
-          .header-buttons {
-            width: 100%;
-            justify-content: flex-start;
-          }
-
-          .header-filters {
-            width: 100%;
-            flex-wrap: wrap;
-          }
+          gap: 15px;
         }
       }
     }
@@ -893,20 +849,12 @@
 
         .trip-header {
           margin-bottom: 20px;
+          flex-direction: column;
+          gap: 10px;
 
-          .header-buttons {
-            flex-direction: column;
+          .btn-tap,
+          .worldmap-button {
             width: 100%;
-
-            .btn-recommend,
-            .btn-create {
-              width: 100%;
-            }
-          }
-
-          .header-filters {
-            flex-direction: column;
-            gap: 10px;
           }
         }
 

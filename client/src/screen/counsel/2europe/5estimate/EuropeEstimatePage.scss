@@ -4,6 +4,8 @@
   box-sizing: border-box;
   background-color: #fff;
   padding: 0 50px;
+  height: calc(100vh - 100px);
+  overflow: hidden;
 
 
   .tour-estimate-content {
@@ -11,6 +13,9 @@
     flex-direction: column;
     gap: 32px;
     width: 100%;
+    height: 100%;
+    max-width: 1920px;
+    margin: 0 auto;
 
     @media (min-width: 1024px) {
       flex-direction: row;
@@ -22,6 +27,14 @@
   .tour-left-section {
     flex: 1;
     min-width: 0;
+    overflow-y: auto;
+    height: 100%;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
 
     .tour-estimate-header {
       margin-bottom: 32px;
@@ -46,6 +59,14 @@
 
   .tour-right-section {
     width: 100%;
+    overflow-y: auto;
+    height: 100%;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
 
     @media (min-width: 1024px) {
       width: 37.33%;

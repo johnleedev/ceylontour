@@ -6,8 +6,8 @@ import { AdminURL } from '../../MainURL';
 import { ImLocation } from 'react-icons/im';
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
 import RatingBoard from './RatingBoard';
-import { useRecoilValue } from 'recoil';
-import { recoilExchangeRate } from '../../RecoilStore';
+import { useRecoilValue, useRecoilState } from 'recoil';
+import { recoilExchangeRate, recoilScheduleInfo } from '../../RecoilStore';
 import { fetchScheduleDetailDataExternal } from './ScheduleDetailRedering';
 import { GoDotFill } from "react-icons/go";
 import AirlineData from '../AirlineData';
@@ -88,12 +88,44 @@ interface ModalScheduleDetailProps {
 interface ScheduleRederBoxProps {
   id?: string | null;
   scheduleInfo?: any;
+  useRecoil?: boolean;
   onSelectedScheduleChange?: (selectedSchedule: ModalScheduleDetailProps | null, selectedIndex: number) => void;
 }
   
 
 export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
+  // Recoil에서 일정 데이터 가져오기 (useRecoil prop이 true일 때)
+  const [recoilScheduleInfoValue] = useRecoilState(recoilScheduleInfo);
+  const useRecoil = props.useRecoil || false;
   
+  // ScheduleInfo를 ModalScheduleDetailProps로 변환하는 함수
+  const convertScheduleInfoToModalProps = (scheduleInfo: any): ModalScheduleDetailProps => {
+    return {
+      airlineData: scheduleInfo.airlineData || { sort: '', airlineCode: [] },
+      scheduleDetailData: scheduleInfo.scheduleDetailData.map((day: any) => ({
+        breakfast: day.breakfast || '',
+        lunch: day.lunch || '',
+        dinner: day.dinner || '',
+        hotel: day.hotel || '',
+        score: day.score || '',
+        scheduleDetail: day.scheduleDetail.map((detail: any) => ({
+          id: detail.id || 0,
+          sort: detail.sort || detail.st || '',
+          st: detail.st,
+          isViewLocation: detail.isViewLocation !== undefined ? detail.isViewLocation : true,
+          locationIcon: detail.locationIcon,
+          location: detail.location || '',
+          isUseContent: detail.isUseMainContent !== undefined ? detail.isUseMainContent : (detail.isUseContent !== undefined ? detail.isUseContent : false),
+          locationContent: detail.mainContent || detail.locationContent || '',
+          locationDetail: detail.locationDetail || [],
+          airlineData: detail.airlineData,
+          trainData: detail.trainData,
+          busData: detail.busData,
+          shipData: detail.shipData
+        }))
+      }))
+    };
+  };
   
   const fetchScheduleData = async () => {
   
@@ -133,20 +165,46 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
   };
   
   useEffect(() => {
-    // scheduleInfo prop이 전달되면 해당 일정만 사용
-    if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
-      setScheduleList([props.scheduleInfo]);
-      setSelectedScheduleIndex(0);
-      setLoading(false);
-      // 선택된 일정 변경 알림
-      if (props.onSelectedScheduleChange) {
-        props.onSelectedScheduleChange(props.scheduleInfo, 0);
+    // Recoil을 사용하는 경우
+    if (useRecoil) {
+      if (recoilScheduleInfoValue && recoilScheduleInfoValue.scheduleDetailData) {
+        // ScheduleInfo를 ModalScheduleDetailProps로 변환
+        const convertedSchedule = convertScheduleInfoToModalProps(recoilScheduleInfoValue);
+        setScheduleList([convertedSchedule]);
+        setSelectedScheduleIndex(0);
+        setLoading(false);
+        // 선택된 일정 변경 알림
+        if (props.onSelectedScheduleChange) {
+          props.onSelectedScheduleChange(convertedSchedule, 0);
+        }
+      } else if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
+        // props.scheduleInfo가 있으면 사용
+        setScheduleList([props.scheduleInfo]);
+        setSelectedScheduleIndex(0);
+        setLoading(false);
+        if (props.onSelectedScheduleChange) {
+          props.onSelectedScheduleChange(props.scheduleInfo, 0);
+        }
+      } else {
+        // id가 변경될 때마다 해당 id 기준으로 다시 일정 조회
+        fetchScheduleData();
       }
     } else {
-      // id가 변경될 때마다 해당 id 기준으로 다시 일정 조회
-      fetchScheduleData();
+      // 기존 로직: scheduleInfo prop이 전달되면 해당 일정만 사용
+      if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
+        setScheduleList([props.scheduleInfo]);
+        setSelectedScheduleIndex(0);
+        setLoading(false);
+        // 선택된 일정 변경 알림
+        if (props.onSelectedScheduleChange) {
+          props.onSelectedScheduleChange(props.scheduleInfo, 0);
+        }
+      } else {
+        // id가 변경될 때마다 해당 id 기준으로 다시 일정 조회
+        fetchScheduleData();
+      }
     }
-  }, [props.scheduleInfo, props.id]);
+  }, [props.scheduleInfo, props.id, useRecoil, recoilScheduleInfoValue]);
 
 
   

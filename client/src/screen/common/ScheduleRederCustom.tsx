@@ -6,8 +6,8 @@ import {AdminURL} from '../../MainURL';
 import { format, formatDate } from 'date-fns';
 import { TiArrowSortedUp, TiArrowSortedDown } from "react-icons/ti";
 import RatingBoard from './RatingBoard';
-import { useRecoilValue } from 'recoil';
-import { recoilExchangeRate } from '../../RecoilStore';
+import { useRecoilValue, useSetRecoilState, useRecoilState } from 'recoil';
+import { recoilExchangeRate, recoilScheduleInfo } from '../../RecoilStore';
 import ScheduleTrafficAdd from './ScheduleTrafficAdd';
 import { fetchScheduleDetailDataExternal } from './ScheduleDetailRedering';
 import { GoDotFill } from "react-icons/go";
@@ -115,7 +115,11 @@ export default function ScheduleRederCustom (props : any) {
           airlineData: { sort: '', airlineCode: [] },
           scheduleDetailData: [createEmptyDay()]
         };
-        setScheduleList([defaultSchedule]);
+        if (useRecoil) {
+          setScheduleListWithRecoil([defaultSchedule]);
+        } else {
+          setScheduleList([defaultSchedule]);
+        }
       }
       
     } catch (error) {
@@ -125,7 +129,11 @@ export default function ScheduleRederCustom (props : any) {
         airlineData: { sort: '', airlineCode: [] },
         scheduleDetailData: [createEmptyDay()]
       };
-      setScheduleList([defaultSchedule]);
+      if (useRecoil) {
+        setScheduleListWithRecoil([defaultSchedule]);
+      } else {
+        setScheduleList([defaultSchedule]);
+      }
     } finally {
       // fetchScheduleDetailData가 완전히 끝난 후에만 로딩 해제
       setLoading(false);
@@ -520,6 +528,35 @@ export default function ScheduleRederCustom (props : any) {
 
   // 일정표 -------------------------------------------------------------------------------------------------------------------
 
+  // Recoil에서 일정 데이터 가져오기 (useRecoil prop이 true일 때)
+  const [recoilScheduleInfoValue, setRecoilScheduleInfo] = useRecoilState(recoilScheduleInfo);
+  const useRecoil = props.useRecoil || false;
+  
+  // setScheduleList를 래핑하여 Recoil도 함께 업데이트
+  const setScheduleListWithRecoil = useCallback((updater: any) => {
+    if (useRecoil) {
+      if (typeof updater === 'function') {
+        setScheduleList((prev) => {
+          const next = updater(prev);
+          // Recoil도 업데이트
+          if (next && next.length > 0) {
+            setRecoilScheduleInfo(next[0]);
+          }
+          return next;
+        });
+      } else {
+        setScheduleList(updater);
+        // Recoil도 업데이트
+        if (updater && updater.length > 0) {
+          setRecoilScheduleInfo(updater[0]);
+        }
+      }
+    } else {
+      // Recoil을 사용하지 않으면 기존대로
+      setScheduleList(updater);
+    }
+  }, [useRecoil, setRecoilScheduleInfo]);
+
   const [scheduleList, setScheduleList] = useState<ModalScheduleDetailProps[]>( 
     [{
       airlineData: {
@@ -640,7 +677,7 @@ export default function ScheduleRederCustom (props : any) {
     };
     
     // 해당 DAY/LOCATION/LOCATIONDETAIL의 subLocationDetail 업데이트
-    setScheduleList(prev => {
+    (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
       const next = [...prev];
       const schedule = next[selectedScheduleIndex];
       const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -821,7 +858,7 @@ export default function ScheduleRederCustom (props : any) {
     const target = copy[selectedScheduleIndex];
     if (!target || !target.scheduleDetailData) return;
     target.scheduleDetailData.splice(idx + 1, 0, createEmptyDay());
-    setScheduleList(copy);
+    (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
   };
   const deleteDay = (idx:number) => {
     const copy = [...scheduleList];
@@ -829,7 +866,7 @@ export default function ScheduleRederCustom (props : any) {
     if (!target || !target.scheduleDetailData) return;
     if (target.scheduleDetailData.length > 1) {
       target.scheduleDetailData.splice(idx, 1);
-      setScheduleList(copy);
+      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
     } else {
       alert('마지막 1일은 삭제할 수 없습니다.');
     }
@@ -842,7 +879,7 @@ export default function ScheduleRederCustom (props : any) {
       const tmp = target.scheduleDetailData[idx];
       target.scheduleDetailData[idx] = target.scheduleDetailData[idx - 1];
       target.scheduleDetailData[idx - 1] = tmp;
-      setScheduleList(copy);
+      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
     } else {
       alert('맨 위 입니다.')
     }
@@ -855,7 +892,7 @@ export default function ScheduleRederCustom (props : any) {
       const tmp = target.scheduleDetailData[idx];
       target.scheduleDetailData[idx] = target.scheduleDetailData[idx + 1];
       target.scheduleDetailData[idx + 1] = tmp;
-      setScheduleList(copy);
+      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
     } else {
       alert('맨 아래 입니다.')
     }
@@ -1385,7 +1422,7 @@ export default function ScheduleRederCustom (props : any) {
       dataToFetch,
       scheduleData : scheduleList[selectedScheduleIndex],
       propsScheduleInfo: props.scheduleInfo,
-      setScheduleList,
+      setScheduleList: useRecoil ? setScheduleListWithRecoil : setScheduleList,
       setManageAirline:() => {},
       createEmptyDay,
       safeJsonParse,
@@ -1395,19 +1432,58 @@ export default function ScheduleRederCustom (props : any) {
   };
 
   useEffect(() => {
-    // scheduleInfo prop이 전달되면 해당 일정만 사용
-    if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
-      setScheduleList([props.scheduleInfo]);
-      setSelectedScheduleIndex(0);
-      setLoading(false);
-      // 선택된 일정 변경 알림
-      if (props.onSelectedScheduleChange) {
-        props.onSelectedScheduleChange(props.scheduleInfo, 0);
+    // Recoil을 사용하는 경우
+    if (useRecoil) {
+      if (recoilScheduleInfoValue && recoilScheduleInfoValue.scheduleDetailData) {
+        setScheduleList([recoilScheduleInfoValue]);
+        setSelectedScheduleIndex(0);
+        setLoading(false);
+        // 선택된 일정 변경 알림
+        if (props.onSelectedScheduleChange) {
+          props.onSelectedScheduleChange(recoilScheduleInfoValue, 0);
+        }
+      } else if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
+        // props.scheduleInfo가 있으면 Recoil에도 저장
+        setScheduleList([props.scheduleInfo]);
+        setRecoilScheduleInfo(props.scheduleInfo);
+        setSelectedScheduleIndex(0);
+        setLoading(false);
+        if (props.onSelectedScheduleChange) {
+          props.onSelectedScheduleChange(props.scheduleInfo, 0);
+        }
+      } else {
+        fetchScheduleData();
       }
     } else {
-    fetchScheduleData();
+      // 기존 로직: scheduleInfo prop이 전달되면 해당 일정만 사용
+      if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
+        setScheduleList([props.scheduleInfo]);
+        setSelectedScheduleIndex(0);
+        setLoading(false);
+        // 선택된 일정 변경 알림
+        if (props.onSelectedScheduleChange) {
+          props.onSelectedScheduleChange(props.scheduleInfo, 0);
+        }
+      } else {
+        fetchScheduleData();
+      }
     }
-  }, [props.scheduleInfo]);
+  }, [props.scheduleInfo, useRecoil, recoilScheduleInfoValue, setRecoilScheduleInfo]);
+
+  // scheduleList가 변경될 때마다 Recoil에 자동 저장 (useRecoil이 true일 때만)
+  // 이전 scheduleList를 추적하여 무한 루프 방지
+  const prevScheduleListRef = useRef<ModalScheduleDetailProps[]>(scheduleList);
+  useEffect(() => {
+    if (useRecoil && scheduleList && scheduleList.length > 0) {
+      // 이전 값과 비교하여 실제로 변경되었을 때만 저장
+      const prevSchedule = prevScheduleListRef.current;
+      const hasChanged = JSON.stringify(prevSchedule) !== JSON.stringify(scheduleList);
+      if (hasChanged) {
+        setRecoilScheduleInfo(scheduleList[0]);
+        prevScheduleListRef.current = scheduleList;
+      }
+    }
+  }, [scheduleList, useRecoil, setRecoilScheduleInfo]);
 
 
 
@@ -1545,7 +1621,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1577,7 +1653,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1611,7 +1687,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1645,7 +1721,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1681,7 +1757,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1715,7 +1791,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1751,7 +1827,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       }}
                                                       onClick={() => {
                                                         const iconKey = `${dayIndex}-${locationIndex}`;
-                                                        setScheduleList(prev => {
+                                                        (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                           const next = [...prev];
                                                           const schedule = next[selectedScheduleIndex];
                                                           const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1793,7 +1869,7 @@ export default function ScheduleRederCustom (props : any) {
                                                         value={loctionItem.location || ''}
                                                         placeholder="텍스트를 입력하세요"
                                                         onChange={e => {
-                                                          setScheduleList(prev => {
+                                                          (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                             const next = [...prev];
                                                             const schedule = next[selectedScheduleIndex];
                                                             const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -1848,7 +1924,7 @@ export default function ScheduleRederCustom (props : any) {
                                                   type="button"
                                                   onClick={() => {
                                                     // +: scheduleDetail 추가
-                                                    setScheduleList(prev => {
+                                                    (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                       const next = [...prev];
                                                       const schedule = { ...next[selectedScheduleIndex] };
                                                       const scheduleDetailData = [...schedule.scheduleDetailData];
@@ -1887,7 +1963,7 @@ export default function ScheduleRederCustom (props : any) {
                                                     if (dayItem.scheduleDetail.length > 1) {
                                                       const copy = [...scheduleList];
                                                       copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail.splice(locationIndex, 1);
-                                                      setScheduleList(copy);
+                                                      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                                     }
                                                   }}
                                                 >–</button>
@@ -1903,7 +1979,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       const temp = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
                                                       copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex] = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex - 1];
                                                       copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex - 1] = temp;
-                                                      setScheduleList(copy);
+                                                      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                                     } else if (dayIndex > 0) {
                                                       // 이전 day의 마지막 위치로 이동
                                                       const copy = [...scheduleList];
@@ -1916,7 +1992,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       // 이전 day의 마지막 위치에 추가
                                                       prevDay.scheduleDetail.push(currentItem);
                                                       
-                                                      setScheduleList(copy);
+                                                      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                                     } else {
                                                       alert('첫 번째 day의 첫 번째 위치입니다.')
                                                     }
@@ -1934,7 +2010,7 @@ export default function ScheduleRederCustom (props : any) {
                                                       const temp = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
                                                       copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex] = copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex + 1];
                                                       copy[selectedScheduleIndex].scheduleDetailData[dayIndex].scheduleDetail[locationIndex + 1] = temp;
-                                                      setScheduleList(copy);
+                                                      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                                     } else if (dayIndex < scheduleList[selectedScheduleIndex].scheduleDetailData.length - 1) {
                                                       // 다음 day의 첫 번째 위치로 이동
                                                       const copy = [...scheduleList];
@@ -1951,7 +2027,7 @@ export default function ScheduleRederCustom (props : any) {
                                                         nextDay.scheduleDetail.unshift(currentItem);
                                                       }
                                                       
-                                                      setScheduleList(copy);
+                                                      (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                                     } else {
                                                       alert('마지막 day의 마지막 위치입니다.')
                                                     }
@@ -1996,7 +2072,7 @@ export default function ScheduleRederCustom (props : any) {
                                               }}
                                               value={loctionItem.mainContent || ''}
                                               onChange={e => {
-                                                setScheduleList(prev => {
+                                                (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
                                                   const next = [...prev];
                                                   const schedule = next[selectedScheduleIndex];
                                                   const day = schedule?.scheduleDetailData?.[dayIndex];
@@ -2056,7 +2132,7 @@ export default function ScheduleRederCustom (props : any) {
                                           searchBusData={searchBusData}
                                           searchShipData={searchShipData}
                                           scheduleList={scheduleList}
-                                          setScheduleList={setScheduleList}
+                                          setScheduleList={useRecoil ? setScheduleListWithRecoil : setScheduleList}
                                           selectedScheduleIndex={selectedScheduleIndex}
                                           createEmptyDetail={createEmptyDetail}
                                           safeJsonParse={safeJsonParse}
@@ -2256,6 +2332,73 @@ export default function ScheduleRederCustom (props : any) {
                                                     <div className="schedule-schedule__text__wrapper">
                                                       <span>{locationDetailItem.subLocation ? locationDetailItem.subLocation.replace(/^\[|\]$/g, '') : ''}</span>
                                                       <div className="schedule-schedule__btns">
+                                                        <button 
+                                                          className="schedule-schedule__btn" 
+                                                          title="추가"
+                                                          style={{
+                                                            marginLeft:'4px',
+                                                            backgroundColor: '#fff',
+                                                            color: '#333',
+                                                            border: '1px solid #ddd',
+                                                            transition: 'all 0.2s',
+                                                            padding: '4px 8px',
+                                                            fontSize: '14px',
+                                                          }}
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
+                                                              const newList = [...prev];
+                                                              const schedule = newList[selectedScheduleIndex];
+                                                              if (schedule && schedule.scheduleDetailData[dayIndex]) {
+                                                                const locationItem = schedule.scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
+                                                                if (locationItem && locationItem.locationDetail) {
+                                                                  const newLocationDetail = {
+                                                                    subLocation: '',
+                                                                    subLocationContent: '',
+                                                                    subLocationDetail: [],
+                                                                    isUseContent: false
+                                                                  };
+                                                                  locationItem.locationDetail = [
+                                                                    ...locationItem.locationDetail.slice(0, locationDetailIndex + 1),
+                                                                    newLocationDetail,
+                                                                    ...locationItem.locationDetail.slice(locationDetailIndex + 1)
+                                                                  ];
+                                                                }
+                                                              }
+                                                              return newList;
+                                                            });
+                                                          }}
+                                                        >+</button>
+                                                        <button 
+                                                          className="schedule-schedule__btn" 
+                                                          title="삭제"
+                                                          style={{
+                                                            backgroundColor: '#fff',
+                                                            color: '#333',
+                                                            border: '1px solid #ddd',
+                                                            transition: 'all 0.2s',
+                                                            padding: '4px 8px',
+                                                            fontSize: '14px',
+                                                            opacity: loctionItem.locationDetail.length > 1 ? 1 : 0.5,
+                                                            cursor: loctionItem.locationDetail.length > 1 ? 'pointer' : 'not-allowed'
+                                                          }}
+                                                          disabled={loctionItem.locationDetail.length <= 1}
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (loctionItem.locationDetail.length <= 1) return;
+                                                            (useRecoil ? setScheduleListWithRecoil : setScheduleList)(prev => {
+                                                              const newList = [...prev];
+                                                              const schedule = newList[selectedScheduleIndex];
+                                                              if (schedule && schedule.scheduleDetailData[dayIndex]) {
+                                                                const locationItem = schedule.scheduleDetailData[dayIndex].scheduleDetail[locationIndex];
+                                                                if (locationItem && locationItem.locationDetail) {
+                                                                  locationItem.locationDetail = locationItem.locationDetail.filter((_: any, idx: number) => idx !== locationDetailIndex);
+                                                                }
+                                                              }
+                                                              return newList;
+                                                            });
+                                                          }}
+                                                        >-</button>
                                                         <button className="schedule-schedule__btn" title="변경"
                                                           style={{
                                                             backgroundColor: isSelected ? '#5fb7ef' : '#fff',
@@ -2362,7 +2505,7 @@ export default function ScheduleRederCustom (props : any) {
                                             if (copy[selectedScheduleIndex].scheduleDetailData && copy[selectedScheduleIndex].scheduleDetailData.length > 0) {
                                               copy[selectedScheduleIndex].scheduleDetailData[dayIndex].breakfast = e.target.value;
                                             }
-                                            setScheduleList(copy);
+                                            (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                           }}
                                         />
                                       ) : (
@@ -2383,7 +2526,7 @@ export default function ScheduleRederCustom (props : any) {
                                             if (copy[selectedScheduleIndex].scheduleDetailData && copy[selectedScheduleIndex].scheduleDetailData.length > 0) {
                                               copy[selectedScheduleIndex].scheduleDetailData[dayIndex].lunch = e.target.value;
                                             }
-                                            setScheduleList(copy);
+                                            (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                           }}
                                         />
                                       ) : (
@@ -2404,7 +2547,7 @@ export default function ScheduleRederCustom (props : any) {
                                             if (copy[selectedScheduleIndex].scheduleDetailData && copy[selectedScheduleIndex].scheduleDetailData.length > 0) {
                                               copy[selectedScheduleIndex].scheduleDetailData[dayIndex].dinner = e.target.value;
                                             }
-                                            setScheduleList(copy);
+                                            (useRecoil ? setScheduleListWithRecoil : setScheduleList)(copy);
                                           }}
                                         />
                                       ) : (
@@ -2432,9 +2575,6 @@ export default function ScheduleRederCustom (props : any) {
                                     <div className="schedule-additional__rating__wrapper">
                                       <RatingBoard ratingSize={16} rating={parseInt(dayItem.score) || 0} />
                                     </div>
-                                  </div>
-                                  <div className="schedule-additional__btn__wrapper schedule-schedule__btns">
-                                    <button className="schedule-schedule__btn" title="변경">변경</button>
                                   </div>
                                 </div>
                               </div>

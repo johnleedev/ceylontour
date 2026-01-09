@@ -4,13 +4,18 @@
   box-sizing: border-box;
   background-color: #fff;
   padding: 0 50px;
+  height: calc(100vh - 100px);
+  overflow: hidden;
 
 
   .rest-estimate-content {
+    max-width: 1920px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
     width: 100%;
+    height: 100%;
 
     @media (min-width: 1024px) {
       flex-direction: row;
@@ -102,6 +107,14 @@
   .rest-left-section {
     flex: 1;
     min-width: 0;
+    overflow-y: auto;
+    height: 100%;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
 
     .rest-estimate-header {
       margin-bottom: 32px;
@@ -126,6 +139,14 @@
 
   .rest-right-section {
     width: 100%;
+    overflow-y: auto;
+    height: 100%;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
 
     @media (min-width: 1024px) {
       width: 37.33%;

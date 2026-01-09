@@ -1,7 +1,7 @@
 import React from 'react';
 import './RestHotelCost.scss';
-import { IoIosArrowForward } from "react-icons/io";
-import { IoIosArrowBack } from "react-icons/io";
+import { IoIosArrowForward, IoIosArrowBack, IoIosArrowUp } from "react-icons/io";
+import { IoMdClose } from "react-icons/io";
 import { useNavigate, useLocation } from 'react-router-dom';
 import rectangle78 from '../../../lastimages/counselrest/hotel/detail/rectangle-78.png';
 import rectangle76 from '../../../lastimages/counselrest/hotel/detail/rectangle-76.png';
@@ -21,7 +21,7 @@ import scheduleImg4 from '../../../lastimages/counselrest/schedule/image-3.png';
 import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
-import { recoilSelectedHotelData, recoilCustomerInfoFormData, recoilExchangeRate } from '../../../../RecoilStore';
+import { recoilSelectedHotelData, recoilCustomerInfoFormData, recoilExchangeRate, recoilProductName, recoilScheduleInfo, recoilSelectedScheduleData } from '../../../../RecoilStore';
 
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -67,12 +67,17 @@ export default function RestHotelCost() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
-  
+  console.log(stateProps);
 
   
   const setSelectedHotelData = useSetRecoilState(recoilSelectedHotelData);
   const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
   const exchangeRate = useRecoilValue(recoilExchangeRate);
+  const savedProductName = useRecoilValue(recoilProductName);
+  const setSavedProductName = useSetRecoilState(recoilProductName);
+  const scheduleInfo = useRecoilValue(recoilScheduleInfo);
+  const setScheduleInfo = useSetRecoilState(recoilScheduleInfo);
+  const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
 
   const [hotelInfo, setHotelInfo] = React.useState<any | null>(null);
   const [imageAllView, setImageAllView] = React.useState<any[]>([]);
@@ -142,6 +147,8 @@ export default function RestHotelCost() {
   const [showScheduleBox, setShowScheduleBox] = React.useState<boolean>(false);
   const [showScheduleEdit, setShowScheduleEdit] = React.useState<boolean>(false);
   const [activeReservationTab, setActiveReservationTab] = React.useState<'reserve' | 'edit'>('reserve');
+  // 오른쪽 패널 토글
+  const [showRightPanel, setShowRightPanel] = React.useState<boolean>(false);
   // ScheduleRederBox에서 사용할 상품 ID (기간변경 시 업데이트)
   const [scheduleProductId, setScheduleProductId] = React.useState<string | null>(
     stateProps?.productInfo?.id ? String(stateProps.productInfo.id) : null
@@ -309,38 +316,70 @@ export default function RestHotelCost() {
         // stateProps에서 전달받은 selectedHotels 확인
         const initialSelectedHotels = stateProps?.selectedHotels || [];
         
-        const cards = (Array.isArray(sched) ? sched : []).map((s: any, idx: number) => {
-          const hotelSort = s.sort || s.hotelSort || '';
-          let hotelName = s.roomTypeName || hotelSort || '';
-          
-          // stateProps에서 전달받은 selectedHotels에서 해당 인덱스의 호텔명 가져오기
-          const selectedHotel = initialSelectedHotels.find((sh: { index: number; hotelSort: string; dayNight?: string; hotel: any | null }) => sh.index === idx);
-          if (selectedHotel?.hotel?.hotelNameKo) {
-            hotelName = selectedHotel.hotel.hotelNameKo;
-          }
-          
-          // 날짜 계산
-          let dayText = `${idx + 1}일차`; // 기본값
-          if (currentDate) {
-            dayText = formatDate(currentDate);
+        // selectedHotels가 있으면 그것을 기준으로 카드 생성, 없으면 productScheduleData 사용
+        let cards = [];
+        
+        if (initialSelectedHotels.length > 0) {
+          // selectedHotels를 기준으로 카드 생성
+          for (let idx = 0; idx < initialSelectedHotels.length; idx++) {
+            const selectedHotel = initialSelectedHotels[idx];
+            const s = sched[idx] || {};
             
-            // 다음 카드를 위한 날짜 계산 (현재 카드의 nights 일수 추가)
-            const nights = extractNightsNumber(s.dayNight || '');
-            if (nights > 0) {
-              const nextDate = new Date(currentDate);
-              nextDate.setDate(nextDate.getDate() + nights);
-              currentDate = nextDate;
+            const hotelSort = selectedHotel?.hotelSort || s.sort || s.hotelSort || '';
+            const hotelName = selectedHotel?.hotel?.hotelNameKo || s.roomTypeName || hotelSort || '';
+            const dayNight = selectedHotel?.dayNight || s.dayNight || '';
+            
+            // 날짜 계산
+            let dayText = `${idx + 1}일차`; // 기본값
+            if (currentDate) {
+              dayText = formatDate(currentDate);
+              
+              // 다음 카드를 위한 날짜 계산 (현재 카드의 nights 일수 추가)
+              const nights = extractNightsNumber(dayNight);
+              if (nights > 0) {
+                const nextDate = new Date(currentDate);
+                nextDate.setDate(nextDate.getDate() + nights);
+                currentDate = nextDate;
+              }
             }
+            
+            cards.push({
+              id: idx + 1,
+              day: dayText,
+              badge: hotelSort,
+              title: hotelName,
+              nights: dayNight,
+            });
           }
-          
-          return {
-            id: idx + 1,
-            day: dayText,
-            badge: hotelSort,
-            title: hotelName,
-            nights: s.dayNight || '',
-          };
-        });
+        } else {
+          // selectedHotels가 없으면 productScheduleData 사용
+          cards = (Array.isArray(sched) ? sched : []).map((s: any, idx: number) => {
+            const hotelSort = s.sort || s.hotelSort || '';
+            let hotelName = s.roomTypeName || hotelSort || '';
+            
+            // 날짜 계산
+            let dayText = `${idx + 1}일차`; // 기본값
+            if (currentDate) {
+              dayText = formatDate(currentDate);
+              
+              // 다음 카드를 위한 날짜 계산 (현재 카드의 nights 일수 추가)
+              const nights = extractNightsNumber(s.dayNight || '');
+              if (nights > 0) {
+                const nextDate = new Date(currentDate);
+                nextDate.setDate(nextDate.getDate() + nights);
+                currentDate = nextDate;
+              }
+            }
+            
+            return {
+              id: idx + 1,
+              day: dayText,
+              badge: hotelSort,
+              title: hotelName,
+              nights: s.dayNight || '',
+            };
+          });
+        }
         
         setScheduleCards(cards);
       } catch {
@@ -849,10 +888,28 @@ export default function RestHotelCost() {
     );
   }, [productInfo?.costType, minimumStayPrices, perDayPrices, finalPricePerPerson, guestCount]);
 
+  // scheduleCards와 selectedNights를 기반으로 상품명 생성 및 RecoilStore에 저장
+  const updateProductNameFromCards = React.useCallback((cards: any[], nights: { [key: number]: number }) => {
+    if (cards.length === 0) return;
+    
+    const nameParts = cards.map((card) => {
+      const nightsValue = nights[card.id] || extractNightsNumber(card.nights || '') || 1;
+      return `${card.title} ${nightsValue}박`;
+    });
+    
+    const newProductName = nameParts.join(' + ');
+    setSavedProductName(newProductName);
+  }, [setSavedProductName]);
+
   // productScheduleData를 파싱하여 호텔명 생성 (RestHotelDetail.tsx 참조)
   const getProductNameFromScheduleCallback = React.useCallback((): string => {
+    // RecoilStore에 저장된 상품명이 있으면 우선 사용
+    if (savedProductName) {
+      return savedProductName;
+    }
+    // 없으면 기존 로직 사용
     return getProductNameFromSchedule(productInfo, selectedHotels, hotelInfo, allHotels);
-  }, [productInfo, selectedHotels, hotelInfo, allHotels]);
+  }, [savedProductName, productInfo, selectedHotels, hotelInfo, allHotels]);
 
   // 상세일정 데이터 조회
   const fetchScheduleDetailList = React.useCallback(async () => {
@@ -888,6 +945,23 @@ export default function RestHotelCost() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelInfo?.city, stateProps?.city]);
+
+  // 일정 데이터를 Recoil에 저장
+  useEffect(() => {
+    if (showScheduleBox) {
+      const scheduleData = stateProps?.isFromMakeButton 
+        ? stateProps?.customScheduleInfo 
+        : undefined;
+      
+      if (scheduleData) {
+        setScheduleInfo(scheduleData);
+      } else {
+        // scheduleProductId가 있으면 나중에 ScheduleRederBox에서 로드될 데이터를 기다림
+        // 일단 null로 설정 (ScheduleRederBox에서 로드 후 업데이트)
+        setScheduleInfo(null);
+      }
+    }
+  }, [showScheduleBox, stateProps?.isFromMakeButton, stateProps?.customScheduleInfo, setScheduleInfo]);
 
   // 선택된 나라의 관련 여행상품(일정) 조회
   const fetchNationProducts = async () => {
@@ -1403,7 +1477,18 @@ export default function RestHotelCost() {
 
   return (
     <div className="RestHotelCost">
-      <div className="hotel-container with-right-panel">
+      {/* 오른쪽 패널 토글 버튼 */}
+      {!showRightPanel && (
+        <button
+          type="button"
+          className="right-panel-toggle-btn"
+          onClick={() => setShowRightPanel(true)}
+        >
+          <IoIosArrowBack />
+        </button>
+      )}
+
+      <div className={`hotel-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
         {/* 왼쪽 영역: 기존 내용 */}
         <div className="left-section">
           <div className="hotel-center-wrapper">
@@ -1460,21 +1545,38 @@ export default function RestHotelCost() {
             </div>
 
 
-
             {showScheduleBox ? (
               <div style={{ marginTop: '40px', position: 'relative' }}>
                 {showScheduleEdit ? (
                   <ScheduleRederCustom
-                    id={scheduleProductId}
+                    id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
                     productInfo={productInfo}
+                    scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
+                    useRecoil={true}
                   />
                 ) : (
                   <ScheduleRederBox
-                    id={scheduleProductId}
+                    id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
+                    scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
+                    useRecoil={true}
                   />
                 )}
                 <button 
                   onClick={() => {
+                    if (showScheduleEdit) {
+                      // 저장&일정보기: 편집한 일정 저장
+                      // Recoil에서 최신 일정 데이터 가져오기
+                      const latestScheduleInfo = scheduleInfo;
+                      if (latestScheduleInfo) {
+                        // Recoil에 저장된 일정 데이터 확인
+                        console.log('일정 저장:', latestScheduleInfo);
+                        // 필요시 서버에 저장하는 API 호출을 여기에 추가할 수 있습니다
+                        // 예: await saveScheduleToServer(latestScheduleInfo);
+                        alert('일정이 저장되었습니다.');
+                      } else {
+                        alert('저장할 일정 데이터가 없습니다.');
+                      }
+                    }
                     setShowScheduleEdit(!showScheduleEdit);
                   }}
                   style={{
@@ -1492,7 +1594,7 @@ export default function RestHotelCost() {
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  {showScheduleEdit ? '일정보기' : '일정수정하기'}
+                  {showScheduleEdit ? '저장&일정보기' : '일정수정하기'}
                 </button>
                 
               </div>
@@ -1717,8 +1819,51 @@ export default function RestHotelCost() {
                   </div>
 
                 </div>
+
+                <ScheduleRederBox
+                    id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
+                    scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
+                    useRecoil={true}
+                  />
               </>
             )}
+
+            {/* 왼쪽 패널 하단 버튼들 */}
+            <div className="left-panel-bottom-buttons">
+              <button
+                type="button"
+                className="bottom-btn bottom-btn-estimate"
+                onClick={() => {
+                  setShowRightPanel(true);
+                  setActiveReservationTab('reserve');
+                }}
+              >
+                견적보기
+              </button>
+              {/* 플로팅 Top 버튼 */}
+              <button
+                type="button"
+                className="floating-top-btn"
+                onClick={() => {
+                  const leftSection = document.querySelector('.RestHotelCost .left-section');
+                  if (leftSection) {
+                    leftSection.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+              >
+                <IoIosArrowUp />
+              </button>
+              <button
+                type="button"
+                className="bottom-btn bottom-btn-edit"
+                onClick={() => {
+                  setShowRightPanel(true);
+                  setActiveReservationTab('edit');
+                }}
+              >
+                수정
+              </button>
+            </div>
 
             <div style={{height: '100px'}}></div>
 
@@ -1726,8 +1871,18 @@ export default function RestHotelCost() {
         </div>
 
         {/* 오른쪽 영역: 선택한 스케줄(여행상품) 정보 및 비용 */}
-        <div className="right-section">
-          <div className="hotel-cost-component">
+        {showRightPanel && (
+          <div className="right-section">
+            {/* 닫기 버튼 */}
+            <button
+              type="button"
+              className="right-panel-close-btn"
+              onClick={() => setShowRightPanel(false)}
+            >
+              <IoMdClose />
+            </button>
+            
+            <div className="hotel-cost-component">
               {/* 제품 정보 헤더 */}
               <div className="cost-header">
                 <div className="cost-header-top">
@@ -1813,7 +1968,7 @@ export default function RestHotelCost() {
                 </div>
               </div>
 
-              {/* 예약하기 탭: 입력 폼 */}
+              {/* 예약하기 탭: 정보 표시 */}
               {activeReservationTab === 'reserve' ? (
                 <div style={{ marginTop: '20px' }}>
                   <div style={{
@@ -1828,7 +1983,7 @@ export default function RestHotelCost() {
                       fontWeight: 'bold',
                       color: '#333'
                     }}>
-                      예약 정보 입력
+                      예약 정보
                     </h3>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1841,22 +1996,22 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          성명 *
+                          성명
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.name}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="성명을 입력하세요"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {customerInfo.customer1Name || customerInfo.customer2Name || '-'}
+                        </div>
                       </div>
 
                       {/* 여행형태 */}
@@ -1868,22 +2023,32 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          여행형태 *
+                          여행형태
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.travelType}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, travelType: e.target.value }))}
-                          placeholder="여행형태를 입력하세요"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {customerInfo.theme && customerInfo.theme.length > 0
+                            ? customerInfo.theme.map((t: string) => {
+                                const themeMap: { [key: string]: string } = {
+                                  'honeymoon': '허니문',
+                                  'family': '가족여행',
+                                  'fit': 'FIT',
+                                  'corporate': '기업/워크샵'
+                                };
+                                return themeMap[t] || t;
+                              }).join(', ')
+                            : '-'}
+                        </div>
                       </div>
 
                       {/* 상품명 */}
@@ -1895,22 +2060,22 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          상품명 *
+                          상품명
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.productName}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, productName: e.target.value }))}
-                          placeholder="상품명을 입력하세요"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {savedProductName || '-'}
+                        </div>
                       </div>
 
                       {/* 여행기간 */}
@@ -1922,22 +2087,22 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          여행기간 *
+                          여행기간
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.travelPeriod}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, travelPeriod: e.target.value }))}
-                          placeholder="여행기간을 입력하세요 (예: 2024-01-01 ~ 2024-01-05)"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {customerInfo.travelPeriod || '-'}
+                        </div>
                       </div>
 
                       {/* 이용항공 */}
@@ -1949,22 +2114,24 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          이용항공 *
+                          이용항공
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.airline}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, airline: e.target.value }))}
-                          placeholder="이용항공을 입력하세요"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {customerInfo.flightStyle && customerInfo.flightStyle.length > 0
+                            ? customerInfo.flightStyle.join(', ')
+                            : '-'}
+                        </div>
                       </div>
 
                       {/* 이용호텔 */}
@@ -1976,22 +2143,27 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          이용호텔 *
+                          이용호텔
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.hotel}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, hotel: e.target.value }))}
-                          placeholder="이용호텔을 입력하세요"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {selectedHotels && selectedHotels.length > 0
+                            ? selectedHotels
+                                .filter((sh: any) => sh.hotel && sh.hotel.hotelNameKo)
+                                .map((sh: any) => sh.hotel.hotelNameKo)
+                                .join(', ') || '-'
+                            : '-'}
+                        </div>
                       </div>
 
                       {/* 1인상품가 */}
@@ -2003,22 +2175,24 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          1인상품가 *
+                          1인상품가
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.pricePerPerson}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, pricePerPerson: e.target.value }))}
-                          placeholder="1인상품가를 입력하세요 (예: 1,500,000)"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {finalPricePerPerson && finalPricePerPerson > 0
+                            ? `${finalPricePerPerson.toLocaleString()}원`
+                            : '-'}
+                        </div>
                       </div>
 
                       {/* 총요금 */}
@@ -2030,22 +2204,24 @@ export default function RestHotelCost() {
                           fontWeight: 500,
                           color: '#333'
                         }}>
-                          총요금 *
+                          총요금
                         </label>
-                        <input
-                          type="text"
-                          value={reservationForm.totalPrice}
-                          onChange={(e) => setReservationForm(prev => ({ ...prev, totalPrice: e.target.value }))}
-                          placeholder="총요금을 입력하세요 (예: 3,000,000)"
-                          style={{
-                            width: '100%',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #ddd',
-                            fontSize: '14px',
-                            boxSizing: 'border-box'
-                          }}
-                        />
+                        <div style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#fff',
+                          border: '1px solid #e0e0e0',
+                          fontSize: '14px',
+                          color: '#333',
+                          minHeight: '40px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          {finalTotalPrice && finalTotalPrice > 0
+                            ? `${finalTotalPrice.toLocaleString()}원`
+                            : '-'}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2192,10 +2368,15 @@ export default function RestHotelCost() {
                                   onClick={() => {
                                     const currentNights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
                                     if (currentNights > 1) {
-                                      setSelectedNights(prev => ({
-                                        ...prev,
-                                        [card.id]: currentNights - 1
-                                      }));
+                                      setSelectedNights(prev => {
+                                        const newNights = {
+                                          ...prev,
+                                          [card.id]: currentNights - 1
+                                        };
+                                        // 박수 변경 시 상품명 업데이트
+                                        updateProductNameFromCards(scheduleCards, newNights);
+                                        return newNights;
+                                      });
                                     }
                                   }}
                                 >-</button>
@@ -2208,10 +2389,15 @@ export default function RestHotelCost() {
                                   className="nights-btn"
                                   onClick={() => {
                                     const currentNights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
-                                    setSelectedNights(prev => ({
-                                      ...prev,
-                                      [card.id]: currentNights + 1
-                                    }));
+                                    setSelectedNights(prev => {
+                                      const newNights = {
+                                        ...prev,
+                                        [card.id]: currentNights + 1
+                                      };
+                                      // 박수 변경 시 상품명 업데이트
+                                      updateProductNameFromCards(scheduleCards, newNights);
+                                      return newNights;
+                                    });
                                   }}
                                 >+</button>
                               )}
@@ -2548,50 +2734,82 @@ export default function RestHotelCost() {
               )}
             </div>
             <div className="cost-schedule-btn-wrapper">
-              <button className="cost-schedule-btn"
-                onClick={() => {
-                  setSelectedHotelData({
-                    hotelInfo: hotelInfo,
-                    productInfo: productInfo,
-                    scheduleCards: scheduleCards,
-                    periodText: periodText,
-                    includeItems: includeItems,
-                    excludeItems: excludeItems,
-                  selectedRoomTypes: selectedRoomTypes,
-                  selectedNights: selectedNights,
-                  travelPeriod: travelPeriodDisplay,
-                  reserveDate: customerInfo.reserveDate,
-                  locationInfo: {
-                    address: hotelInfo?.hotelAddress || '',
-                    details: [
-                      '누사두아 게이티드 지역의 고급 라인업',
-                      '공항 → 20~25분',
-                      '발리 컬렉션 쇼핑센터 → 차량 5분',
-                      '주변: 무려프 비치클럽·워터블로우·BTDC 산책로'
-                    ]
-                  },
-                  benefitItems: benefitItems.map((item) => ({
-                    title: item.title,
-                    text: item.text,
-                    image: item.image
-                  })),
-                    priceInfo: {
-                      pricePerPerson: pricePerPerson,
-                      totalPrice: pricePerPerson * guestCount,
-                      guestCount: guestCount
-                    }
-                  });
-                  alert('호텔이 담겼습니다.');
-                }}
-              >호텔담기</button>
-              <button className="cost-schedule-btn"
+              <button className="cost-schedule-btn cost-schedule-btn-prev"
                 onClick={() => {
                   navigate('/counsel/rest/schedule', { state : productInfo})
                   window.scrollTo(0, 0);
                 }}
-              >일정보기</button>
+              >이전</button>
+              <button className="cost-schedule-btn cost-schedule-btn-next"
+                onClick={() => {
+                  // productInfo에 상품명 업데이트 (savedProductName이 있으면 사용)
+                  const updatedProductInfo = savedProductName 
+                    ? { ...productInfo, productName: savedProductName }
+                    : productInfo;
+
+                  // 호텔 데이터를 Recoil에 저장
+                  setSelectedHotelData({
+                    hotelInfo: hotelInfo,
+                    productInfo: updatedProductInfo,
+                    scheduleCards: scheduleCards,
+                    selectedHotels: selectedHotels,
+                    periodText: periodText,
+                    includeItems: includeItems,
+                    excludeItems: excludeItems,
+                    selectedRoomTypes: selectedRoomTypes,
+                    selectedNights: selectedNights,
+                    travelPeriod: travelPeriodDisplay,
+                    reserveDate: customerInfo.reserveDate,
+                    locationInfo: {
+                      address: hotelInfo?.hotelAddress || '',
+                      details: [
+                        '누사두아 게이티드 지역의 고급 라인업',
+                        '공항 → 20~25분',
+                        '발리 컬렉션 쇼핑센터 → 차량 5분',
+                        '주변: 무려프 비치클럽·워터블로우·BTDC 산책로'
+                      ]
+                    },
+                    benefitItems: benefitItems.map((item) => ({
+                      title: item.title,
+                      text: item.text,
+                      image: item.image
+                    })),
+                    priceInfo: {
+                      pricePerPerson: finalPricePerPerson || 0,
+                      totalPrice: finalTotalPrice || 0,
+                      guestCount: guestCount
+                    }
+                  });
+
+                  // 일정 데이터를 Recoil에 저장
+                  const scheduleDataToSave = stateProps?.isFromMakeButton 
+                    ? stateProps?.customScheduleInfo 
+                    : scheduleInfo;
+                  
+                  if (scheduleDataToSave) {
+                    setSelectedScheduleData({
+                      productInfo: updatedProductInfo,
+                      selectedSchedule: scheduleDataToSave,
+                      totalPrice: finalTotalPrice || 0,
+                      guestCount: guestCount
+                    });
+                  } else {
+                    // scheduleInfo가 없으면 상품 ID만 저장
+                    setSelectedScheduleData({
+                      productInfo: updatedProductInfo,
+                      selectedSchedule: null,
+                      totalPrice: finalTotalPrice || 0,
+                      guestCount: guestCount
+                    });
+                  }
+
+                  navigate('/counsel/rest/estimate', { state: updatedProductInfo });
+                  window.scrollTo(0, 0);
+                }}
+              >견적보기</button>
             </div>
-        </div>
+          </div>
+        )}
         
       </div>
       
@@ -2823,6 +3041,10 @@ export default function RestHotelCost() {
                       onClick={async () => {
                         // 선택한 상품 기준으로 호텔/스케줄/요금 정보를 현재 페이지에서 갱신
                         const selectedHotels = await getSelectedHotelsFromSchedule(product);
+
+                        // 상품명을 RecoilStore에 저장
+                        const productNameFromModal = getProductNameFromScheduleForModal(product);
+                        setSavedProductName(productNameFromModal);
 
                         // 상품 정보 갱신
                         setProductInfo(product);
