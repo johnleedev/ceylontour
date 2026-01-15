@@ -83,6 +83,94 @@ router.get('/gettourschedulepart/:id', (req, res) => {
   });
 });
 
+// 도시 ID 배열로 스케줄 가져오기 (장바구니 도시 기준)
+router.post('/gettourschedulesbycities', (req, res) => {
+  const cityIds = req.body.cityIds; // 도시 ID 배열
+  
+  if (!cityIds || !Array.isArray(cityIds) || cityIds.length === 0) {
+    return res.status(400).json({ error: 'cityIds 배열이 필요합니다.' });
+  }
+  
+  // 도시 ID로 도시 정보 가져오기
+  const cityIdPlaceholders = cityIds.map(() => '?').join(',');
+  
+  dbpdTour.query(`
+    SELECT id, cityKo, nation
+    FROM tourNation
+    WHERE id IN (${cityIdPlaceholders})
+  `, cityIds, function(error, cities) {
+    if (error) {
+      console.error('SQL Error:', error);
+      return res.status(500).json({ error: 'Database error', details: error.message });
+    }
+    
+    if (!cities || cities.length === 0) {
+      return res.send([]);
+    }
+    
+    // 도시 이름 목록 추출
+    const cityNames = cities.map(city => city.cityKo).filter(Boolean);
+    
+    // productScheduleData에 해당 도시들이 포함된 스케줄 찾기
+    dbpdTour.query(`
+      SELECT h.*,
+             (SELECT i.inputImage 
+              FROM tourNation i 
+              WHERE JSON_UNQUOTE(JSON_EXTRACT(h.tourNation, '$[0]')) = i.nationKo
+              LIMIT 1) as inputImage
+      FROM tourSchedule h
+      WHERE h.productScheduleData IS NOT NULL
+        AND h.productScheduleData != ''
+    `, function(error, allSchedules) {
+      if (error) {
+        console.error('SQL Error:', error);
+        return res.status(500).json({ error: 'Database error', details: error.message });
+      }
+      
+      // productScheduleData를 파싱해서 도시 이름이 포함된 스케줄만 필터링
+      const filteredSchedules = allSchedules.filter(schedule => {
+        try {
+          if (!schedule.productScheduleData) return false;
+          
+          const parsed = JSON.parse(schedule.productScheduleData);
+          if (!Array.isArray(parsed)) return false;
+          
+          const scheduleCities = parsed.map((item) => {
+            if (typeof item === 'string') {
+              return item;
+            } else if (item && typeof item === 'object') {
+              return item.city || item.cityKo || '';
+            }
+            return '';
+          }).filter(Boolean);
+          
+          // 장바구니의 모든 도시가 스케줄에 포함되어 있는지 확인
+          return cityNames.every(cityName => 
+            scheduleCities.some(scheduleCity => 
+              scheduleCity.includes(cityName) || cityName.includes(scheduleCity)
+            )
+          );
+        } catch (e) {
+          // 파싱 실패 시 productName에서 확인
+          if (schedule.productName) {
+            return cityNames.some(cityName => 
+              schedule.productName.includes(cityName)
+            );
+          }
+          return false;
+        }
+      });
+      
+      if (filteredSchedules.length > 0) {
+        res.send(filteredSchedules);
+      } else {
+        res.send([]);
+      }
+      res.end();
+    });
+  });
+});
+
 // // 특정 호텔 해당 지역 스케줄 가져오기
 // router.get('/getschedules/:nation/:city', (req, res) => {
   

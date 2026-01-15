@@ -464,14 +464,6 @@ export default function EuropeTripPage () {
                  
                   <button
                     type="button"
-                    className={`tab-button text-wrapper-tab-product ${activeTab === 'product' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('product')}
-                  >
-                    여행상품
-                  </button>
-                 
-                  <button
-                    type="button"
                     className={`tab-button text-wrapper-tab-entry ${activeTab === 'entry' ? 'active' : ''}`}
                     onClick={() => setActiveTab('entry')}
                   >
@@ -479,6 +471,13 @@ export default function EuropeTripPage () {
                   </button>
                 </div>
                 <div className="tab-right">
+                  <button
+                    type="button"
+                    className="tab-map-button"
+                    onClick={() => setActiveTab('product')}
+                  >
+                    여행상품
+                  </button>
                   <button
                     type="button"
                     className="tab-map-button"
@@ -494,7 +493,7 @@ export default function EuropeTripPage () {
               {activeTab === 'info' && (
                 <>
                   <div className="detail-main-image">
-                   <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/nationcustomimage/${selectedNationData.noticeImage}`} />;
+                   <img className="image-detail-main" alt={selectedNation || 'Image'} src={`${AdminURL}/images/nationcustomimage/${selectedNationData.noticeImage}`} />
                   </div>
                   <div className="detail-info-grid">
                     {(() => {

@@ -18,73 +18,52 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
   // 여행기간 날짜 상태 및 모달 상태
   const [travelDateStart, setTravelDateStart] = useState<Date | null>(null);
   const [travelDateEnd, setTravelDateEnd] = useState<Date | null>(null);
-  const [showDateModal, setShowDateModal] = useState(false);
 
-  // travelPeriod를 파싱하여 날짜 설정
+  // travelPeriodStart와 travelPeriodEnd를 파싱하여 날짜 설정
   useEffect(() => {
-    if (formData.travelPeriod) {
-      const travelPeriod = formData.travelPeriod.trim();
-      
-      // "YYYY-MM-DD ~ YYYY-MM-DD" 형식인 경우
-      if (travelPeriod.includes('~')) {
-        const parts = travelPeriod.split('~').map(part => part.trim());
-        if (parts.length === 2) {
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (dateRegex.test(parts[0]) && dateRegex.test(parts[1])) {
-            const startDate = new Date(parts[0]);
-            const endDate = new Date(parts[1]);
-            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-              setTravelDateStart(startDate);
-              setTravelDateEnd(endDate);
-            }
-          }
-        }
-      } else {
-        // 단일 날짜인 경우
+    if (formData.travelPeriodStart) {
+      try {
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (dateRegex.test(travelPeriod)) {
-          const date = new Date(travelPeriod);
-          if (!isNaN(date.getTime())) {
-            setTravelDateStart(date);
-            setTravelDateEnd(date);
-          }
+        if (dateRegex.test(formData.travelPeriodStart.trim())) {
+          setTravelDateStart(new Date(formData.travelPeriodStart.trim()));
         }
+      } catch {
+        setTravelDateStart(null);
       }
-    }
-  }, [formData.travelPeriod]);
-
-  // 날짜 변경 핸들러 (ModalDateInput에서 호출)
-  const handleDateChange = (startDateStr: string, endDateStr: string) => {
-    if (startDateStr && endDateStr) {
-      if (startDateStr === endDateStr) {
-        setFormData(prev => ({
-          ...prev,
-          travelPeriod: startDateStr
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          travelPeriod: `${startDateStr} ~ ${endDateStr}`
-        }));
-      }
-      setTravelDateStart(new Date(startDateStr));
-      setTravelDateEnd(new Date(endDateStr));
-    } else if (startDateStr) {
-      setFormData(prev => ({
-        ...prev,
-        travelPeriod: startDateStr
-      }));
-      setTravelDateStart(new Date(startDateStr));
-      setTravelDateEnd(null);
     } else {
-      setFormData(prev => ({
-        ...prev,
-        travelPeriod: ''
-      }));
       setTravelDateStart(null);
+    }
+
+    if (formData.travelPeriodEnd) {
+      try {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(formData.travelPeriodEnd.trim())) {
+          setTravelDateEnd(new Date(formData.travelPeriodEnd.trim()));
+        }
+      } catch {
+        setTravelDateEnd(null);
+      }
+    } else {
       setTravelDateEnd(null);
     }
-  };
+  }, [formData.travelPeriodStart, formData.travelPeriodEnd]);
+
+  // weddingDate가 없으면 오늘 날짜로 초기화
+  useEffect(() => {
+    if (!formData.weddingDate) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      
+      setFormData(prev => ({
+        ...prev,
+        weddingDate: todayStr
+      }));
+    }
+  }, [formData.weddingDate, setFormData]);
+
 
   const handleThemeChange = (theme: string) => {
     setFormData(prev => ({
@@ -145,6 +124,36 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
       ...prev,
       [name]: type === 'checkbox' ? checked : processedValue
     }));
+  };
+
+  const handleReset = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    setFormData({
+      theme: ['honeymoon'],
+      customer1Name: '',
+      customer1Phone: '',
+      customer2Name: '',
+      customer2Phone: '',
+      destination: '',
+      weddingDate: '',
+      travelPeriodStart: '',
+      travelPeriodEnd: '',
+      reserveDate: todayStr,
+      travelStyle: [],
+      flightStyle: [],
+      accommodationPreference: [],
+      wantsAndNeeds: '',
+      selfTicketing: false,
+      beforeTicketing: false
+    });
+
+    setTravelDateStart(null);
+    setTravelDateEnd(null);
   };
 
   return (
@@ -307,41 +316,21 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
                   setSelectStartDate={(dateStr: string) => {
                     if (dateStr) {
                       setTravelDateStart(new Date(dateStr));
-                      // travelPeriod 업데이트
-                      const currentEnd = travelDateEnd ? 
-                        travelDateEnd.toISOString().split('T')[0] : 
-                        dateStr;
-                      if (dateStr === currentEnd) {
-                        setFormData(prev => ({
-                          ...prev,
-                          travelPeriod: dateStr
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          travelPeriod: `${dateStr} ~ ${currentEnd}`
-                        }));
-                      }
+                      // travelPeriodStart 업데이트
+                      setFormData(prev => ({
+                        ...prev,
+                        travelPeriodStart: dateStr
+                      }));
                     }
                   }}
                   setSelectEndDate={(dateStr: string) => {
                     if (dateStr) {
                       setTravelDateEnd(new Date(dateStr));
-                      // travelPeriod 업데이트
-                      const currentStart = travelDateStart ? 
-                        travelDateStart.toISOString().split('T')[0] : 
-                        dateStr;
-                      if (currentStart === dateStr) {
-                        setFormData(prev => ({
-                          ...prev,
-                          travelPeriod: dateStr
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          travelPeriod: `${currentStart} ~ ${dateStr}`
-                        }));
-                      }
+                      // travelPeriodEnd 업데이트
+                      setFormData(prev => ({
+                        ...prev,
+                        travelPeriodEnd: dateStr
+                      }));
                     }
                   }}
                 />
@@ -467,6 +456,9 @@ export default function CustomerInfoModal({ onStart, onClose }: CustomerInfoModa
           <div className='modal-footer'>
             <button className='shortcut-button' onClick={onClose}>
               닫기
+            </button>
+            <button className='shortcut-button' onClick={handleReset}>
+              초기화
             </button>
             <button className='start-button' onClick={onStart}>
               저장후 계속

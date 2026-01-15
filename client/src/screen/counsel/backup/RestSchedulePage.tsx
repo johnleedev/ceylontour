@@ -4,8 +4,8 @@ import { IoIosArrowForward } from "react-icons/io";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate, useLocation } from 'react-router-dom';
-import RatingBoard from '../../../common/RatingBoard';
-import ScheduleRederBox from '../../../common/ScheduleRederBox';
+// import RatingBoard from '../../../common/RatingBoard';
+import ScheduleRederBox from '../../common/ScheduleRederBox';
 import nationnotice from '../../../lastimages/counselrest/schedule/nationnotice.png';
 import rectangle675 from '../../../lastimages/counselrest/hotel/detail/rectangle-675.png';
 import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle-676.png';
@@ -16,8 +16,8 @@ import scheduleImg3 from '../../../lastimages/counselrest/schedule/image-2.png';
 import scheduleImg4 from '../../../lastimages/counselrest/schedule/image-3.png';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { recoilSelectedScheduleData } from '../../../../RecoilStore';
-import ScheduleRederCustom from '../../../common/ScheduleRederCustom';
+import { recoilSelectedScheduleData } from '../../../RecoilStore';
+import ScheduleRederCustom from '../../common/ScheduleRederCustom';
 
 export default function RestSchedulePage() {
 

@@ -36,30 +36,33 @@ export const DateBoxDouble : React.FC<DateBoxDoubleProps> = ({dateStart, dateEnd
   }, [dateStart, dateEnd]);
 
   const handleSelectDateChange = ( event : any) => {
-
     const [start, end] = event;
     setStartDate(start); // 시작 날짜 설정
     setEndDate(end); // 종료 날짜 설정
    
-    if (end) {
+    // 시작 날짜가 선택되었을 때
+    if (start) {
       const startcopy = start.toLocaleDateString('ko-KR');
-      const endcopy = end.toLocaleDateString('ko-KR');
-  
       const startsplitCopy = startcopy.slice(0, -1).split('. ');
       const startsplitCopy2Copy = startsplitCopy[1] < 10 ? `0${startsplitCopy[1]}` : startsplitCopy[1];
       const startsplitCopy3Copy = startsplitCopy[2] < 10 ? `0${startsplitCopy[2]}` : startsplitCopy[2];
       const reformmedStartText = `${startsplitCopy[0]}-${startsplitCopy2Copy}-${startsplitCopy3Copy}`;
+      setSelectStartDate(reformmedStartText);
+    } else {
+      setSelectStartDate('');
+    }
 
+    // 종료 날짜가 선택되었을 때
+    if (end) {
+      const endcopy = end.toLocaleDateString('ko-KR');
       const endsplitCopy = endcopy.slice(0, -1).split('. ');
       const endsplitCopy2Copy = endsplitCopy[1] < 10 ? `0${endsplitCopy[1]}` : endsplitCopy[1];
       const endsplitCopy3Copy = endsplitCopy[2] < 10 ? `0${endsplitCopy[2]}` : endsplitCopy[2];
       const reformmedEndText = `${endsplitCopy[0]}-${endsplitCopy2Copy}-${endsplitCopy3Copy}`;
-
-      setSelectStartDate(reformmedStartText);
       setSelectEndDate(reformmedEndText);
-
+    } else {
+      setSelectEndDate('');
     }
-
   }
   return (
     <div className='calendarbox calendarDouble' style={{marginLeft: marginLeft ? `${marginLeft}px` : '5px'}}>

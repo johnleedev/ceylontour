@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './RestHotelScheduleEdit.scss';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { recoilHotelCart, HotelCartItem, recoilProductName } from '../../../../RecoilStore';
+import { recoilHotelCart, HotelCartItem, recoilProductName } from '../../../RecoilStore';
 import { IoIosArrowBack } from 'react-icons/io';
-import { AdminURL } from '../../../../MainURL';
+import { AdminURL } from '../../../MainURL';
 import axios from 'axios';
 
 export default function RestHotelScheduleEdit() {

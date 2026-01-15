@@ -65,9 +65,10 @@ const CounselTourHeader: React.FC = () => {
   const formatTravelInfo = () => {
     const customer1 = customerInfoFormData.customer1Name;
     const customer2 = customerInfoFormData.customer2Name;
-    const travelPeriod = customerInfoFormData.travelPeriod;
+    const travelPeriodStart = customerInfoFormData.travelPeriodStart;
+    const travelPeriodEnd = customerInfoFormData.travelPeriodEnd;
     
-    if (!customer1 && !customer2 && !travelPeriod) {
+    if (!customer1 && !customer2 && !travelPeriodStart && !travelPeriodEnd) {
       return '';
     }
     
@@ -82,8 +83,8 @@ const CounselTourHeader: React.FC = () => {
     }
     
     // 여행기간이 있으면 고객명과 함께 표시, 없으면 고객명만 표시
-    if (travelPeriod) {
-      return customerText ? `${customerText}, ${travelPeriod}` : travelPeriod;
+    if (travelPeriodStart && travelPeriodEnd) {
+      return customerText ? `${customerText}, ${travelPeriodStart} ~ ${travelPeriodEnd}` : `${travelPeriodStart} ~ ${travelPeriodEnd}`;
     }
     
     return customerText;
@@ -146,17 +147,18 @@ const CounselTourHeader: React.FC = () => {
             <img src={logoImage} alt="CEYLON TOUR" />
           </div>
 
-          {/* 여행 정보 표시 */}
-          {(customerInfoFormData.customer1Name || customerInfoFormData.customer2Name || customerInfoFormData.travelPeriod) && (
-            <div className="header-travel-info">
-              {formatTravelInfo()}
-            </div>
-          )}
+          <div className="header-info-wrapper">
+            {/* 여행 정보 표시 */}
+            {(customerInfoFormData.customer1Name || customerInfoFormData.customer2Name || customerInfoFormData.travelPeriodStart || customerInfoFormData.travelPeriodEnd) && (
+              <div className="header-travel-info">
+                {formatTravelInfo()}
+              </div>
+            )}
 
-          {/* 도시 장바구니 표시 */}
-          {cityCart.length > 0 && (() => {
-            return (
-              <div className="header-city-cart" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
+            {/* 도시 장바구니 표시 */}
+            {cityCart.length > 0 && (() => {
+              return (
+                <div className="header-city-cart" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '0' }}>
                 <span style={{ fontSize: '14px', color: '#333' }}>
                   담은 도시: {cityCart.length}개
                 </span>
@@ -273,6 +275,7 @@ const CounselTourHeader: React.FC = () => {
               </div>
             );
           })()}
+          </div>
         </div>
 
         {/* 네비게이션 메뉴 */}

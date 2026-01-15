@@ -50,6 +50,10 @@ interface FetchScheduleDetailParams {
   safeJsonParse: <T,>(jsonString: any, defaultValue: T) => T;
   repairJsonString: (value: string) => string;
   isAddOrRevise: 'add' | 'revise';
+  // 일차별 호텔 정보 (상품명에서 파싱한 호텔 정보)
+  hotelInfoPerDay?: Array<{ dayIndex: number; hotelName: string; hotelLevel: string }>;
+  // 일차별 도시 정보 (유럽 일정용)
+  cityInfoPerDay?: Array<{ dayIndex: number; cityName: string }>;
 }
 
 // ModalAddSchedule.tsx 의 fetchScheduleDetailData 로직을 외부에서 재사용하기 위한 함수
@@ -64,6 +68,8 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
     safeJsonParse,
     repairJsonString,
     isAddOrRevise,
+    hotelInfoPerDay,
+    cityInfoPerDay,
   } = params;
 
 
@@ -1039,12 +1045,21 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
           });
         }
 
+        // hotelInfoPerDay 또는 cityInfoPerDay에서 해당 일차의 정보 가져오기
+        // hotelInfoPerDay가 있으면 호텔 정보를 우선 사용, 없으면 cityInfoPerDay 사용
+        const hotelInfoForDay = hotelInfoPerDay?.find(info => info.dayIndex === dayIdx);
+        const cityInfoForDay = cityInfoPerDay?.find(info => info.dayIndex === dayIdx);
+        
+        // 호텔 정보가 있으면 호텔명을, 없으면 도시 정보 사용
+        const displayName = hotelInfoForDay?.hotelName || cityInfoForDay?.cityName || day.hotel || '';
+        const displayScore = hotelInfoForDay?.hotelLevel || (cityInfoForDay ? '' : day.score || '');
+
         const result = {
           breakfast: day.breakfast || '',
           lunch: day.lunch || '',
           dinner: day.dinner || '',
-          hotel: day.hotel || '',
-          score: day.score || '',
+          hotel: displayName,
+          score: displayScore,
           scheduleDetail: details
         };
         // console.log(`✅ [DAY ${dayIdx + 1}] 최종 결과:`, details.map((d: any, i: number) => ({

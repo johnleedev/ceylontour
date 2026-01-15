@@ -5,8 +5,8 @@ import RestTripPage from "./1trip/RestTripPage";
 import RestHotelPage from "./2hotel/RestHotelPage";
 import RestHotelDetail from "./2hotel/RestHotelDetail";
 import RestHotelCost from "./3schedule/RestHotelCost";
-import RestSchedulePage from "./3schedule/RestSchedulePage";
-import RestHotelScheduleEdit from "./3schedule/RestHotelScheduleEdit";
+// import RestSchedulePage from "./3schedule/RestSchedulePage";
+// import RestHotelScheduleEdit from "./3schedule/RestHotelScheduleEdit";
 import RestFlightPage from "./4flight/RestFlightPage";
 import RestEstimatePage from "./5estimate/RestEstimatePage";
 
@@ -21,8 +21,8 @@ export default function RestRouter() {
         <Route path="/hotel" element={<RestHotelPage />}/>
         <Route path="/hoteldetail" element={<RestHotelDetail />}/>
         <Route path="/hotelcost" element={<RestHotelCost />}/>
-        <Route path="/schedule" element={<RestSchedulePage />}/>
-        <Route path="/hotelscheduleedit" element={<RestHotelScheduleEdit />}/>
+        {/* <Route path="/schedule" element={<RestSchedulePage />}/>
+        <Route path="/hotelscheduleedit" element={<RestHotelScheduleEdit />}/> */}
         <Route path="/flight" element={<RestFlightPage />}/>
         <Route path="/estimate" element={<RestEstimatePage />}/>
 

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AdminURL } from '../../../../MainURL';
 import { useSetRecoilState } from 'recoil';
 import { recoilCityCart, CityCartItem } from '../../../../RecoilStore';
+import axios from 'axios';
 
 export default function EuropeCityPage() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ export default function EuropeCityPage() {
   const [cities, setCities] = useState<any[]>([]);
   const [originalCities, setOriginalCities] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [nations, setNations] = useState<any[]>([]);
+  const [selectedNation, setSelectedNation] = useState<string>('');
 
   const addToCart = (city: any) => {
     setCityCart((prevCart) => {
@@ -70,6 +73,38 @@ export default function EuropeCityPage() {
     });
   };
 
+  // 국가 리스트 가져오기
+  useEffect(() => {
+    const fetchNations = async () => {
+      try {
+        const locationType = '유럽';
+        const response = await axios.get(`${AdminURL}/ceylontour/getnationlisttour/${locationType}`);
+        if (response.data && Array.isArray(response.data)) {
+          const nationList = response.data
+            .filter((nation: any) => nation.isView === 'true')
+            .map((nation: any) => ({
+              id: nation.id,
+              name: nation.nationKo || '',
+              rawData: nation
+            }));
+          setNations(nationList);
+          
+          // 현재 도시 데이터의 국가를 기본 선택으로 설정
+          if (cityData && cityData.length > 0 && cityData[0].nation) {
+            const currentNation = nationList.find((n: any) => n.name === cityData[0].nation);
+            if (currentNation) {
+              setSelectedNation(currentNation.name);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('국가 리스트를 가져오는 중 오류 발생:', error);
+      }
+    };
+    
+    fetchNations();
+  }, []);
+
   useEffect(() => {
     if (cityData) {
       // 국가 데이터에서 도시 리스트 추출
@@ -104,8 +139,54 @@ export default function EuropeCityPage() {
     <div className="div-wrapper-screen">
       <div className="hotel-header">
         <div className="hotel-header-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 className="hotel-header-title">{cityData[0].nation || '유럽 도시 선택'}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', justifyContent: 'space-between' }}>
+            <h1 className="hotel-header-title">{cityData && cityData.length > 0 ? cityData[0].nation : '유럽 도시 선택'}</h1>
+            {nations.length > 0 && (
+              <select
+                value={selectedNation}
+                onChange={async (e) => {
+                  const selectedNationName = e.target.value;
+                  setSelectedNation(selectedNationName);
+                  
+                  // 선택된 국가의 도시 데이터 가져오기
+                  try {
+                    const selectedNationData = nations.find((n: any) => n.name === selectedNationName);
+                    if (selectedNationData && selectedNationData.rawData && selectedNationData.rawData.cities) {
+                      // 해당 국가의 도시 데이터로 페이지 전환
+                      navigate(`/counsel/europe/city`, {
+                        state: {
+                          cityData: selectedNationData.rawData.cities,
+                          nationData: selectedNationData.rawData,
+                          nationName: selectedNationName
+                        },
+                        replace: true
+                      });
+                      window.scrollTo(0, 0);
+                    }
+                  } catch (error) {
+                    console.error('도시 데이터를 가져오는 중 오류 발생:', error);
+                  }
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  cursor: 'pointer',
+                  minWidth: '150px',
+                  outline: 'none'
+                }}
+              >
+                <option value="">국가 선택</option>
+                {nations.map((nation: any) => (
+                  <option key={nation.id} value={nation.name}>
+                    {nation.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <p className="hotel-header-subtitle">
             방문하고 싶은 도시를 선택해주세요

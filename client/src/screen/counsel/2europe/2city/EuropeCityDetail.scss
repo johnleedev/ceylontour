@@ -210,6 +210,8 @@
       .city-tabs-container {
         margin-bottom: 50px;
         border-bottom: 1px solid #e0e0e0;
+        max-width: 1100px;
+        margin: 0 auto;
 
         .city-tabs-left {
           display: flex;
@@ -311,6 +313,43 @@
     width: 100%;
     max-width: 1100px;
     margin: 0 auto;
+
+    // Breadcrumb Navigation
+    .breadcrumb-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #666;
+
+      .breadcrumb-item {
+        cursor: pointer;
+        color: #333;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: #26a9fb;
+          text-decoration: underline;
+        }
+
+        &.breadcrumb-item-current {
+          cursor: default;
+          color: #666;
+          font-weight: 500;
+
+          &:hover {
+            color: #666;
+            text-decoration: none;
+          }
+        }
+      }
+
+      .breadcrumb-separator {
+        color: #999;
+        user-select: none;
+      }
+    }
   }
 
   // 도시 소개 섹션

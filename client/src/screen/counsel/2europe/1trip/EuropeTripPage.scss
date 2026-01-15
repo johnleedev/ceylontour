@@ -126,7 +126,7 @@
           }
 
           .nation-info {
-            padding: 12px;
+            padding: 12px 0;
             flex: 1;
             min-height: 90px;
             background: #ffffff;
@@ -139,9 +139,8 @@
 
             .nation-name {
               color: #333333;
-              
-              font-size: 20px;
-              font-weight: 500;
+              font-size: 23px;
+              font-weight: 600;
               text-align: left;
               margin: 0 0 8px 0;
               transition: color 0.3s ease;
@@ -187,15 +186,8 @@
     // 오른쪽 영역: 상세 정보
     .right-section {
       flex: 0 0 40%;
-      overflow-y: auto;
       background-color: #fff;
       height: 100%;
-      -ms-overflow-style: none; /* IE and Edge */
-      scrollbar-width: none; /* Firefox */
-      
-      &::-webkit-scrollbar {
-        display: none; /* Chrome, Safari, Opera */
-      }
 
       .detail-section {
         width: 100%;
@@ -208,8 +200,14 @@
           border-radius: 12px;
           box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.15);
           padding: 30px;
-          position: sticky;
-          top: 20px;
+          height: 100%;
+          overflow-y: auto;
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+          
+          &::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+          }
 
           .detail-header {
             margin-bottom: 20px;

@@ -202,37 +202,40 @@ export const createHandleHotelSelect = (
     const card = scheduleCards.find(c => c.id === selectedCardIndex);
     if (!card) return;
     
+    // 카드의 배열 인덱스 찾기 (순서 변경 후에도 올바른 인덱스 사용)
+    const cardArrayIndex = scheduleCards.findIndex(c => c.id === selectedCardIndex);
+    if (cardArrayIndex < 0) return;
+    
     // selectedHotels 업데이트
-    // card.id - 1을 인덱스로 사용하되, productScheduleData의 순서와 일치하도록 처리
-    const targetIndex = card.id - 1;
+    // scheduleCards와 selectedHotels는 같은 배열 인덱스를 사용합니다
+    // 즉, scheduleCards[cardArrayIndex]는 selectedHotels[cardArrayIndex]에 해당합니다
     const updatedSelectedHotels = [...selectedHotels];
     
-    // 인덱스로 먼저 찾기
-    let hotelIndex = updatedSelectedHotels.findIndex(sh => sh.index === targetIndex);
+    // 배열 인덱스로 직접 접근 (가장 확실한 방법)
+    const hotelIndex = cardArrayIndex;
     
-    // 인덱스로 찾지 못하면 hotelSort와 badge로 찾기
-    if (hotelIndex < 0) {
-      hotelIndex = updatedSelectedHotels.findIndex(sh => sh.hotelSort === card.badge);
+    // 만약 배열 인덱스가 범위를 벗어나거나, 해당 위치에 항목이 없으면 새로 추가
+    if (hotelIndex >= updatedSelectedHotels.length || !updatedSelectedHotels[hotelIndex]) {
+      // 배열을 확장하여 새 항목 추가
+      while (updatedSelectedHotels.length <= hotelIndex) {
+        updatedSelectedHotels.push({
+          index: updatedSelectedHotels.length,
+          hotelSort: card.badge || '',
+          hotel: null
+        });
+      }
     }
     
-    if (hotelIndex >= 0) {
-      // 기존 항목 업데이트
-      updatedSelectedHotels[hotelIndex] = {
-        ...updatedSelectedHotels[hotelIndex],
-        hotel: selectedHotel,
-        index: targetIndex // 인덱스도 업데이트
-      };
-    } else {
-      // 새로운 항목 추가
-      updatedSelectedHotels.push({
-        index: targetIndex,
-        hotelSort: card.badge,
-        dayNight: card.nights?.replace('박', ''),
-        hotel: selectedHotel
-      });
-    }
+    // 기존 항목 업데이트 (배열 인덱스가 항상 유효하므로 else는 필요 없음)
+    updatedSelectedHotels[hotelIndex] = {
+      ...updatedSelectedHotels[hotelIndex],
+      hotel: selectedHotel,
+      hotelSort: card.badge || updatedSelectedHotels[hotelIndex].hotelSort,
+      dayNight: card.nights?.replace('박', '') || updatedSelectedHotels[hotelIndex].dayNight,
+      index: hotelIndex // 인덱스도 업데이트 (배열 인덱스와 일치)
+    };
     
-    // 인덱스 순서대로 정렬
+    // 인덱스 순서대로 정렬 (이미 순서대로 되어 있지만 안전을 위해)
     updatedSelectedHotels.sort((a, b) => a.index - b.index);
     
     // scheduleCards 즉시 업데이트 (호텔명 변경)

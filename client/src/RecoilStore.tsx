@@ -37,7 +37,8 @@ export interface CustomerInfoFormData {
   customer2Phone: string;
   destination: string;
   weddingDate: string;
-  travelPeriod: string;
+  travelPeriodStart: string;
+  travelPeriodEnd: string;
   reserveDate: string;
   travelStyle: string[];
   flightStyle: string[];
@@ -56,8 +57,15 @@ export const recoilCustomerInfoFormData = atom<CustomerInfoFormData>({
     customer2Name: '',
     customer2Phone: '',
     destination: '',
-    weddingDate: '',
-    travelPeriod: '',
+    weddingDate: (() => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    })(),
+    travelPeriodStart: '',
+    travelPeriodEnd: '',
     reserveDate: (() => {
       const today = new Date();
       const year = today.getFullYear();

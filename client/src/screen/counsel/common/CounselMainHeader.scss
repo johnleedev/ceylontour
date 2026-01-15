@@ -25,6 +25,13 @@
       flex-shrink: 0;
     }
 
+    .header-info-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
     .header-logo {
       cursor: pointer;
       flex-shrink: 0;
@@ -69,7 +76,7 @@
     }
 
     .header-travel-info {
-      margin: 0 40px;
+      margin: 0;
       font-size: 15px;
       color: #333;
       font-weight: 400;

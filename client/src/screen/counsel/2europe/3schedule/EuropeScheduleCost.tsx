@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import './EuropeScheduleCost.scss';
-import '../3hotel/EuropeHotelPage.scss';
+import '../../backup/3hotel/EuropeHotelPage.scss';
 import '../2city/EuropeCityDetail.scss';
 import { AdminURL } from '../../../../MainURL';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImLocation } from 'react-icons/im';
-import { IoIosArrowBack, IoIosArrowUp } from "react-icons/io";
+import { IoIosArrowBack, IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
@@ -99,6 +99,14 @@ export default function EuropeScheduleCost() {
   // 우측 패널 탭 상태
   const [rightPanelTopTab, setRightPanelTopTab] = React.useState<'예약하기' | '수정하기'>('예약하기');
   const [rightPanelSubTab, setRightPanelSubTab] = React.useState<'여행도시' | '여행루트' | '일정' | '예약정보' | '호텔'>('예약정보');
+  
+  // 플로팅 박스용 상태
+  const [expandedLocationDays, setExpandedLocationDays] = React.useState<Set<number>>(new Set());
+  
+  // 도시 편집 관련 상태
+  const [isEditingPeriod, setIsEditingPeriod] = React.useState<boolean>(false);
+  const [cityCards, setCityCards] = React.useState<Array<{ id: number; city: string; travelPeriod: string; nights: number }>>([]);
+  const [selectedNights, setSelectedNights] = React.useState<{ [key: number]: number }>({});
 
   // 호텔 페이지 관련 상태 - Recoil에서 가져오기
   const [hotelLoading, setHotelLoading] = useState<boolean>(true);
@@ -246,6 +254,73 @@ export default function EuropeScheduleCost() {
     return [];
   }, [cityCart, stateProps?.productScheduleData, stateProps?.selectedCities, stateProps?.cityCart]);
 
+  // productScheduleData에서 일차별 도시 정보 추출
+  const cityInfoPerDay = React.useMemo(() => {
+    // stateProps에서 cityInfoPerDay가 있으면 사용
+    if (stateProps?.cityInfoPerDay) {
+      return stateProps.cityInfoPerDay;
+    }
+    
+    // productScheduleData에서 cityInfoPerDay 생성
+    if (stateProps?.productScheduleData) {
+      try {
+        const scheduleData = JSON.parse(stateProps.productScheduleData);
+        if (Array.isArray(scheduleData)) {
+          const cityInfo: Array<{ dayIndex: number; cityName: string }> = [];
+          let currentDay = 0;
+          scheduleData.forEach((item: any) => {
+            const city = item.city || '';
+            const dayNight = item.dayNight || '';
+            const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
+            for (let i = 0; i < nights; i++) {
+              cityInfo.push({
+                dayIndex: currentDay,
+                cityName: city
+              });
+              currentDay++;
+            }
+          });
+          return cityInfo;
+        }
+      } catch (e) {
+        console.error('productScheduleData 파싱 오류:', e);
+      }
+    }
+    return undefined;
+  }, [stateProps?.cityInfoPerDay, stateProps?.productScheduleData]);
+
+  // 각 도시별 첫 번째 호텔 정보를 일차별로 추출 (유럽 일정용)
+  const hotelInfoPerDay = React.useMemo(() => {
+    if (!cityInfoPerDay || !hotels || hotels.length === 0) {
+      return undefined;
+    }
+
+    const hotelInfo: Array<{ dayIndex: number; hotelName: string; hotelLevel: string }> = [];
+    
+    // 각 도시별 첫 번째 호텔을 찾기 위한 맵 생성
+    const firstHotelByCity = new Map<string, any>();
+    hotels.forEach((hotel: any) => {
+      const city = hotel.city || hotel._cityFromSchedule || '';
+      if (city && !firstHotelByCity.has(city)) {
+        firstHotelByCity.set(city, hotel);
+      }
+    });
+
+    // cityInfoPerDay를 기반으로 각 일차별 호텔 정보 생성
+    cityInfoPerDay.forEach((cityInfo: { dayIndex: number; cityName: string }) => {
+      const firstHotel = firstHotelByCity.get(cityInfo.cityName);
+      if (firstHotel) {
+        hotelInfo.push({
+          dayIndex: cityInfo.dayIndex,
+          hotelName: firstHotel.hotelNameKo || '',
+          hotelLevel: firstHotel.hotelLevel || ''
+        });
+      }
+    });
+
+    return hotelInfo.length > 0 ? hotelInfo : undefined;
+  }, [cityInfoPerDay, hotels]);
+
   // productScheduleData에서 도시 정보 (도시명, 여행기간, 박수) 추출
   const citiesWithInfo = React.useMemo(() => {
     if (!stateProps?.productScheduleData) return [];
@@ -255,21 +330,10 @@ export default function EuropeScheduleCost() {
 
       // 시작 날짜 계산
       let startDate: Date | null = null;
-      if (customerInfo.travelPeriod) {
-        const travelPeriod = customerInfo.travelPeriod.trim();
-        if (travelPeriod.includes('~')) {
-          const parts = travelPeriod.split('~').map(part => part.trim());
-          if (parts.length === 2) {
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (dateRegex.test(parts[0])) {
-              startDate = new Date(parts[0]);
-            }
-          }
-        } else {
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (dateRegex.test(travelPeriod)) {
-            startDate = new Date(travelPeriod);
-          }
+      if (customerInfo.travelPeriodStart) {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+          startDate = new Date(customerInfo.travelPeriodStart.trim());
         }
       }
       
@@ -279,7 +343,7 @@ export default function EuropeScheduleCost() {
 
       let currentDate = new Date(startDate);
 
-      return scheduleData.map((item: any) => {
+      return scheduleData.map((item: any, index: number) => {
         const city = item.city || '';
         const dayNight = item.dayNight || '';
         const nights = dayNight ? parseInt(dayNight.replace(/[^0-9]/g, ''), 10) || 0 : 0;
@@ -303,6 +367,7 @@ export default function EuropeScheduleCost() {
         currentDate = new Date(departureDate);
         
         return {
+          id: index + 1,
           city,
           travelPeriod,
           nights
@@ -312,7 +377,154 @@ export default function EuropeScheduleCost() {
       console.error('productScheduleData 파싱 오류:', e);
       return [];
     }
-  }, [stateProps?.productScheduleData, customerInfo.travelPeriod]);
+  }, [stateProps?.productScheduleData, customerInfo.travelPeriodStart]);
+
+  // cityCards 초기화 (citiesWithInfo가 변경될 때)
+  useEffect(() => {
+    if (citiesWithInfo.length > 0 && cityCards.length === 0) {
+      setCityCards(citiesWithInfo.map((item, index) => ({
+        id: item.id || index + 1,
+        city: item.city,
+        travelPeriod: item.travelPeriod,
+        nights: item.nights
+      })));
+      
+      // selectedNights 초기화
+      const initialNights: { [key: number]: number } = {};
+      citiesWithInfo.forEach((item, index) => {
+        const cardId = item.id || index + 1;
+        initialNights[cardId] = item.nights;
+      });
+      setSelectedNights(initialNights);
+    }
+  }, [citiesWithInfo]);
+
+  // 박수 추출 헬퍼 함수
+  const extractNightsNumber = (nightsStr: string | number): number => {
+    if (typeof nightsStr === 'number') return nightsStr;
+    if (!nightsStr) return 0;
+    const match = nightsStr.toString().match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
+  // 상품명 업데이트 함수
+  const updateProductNameFromCards = React.useCallback((cards: any[], nights: { [key: number]: number }) => {
+    if (cards.length === 0) return;
+    
+    const nameParts = cards.map((card) => {
+      const nightsValue = nights[card.id] || card.nights || 1;
+      return `${card.city} ${nightsValue}박`;
+    });
+    
+    const newProductName = nameParts.join(' + ');
+    setSavedProductName(newProductName);
+  }, [setSavedProductName]);
+
+  // 카드 순서 변경 함수 (위로 이동)
+  const handleMoveCardUp = React.useCallback((cardId: number) => {
+    const cardIndex = cityCards.findIndex(c => c.id === cardId);
+    if (cardIndex <= 0) return;
+
+    const updatedCards = [...cityCards];
+    [updatedCards[cardIndex - 1], updatedCards[cardIndex]] = [updatedCards[cardIndex], updatedCards[cardIndex - 1]];
+    setCityCards(updatedCards);
+    updateProductNameFromCards(updatedCards, selectedNights);
+  }, [cityCards, selectedNights, updateProductNameFromCards]);
+
+  // 카드 순서 변경 함수 (아래로 이동)
+  const handleMoveCardDown = React.useCallback((cardId: number) => {
+    const cardIndex = cityCards.findIndex(c => c.id === cardId);
+    if (cardIndex < 0 || cardIndex >= cityCards.length - 1) return;
+
+    const updatedCards = [...cityCards];
+    [updatedCards[cardIndex], updatedCards[cardIndex + 1]] = [updatedCards[cardIndex + 1], updatedCards[cardIndex]];
+    setCityCards(updatedCards);
+    updateProductNameFromCards(updatedCards, selectedNights);
+  }, [cityCards, selectedNights, updateProductNameFromCards]);
+
+  // 도시 카드 삭제 함수
+  const handleDeleteCard = React.useCallback((cardId: number) => {
+    if (cityCards.length <= 1) {
+      alert('최소 1개의 도시는 유지해야 합니다.');
+      return;
+    }
+
+    const cardIndex = cityCards.findIndex(c => c.id === cardId);
+    if (cardIndex < 0) return;
+
+    const updatedCards = cityCards.filter(c => c.id !== cardId);
+    setCityCards(updatedCards);
+    
+    // selectedNights에서도 제거
+    setSelectedNights(prev => {
+      const newNights = { ...prev };
+      delete newNights[cardId];
+      return newNights;
+    });
+    
+    updateProductNameFromCards(updatedCards, selectedNights);
+  }, [cityCards, selectedNights, updateProductNameFromCards]);
+
+  // 도시 추가 함수
+  const handleAddCity = React.useCallback(() => {
+    if (cityCards.length === 0) return;
+
+    const lastCard = cityCards[cityCards.length - 1];
+    const lastCardNights = selectedNights[lastCard.id] || lastCard.nights || 1;
+    
+    // 마지막 카드의 날짜 계산
+    let startDate: Date | null = null;
+    if (customerInfo.travelPeriodStart) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+        startDate = new Date(customerInfo.travelPeriodStart.trim());
+      }
+    }
+    
+    if (!startDate) {
+      startDate = new Date();
+    }
+
+    // 마지막 카드의 출발일 계산
+    let currentDate = new Date(startDate);
+    cityCards.forEach((card, index) => {
+      const nights = selectedNights[card.id] || card.nights || 1;
+      if (index < cityCards.length - 1) {
+        currentDate.setDate(currentDate.getDate() + nights);
+      } else {
+        currentDate.setDate(currentDate.getDate() + nights);
+      }
+    });
+
+    const arrivalDate = new Date(currentDate);
+    const departureDate = new Date(currentDate);
+    departureDate.setDate(departureDate.getDate() + 1);
+
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const newCard = {
+      id: Math.max(...cityCards.map(c => c.id), 0) + 1,
+      city: '도시 선택 필요',
+      travelPeriod: `${formatDate(arrivalDate)} ~ ${formatDate(departureDate)}`,
+      nights: 1
+    };
+
+    const updatedCards = [...cityCards, newCard];
+    setCityCards(updatedCards);
+    
+    // selectedNights에 새 카드 추가
+    setSelectedNights(prev => ({
+      ...prev,
+      [newCard.id]: 1
+    }));
+    
+    updateProductNameFromCards(updatedCards, { ...selectedNights, [newCard.id]: 1 });
+  }, [cityCards, selectedNights, customerInfo.travelPeriodStart, updateProductNameFromCards]);
 
   // 각 도시 정보 가져오기
   const fetchCityInfo = async (cityName: string) => {
@@ -527,6 +739,80 @@ export default function EuropeScheduleCost() {
     }
   };
 
+  // 플로팅 박스용 헬퍼 함수들
+  const createEmptyDetail = () => ({
+    id: 0,
+    sort: '',
+    st: '',
+    locationIcon: '',
+    location: '',
+    isUseMainContent: false,
+    mainContent: '',
+    isViewLocation: true,
+    locationDetail: [{ subLocation: '', subLocationContent: '', subLocationDetail: [], isUseContent: false }],
+    airlineData: null
+  });
+
+  const createEmptyDay = () => ({
+    breakfast: '',
+    lunch: '',
+    dinner: '',
+    hotel: '',
+    score: '',
+    scheduleDetail: [createEmptyDetail()]
+  });
+
+  // 일정표 추가, 삭제, 이동 함수 (Recoil 상태 수정)
+  const addDay = (idx: number) => {
+    if (!scheduleInfo || !scheduleInfo.scheduleDetailData) return;
+    const newScheduleInfo = { ...scheduleInfo };
+    const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
+    newScheduleDetailData.splice(idx + 1, 0, createEmptyDay());
+    newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+    setScheduleInfo(newScheduleInfo);
+  };
+
+  const deleteDay = (idx: number) => {
+    if (!scheduleInfo || !scheduleInfo.scheduleDetailData) return;
+    if (scheduleInfo.scheduleDetailData.length > 1) {
+      const newScheduleInfo = { ...scheduleInfo };
+      const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
+      newScheduleDetailData.splice(idx, 1);
+      newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+      setScheduleInfo(newScheduleInfo);
+    } else {
+      alert('마지막 1일은 삭제할 수 없습니다.');
+    }
+  };
+
+  const moveDayUp = (idx: number) => {
+    if (idx > 0 && scheduleInfo && scheduleInfo.scheduleDetailData) {
+      const newScheduleInfo = { ...scheduleInfo };
+      const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
+      const tmp = newScheduleDetailData[idx];
+      newScheduleDetailData[idx] = newScheduleDetailData[idx - 1];
+      newScheduleDetailData[idx - 1] = tmp;
+      newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+      setScheduleInfo(newScheduleInfo);
+    } else {
+      alert('맨 위 입니다.');
+    }
+  };
+
+  const moveDayDown = (idx: number) => {
+    if (scheduleInfo && scheduleInfo.scheduleDetailData && idx < scheduleInfo.scheduleDetailData.length - 1) {
+      const newScheduleInfo = { ...scheduleInfo };
+      const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
+      const tmp = newScheduleDetailData[idx];
+      newScheduleDetailData[idx] = newScheduleDetailData[idx + 1];
+      newScheduleDetailData[idx + 1] = tmp;
+      newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+      setScheduleInfo(newScheduleInfo);
+    } else {
+      alert('맨 아래 입니다.');
+    }
+  };
+
   // 도시간 이동 교통 정보 렌더링 함수
   const renderTransportSection = () => {
     if (!stateProps?.productScheduleData) {
@@ -548,21 +834,10 @@ export default function EuropeScheduleCost() {
 
       // 시작 날짜 계산
       let startDate: Date | null = null;
-      if (customerInfo.travelPeriod) {
-        const travelPeriod = customerInfo.travelPeriod.trim();
-        if (travelPeriod.includes('~')) {
-          const parts = travelPeriod.split('~').map(part => part.trim());
-          if (parts.length === 2) {
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (dateRegex.test(parts[0])) {
-              startDate = new Date(parts[0]);
-            }
-          }
-        } else {
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (dateRegex.test(travelPeriod)) {
-            startDate = new Date(travelPeriod);
-          }
+      if (customerInfo.travelPeriodStart) {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+          startDate = new Date(customerInfo.travelPeriodStart.trim());
         }
       }
       
@@ -691,10 +966,8 @@ export default function EuropeScheduleCost() {
   const productScheduleData = stateProps?.productScheduleData;
   const parsedProductScheduleData = productScheduleData ? JSON.parse(productScheduleData) : [];
 
-  // 일정에 포함된 도시별로 호텔 리스트를 API에서 가져오기
+  // 일정에 포함된 도시별로 호텔 리스트를 API에서 가져오기 (일정표에서 호텔 정보 표시를 위해 항상 가져옴)
   useEffect(() => {
-    if (mainTab !== '호텔') return;
-
     const fetchHotelsByNation = async () => {
       try {
         if (!parsedProductScheduleData || parsedProductScheduleData.length === 0) {
@@ -756,7 +1029,7 @@ export default function EuropeScheduleCost() {
     };
 
     fetchHotelsByNation();
-  }, [mainTab, productScheduleData, activeHotelCity]);
+  }, [productScheduleData, activeHotelCity]);
 
   // 도시/호텔 목록 변경 시, 현재 도시의 첫 번째 호텔을 자동 선택
   useEffect(() => {
@@ -1170,12 +1443,18 @@ export default function EuropeScheduleCost() {
                     productInfo={stateProps?.productInfo || stateProps}
                     scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
                     useRecoil={true}
+                    cityInfoPerDay={cityInfoPerDay}
+                    hotelInfoPerDay={hotelInfoPerDay}
+                    hideFloatingBox={false}
                   />
                 ) : (
                   <ScheduleRederBox 
                     id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
                     scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
                     useRecoil={true}
+                    productInfo={stateProps?.productInfo || stateProps}
+                    cityInfoPerDay={cityInfoPerDay}
+                    hotelInfoPerDay={hotelInfoPerDay}
                     onSelectedScheduleChange={(schedule, index) => {
                       setSelectedSchedule(schedule);
                       setSelectedScheduleIndex(index);
@@ -1254,6 +1533,96 @@ export default function EuropeScheduleCost() {
                               </div>
                             ))}
                           </div>
+
+                          {/* 각 도시별 현재 선택한 호텔 표시 */}
+                          {hotelInfoPerDay && hotelInfoPerDay.length > 0 && hotelCities.length > 0 && (
+                            <div style={{
+                              marginBottom: '20px',
+                              padding: '16px',
+                              backgroundColor: '#f9f9f9',
+                              borderRadius: '8px',
+                              border: '1px solid #e0e0e0'
+                            }}>
+                              <div style={{
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: '#333',
+                                marginBottom: '12px'
+                              }}>
+                                현재 선택한 호텔
+                              </div>
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px'
+                              }}>
+                                {hotelCities.map((city) => {
+                                  // 해당 도시의 첫 번째 호텔 찾기
+                                  const cityHotels = hotels.filter((hotel: any) =>
+                                    (hotel.city === city || hotel._cityFromSchedule === city)
+                                  );
+                                  const firstHotel = cityHotels.length > 0 ? cityHotels[0] : null;
+                                  
+                                  // hotelInfoPerDay에서 해당 도시의 호텔 정보 찾기
+                                  const cityInfo = cityInfoPerDay?.find((info: { dayIndex: number; cityName: string }) => info.cityName === city);
+                                  const hotelInfo = cityInfo ? hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => info.dayIndex === cityInfo.dayIndex) : null;
+                                  
+                                  const displayHotel = hotelInfo ? 
+                                    hotels.find((h: any) => h.hotelNameKo === hotelInfo.hotelName) : 
+                                    firstHotel;
+
+                                  if (!displayHotel) return null;
+
+                                  return (
+                                    <div key={city} style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      padding: '12px',
+                                      backgroundColor: '#fff',
+                                      borderRadius: '6px',
+                                      border: '1px solid #e0e0e0'
+                                    }}>
+                                      <div style={{
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        color: '#666',
+                                        minWidth: '60px'
+                                      }}>
+                                        {city}
+                                      </div>
+                                      <div style={{
+                                        flex: 1,
+                                        fontSize: '14px',
+                                        fontWeight: 500,
+                                        color: '#333'
+                                      }}>
+                                        {displayHotel.hotelNameKo || '-'}
+                                      </div>
+                                      {displayHotel.hotelLevel && (
+                                        <div style={{
+                                          display: 'flex',
+                                          gap: '2px'
+                                        }}>
+                                          {Array.from({ length: parseInt(displayHotel.hotelLevel) || 0 }).map((_, i) => (
+                                            <img
+                                              key={i}
+                                              src={StarIcon}
+                                              alt="Star"
+                                              style={{
+                                                width: '14px',
+                                                height: '14px'
+                                              }}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
 
                           {/* 호텔 카드 리스트 */}
                           <div className="hotel-cards-list">
@@ -1561,15 +1930,11 @@ export default function EuropeScheduleCost() {
               </div>
 
               {/* 하위 탭: 예약정보 / 여행도시 / 여행루트 / 일정 / 호텔 */}
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                marginBottom: '20px'
-              }}>
+              <div className="city-tab-buttons-left" style={{ marginBottom: '20px' }}>
                 {['예약정보','여행도시', '여행루트', '호텔', '일정' ].map((tab) => (
                   <button
                     key={tab}
-                    type="button"
+                    className={`city-tab-btn-left ${rightPanelSubTab === tab ? 'active' : ''}`}
                     onClick={() => {
                       setRightPanelSubTab(tab as typeof rightPanelSubTab);
                       // 우측 패널 탭이 변경되면 좌측 패널 탭도 업데이트 (예약정보, 호텔 제외)
@@ -1584,18 +1949,6 @@ export default function EuropeScheduleCost() {
                       }
                       // 예약정보 탭은 좌측 패널 탭 변경 없음
                     }}
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '4px',
-                      backgroundColor: rightPanelSubTab === tab ? '#333' : '#fff',
-                      color: rightPanelSubTab === tab ? '#fff' : '#666',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      transition: 'all 0.2s'
-                    }}
                   >
                     {tab}
                   </button>
@@ -1607,7 +1960,7 @@ export default function EuropeScheduleCost() {
                 <div style={{ marginTop: '20px' }}>
                   <div className="selected-cities-section" style={{ marginBottom: '30px' }}>
                     <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 700 }}>여행 도시</h3>
-                    {citiesWithInfo.length === 0 ? (
+                    {(cityCards.length > 0 ? cityCards : citiesWithInfo).length === 0 ? (
                       <div className="no-selected-cities" style={{
                         padding: '40px',
                         textAlign: 'center',
@@ -1617,21 +1970,258 @@ export default function EuropeScheduleCost() {
                       }}>여행 도시가 없습니다</div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {citiesWithInfo.map((cityInfo, index) => (
-                          <div key={index} className="selected-city-card" style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '20px',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '10px',
-                            boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)'
-                          }}>
-                            <span className="city-name" style={{ fontSize: '14px', fontWeight: 500 }}>{cityInfo.city}</span>
-                            <span className="travel-period" style={{ fontSize: '14px', color: '#666', flex: 1, textAlign: 'center' }}>{cityInfo.travelPeriod}</span>
-                            <span className="nights" style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{cityInfo.nights}박</span>
-                          </div>
-                        ))}
+                        {(cityCards.length > 0 ? cityCards : citiesWithInfo).map((cityInfo, index) => {
+                          const cardId = cityInfo.id || index + 1;
+                          const currentNights = cityCards.length > 0 
+                            ? (selectedNights[cardId] || cityInfo.nights || 1)
+                            : cityInfo.nights;
+                          
+                          return (
+                            <div key={cardId} className="selected-city-card" style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '20px',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '10px',
+                              boxShadow: '0 0 10px 0 rgba(0, 0, 0, 0.1)',
+                              position: 'relative'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                                <span className="city-name" style={{ fontSize: '14px', fontWeight: 500, minWidth: '100px' }}>{cityInfo.city}</span>
+                                <span className="travel-period" style={{ fontSize: '14px', color: '#666', flex: 1, textAlign: 'center' }}>{cityInfo.travelPeriod}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  {isEditingPeriod && (
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        if (currentNights > 1) {
+                                          const newNights = currentNights - 1;
+                                          setSelectedNights(prev => {
+                                            const newNightsState = { ...prev, [cardId]: newNights };
+                                            updateProductNameFromCards(cityCards, newNightsState);
+                                            return newNightsState;
+                                          });
+                                        }
+                                      }}
+                                      disabled={currentNights <= 1}
+                                      style={{
+                                        padding: '4px 8px',
+                                        border: '1px solid #ddd',
+                                        backgroundColor: currentNights <= 1 ? '#f5f5f5' : '#fff',
+                                        color: currentNights <= 1 ? '#ccc' : '#333',
+                                        fontSize: '12px',
+                                        cursor: currentNights <= 1 ? 'not-allowed' : 'pointer',
+                                        borderRadius: '4px',
+                                        minWidth: '28px',
+                                        height: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                      }}
+                                    >-</button>
+                                  )}
+                                  <span className="nights" style={{ fontSize: '14px', fontWeight: 500, color: '#333', minWidth: '40px', textAlign: 'center' }}>
+                                    {currentNights}박
+                                  </span>
+                                  {isEditingPeriod && (
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        const newNights = currentNights + 1;
+                                        setSelectedNights(prev => {
+                                          const newNightsState = { ...prev, [cardId]: newNights };
+                                          updateProductNameFromCards(cityCards, newNightsState);
+                                          return newNightsState;
+                                        });
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        border: '1px solid #ddd',
+                                        backgroundColor: '#fff',
+                                        color: '#333',
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                        borderRadius: '4px',
+                                        minWidth: '28px',
+                                        height: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                      }}
+                                    >+</button>
+                                  )}
+                                </div>
+                              </div>
+                              {isEditingPeriod && (
+                                <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveCardUp(cardId)}
+                                    disabled={index === 0}
+                                    style={{
+                                      padding: '4px 8px',
+                                      border: '1px solid #ddd',
+                                      backgroundColor: index === 0 ? '#f5f5f5' : '#fff',
+                                      color: index === 0 ? '#ccc' : '#333',
+                                      fontSize: '12px',
+                                      cursor: index === 0 ? 'not-allowed' : 'pointer',
+                                      borderRadius: '4px',
+                                      transition: 'all 0.2s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minWidth: '28px',
+                                      height: '24px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (index > 0) {
+                                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (index > 0) {
+                                        e.currentTarget.style.backgroundColor = '#fff';
+                                      }
+                                    }}
+                                    title="위로 이동"
+                                  >
+                                    <IoIosArrowUp />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveCardDown(cardId)}
+                                    disabled={index === (cityCards.length > 0 ? cityCards : citiesWithInfo).length - 1}
+                                    style={{
+                                      padding: '4px 8px',
+                                      border: '1px solid #ddd',
+                                      backgroundColor: index === (cityCards.length > 0 ? cityCards : citiesWithInfo).length - 1 ? '#f5f5f5' : '#fff',
+                                      color: index === (cityCards.length > 0 ? cityCards : citiesWithInfo).length - 1 ? '#ccc' : '#333',
+                                      fontSize: '12px',
+                                      cursor: index === (cityCards.length > 0 ? cityCards : citiesWithInfo).length - 1 ? 'not-allowed' : 'pointer',
+                                      borderRadius: '4px',
+                                      transition: 'all 0.2s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minWidth: '28px',
+                                      height: '24px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (index < (cityCards.length > 0 ? cityCards : citiesWithInfo).length - 1) {
+                                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (index < (cityCards.length > 0 ? cityCards : citiesWithInfo).length - 1) {
+                                        e.currentTarget.style.backgroundColor = '#fff';
+                                      }
+                                    }}
+                                    title="아래로 이동"
+                                  >
+                                    <IoIosArrowDown />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm('이 도시를 삭제하시겠습니까?')) {
+                                        handleDeleteCard(cardId);
+                                      }
+                                    }}
+                                    disabled={(cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1}
+                                    style={{
+                                      padding: '4px 8px',
+                                      border: '1px solid #ddd',
+                                      backgroundColor: (cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1 ? '#f5f5f5' : '#fff',
+                                      color: (cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1 ? '#ccc' : '#e74c3c',
+                                      fontSize: '12px',
+                                      cursor: (cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1 ? 'not-allowed' : 'pointer',
+                                      borderRadius: '4px',
+                                      transition: 'all 0.2s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minWidth: '28px',
+                                      height: '24px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if ((cityCards.length > 0 ? cityCards : citiesWithInfo).length > 1) {
+                                        e.currentTarget.style.backgroundColor = '#fee';
+                                        e.currentTarget.style.borderColor = '#e74c3c';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if ((cityCards.length > 0 ? cityCards : citiesWithInfo).length > 1) {
+                                        e.currentTarget.style.backgroundColor = '#fff';
+                                        e.currentTarget.style.borderColor = '#ddd';
+                                      }
+                                    }}
+                                    title="삭제"
+                                  >
+                                    <IoMdClose />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* 기간변경 버튼 */}
+                    {cityCards.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', gap: '10px' }}>
+                        {isEditingPeriod && (
+                          <button
+                            type="button"
+                            onClick={handleAddCity}
+                            style={{
+                              padding: '5px 15px',
+                              border: '1px solid #333',
+                              backgroundColor: '#fff',
+                              color: '#333',
+                              fontSize: '15px',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              borderRadius: '6px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f5f5f5';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#fff';
+                            }}
+                          >
+                            도시 추가
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingPeriod(!isEditingPeriod);
+                            if (!isEditingPeriod) {
+                              // 편집 모드 시작
+                            } else {
+                              // 완료: 상품명 업데이트
+                              updateProductNameFromCards(cityCards, selectedNights);
+                            }
+                          }}
+                          style={{
+                            width: '150px',
+                            padding: '5px 15px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditingPeriod ? '#333' : '#fff',
+                            color: isEditingPeriod ? '#fff' : '#333',
+                            fontSize: '15px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            borderRadius: '6px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {isEditingPeriod ? '완료' : '기간&도시변경'}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1671,21 +2261,10 @@ export default function EuropeScheduleCost() {
 
                         // 시작 날짜 계산
                         let startDate: Date | null = null;
-                        if (customerInfo.travelPeriod) {
-                          const travelPeriod = customerInfo.travelPeriod.trim();
-                          if (travelPeriod.includes('~')) {
-                            const parts = travelPeriod.split('~').map(part => part.trim());
-                            if (parts.length === 2) {
-                              const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                              if (dateRegex.test(parts[0])) {
-                                startDate = new Date(parts[0]);
-                              }
-                            }
-                          } else {
-                            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                            if (dateRegex.test(travelPeriod)) {
-                              startDate = new Date(travelPeriod);
-                            }
+                        if (customerInfo.travelPeriodStart) {
+                          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                          if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+                            startDate = new Date(customerInfo.travelPeriodStart.trim());
                           }
                         }
                         
@@ -2115,115 +2694,6 @@ export default function EuropeScheduleCost() {
                           })()}
                         </div>
 
-                        {/* 예약 카드 */}
-                        <div className="booking-card">
-                          <div className="booking-field">
-                            <div className="booking-label">날짜</div>
-                            <div className="booking-input">
-                              <img className="date-icon" alt="Calendar" src={DateIcon} />
-                            </div>
-                          </div>
-
-                          <div className="booking-field">
-                            <div className="booking-label">룸타입</div>
-                            <div className="booking-input">
-                              <span className="booking-input-text">룸타입</span>
-                              <img className="booking-option-icon" alt="Vector" src={DropdownIcon} />
-                            </div>
-                          </div>
-
-                          <div className="booking-field">
-                            <div className="booking-label">인원</div>
-                            <div className="booking-counter">
-                              <button className="counter-btn">-</button>
-                              <span className="counter-value">2명</span>
-                              <button className="counter-btn">+</button>
-                            </div>
-                          </div>
-
-                          <div className="booking-price-info">
-                            <span className="price-per-night">
-                              {selectedHotel.lowestPrice
-                                ? `${Number(selectedHotel.lowestPrice).toLocaleString()}원 /1박`
-                                : '요금은 문의해 주세요'}
-                            </span>
-                          </div>
-
-                          <div className="booking-field">
-                            <div className="booking-label">박수</div>
-                            <div className="booking-counter">
-                              <button className="counter-btn">-</button>
-                              <span className="counter-value">
-                                {stateProps?.tourPeriodData?.periodNight || '1박'}
-                              </span>
-                              <button className="counter-btn">+</button>
-                            </div>
-                          </div>
-
-                          <div className="booking-total">
-                            <div className="total-label">총요금</div>
-                            <div className="total-amount">
-                              {selectedHotel.lowestPrice
-                                ? `₩${Number(selectedHotel.lowestPrice).toLocaleString()}`
-                                : '문의요청'}
-                            </div>
-                          </div>
-                          <div className="select-button-wrapper">  
-                            <button className="select-button"
-                            onClick={() => {
-                              if (!selectedHotel) {
-                                alert('호텔을 선택해주세요.');
-                                return;
-                              }
-
-                              // 일정에서 도시별 호텔 정보 추출
-                              const scheduleCards: any[] = [];
-                              if (parsedProductScheduleData && Array.isArray(parsedProductScheduleData)) {
-                                parsedProductScheduleData.forEach((scheduleItem: any) => {
-                                  if (scheduleItem.city === selectedHotel.city || scheduleItem.city === selectedHotel._cityFromSchedule) {
-                                    scheduleCards.push({
-                                      title: selectedHotel.hotelNameKo || '',
-                                      nights: stateProps?.tourPeriodData?.periodNight || '1박',
-                                      city: scheduleItem.city || selectedHotel.city
-                                    });
-                                  }
-                                });
-                              }
-
-                              // 포함/제외 항목 추출
-                              const includeItems = stateProps?.includeNote ? stateProps.includeNote.split('\n').filter((item: string) => item.trim()) : [];
-                              const excludeItems = stateProps?.notIncludeNote ? stateProps.notIncludeNote.split('\n').filter((item: string) => item.trim()) : [];
-
-                              setSelectedHotelData({
-                                hotelInfo: selectedHotel,
-                                productInfo: {
-                                  id: stateProps?.id,
-                                  productName: stateProps?.productName,
-                                  scheduleSort: stateProps?.scheduleSort,
-                                  costType: stateProps?.costType,
-                                  tourPeriodData: stateProps?.tourPeriodData,
-                                  includeNote: stateProps?.includeNote,
-                                  notIncludeNote: stateProps?.notIncludeNote,
-                                  productScheduleData: stateProps?.productScheduleData
-                                },
-                                scheduleCards: scheduleCards,
-                                periodText: stateProps?.tourPeriodData?.periodNight ? `${stateProps.tourPeriodData.periodNight} ${stateProps.tourPeriodData.periodDay}` : '',
-                                includeItems: includeItems,
-                                excludeItems: excludeItems,
-                                priceInfo: {
-                                  pricePerPerson: selectedHotel.lowestPrice ? Number(selectedHotel.lowestPrice) : 0,
-                                  totalPrice: selectedHotel.lowestPrice ? Number(selectedHotel.lowestPrice) * 2 : 0,
-                                  guestCount: 2
-                                }
-                              });
-                              alert('호텔이 담겼습니다.');
-                            }}
-                            >호텔담기</button>
-                            <button className="select-button"
-                            onClick={() => navigate('/counsel/europe/flight', { state: { schedule: parsedProductScheduleData, hotel: selectedHotel } })}
-                            >다음</button>
-                          </div>
-                        </div>
                       </>
                     ) : (
                       <div className="hotel-detail-empty">
@@ -2237,258 +2707,171 @@ export default function EuropeScheduleCost() {
               )}
 
               {rightPanelSubTab === '예약정보' && (
-                <div style={{ marginTop: '20px' }}>
-                  <div style={{
-                    backgroundColor: '#f9f9f9',
-                    padding: '20px',
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0'
-                  }}>
-                    <h3 style={{
-                      margin: '0 0 20px 0',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      color: '#333'
-                    }}>
-                      예약 정보
-                    </h3>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {/* 성명 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          성명
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {customerInfo.customer1Name || customerInfo.customer2Name || '-'}
-                        </div>
+                <div className="reservation-info-section">
+                  <h3 className="reservation-info-title">
+                    예약 정보
+                  </h3>
+                  
+                  <div className="cost-hotel-cards">
+                    {/* 성명 */}
+                    <div className="cost-hotel-card">
+                      <label>성명</label>
+                      <div className="reservation-info-value">
+                        {customerInfo.customer1Name || customerInfo.customer2Name || '-'}
                       </div>
+                    </div>
 
-                      {/* 여행형태 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          여행형태
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {customerInfo.theme && customerInfo.theme.length > 0
-                            ? customerInfo.theme.map((t: string) => {
-                                const themeMap: { [key: string]: string } = {
-                                  'honeymoon': '허니문',
-                                  'family': '가족여행',
-                                  'fit': 'FIT',
-                                  'corporate': '기업/워크샵'
-                                };
-                                return themeMap[t] || t;
-                              }).join(', ')
-                            : '-'}
-                        </div>
+                    {/* 여행형태 */}
+                    <div className="cost-hotel-card">
+                      <label>여행형태</label>
+                      <div className="reservation-info-value">
+                        {customerInfo.theme && customerInfo.theme.length > 0
+                          ? customerInfo.theme.map((t: string) => {
+                              const themeMap: { [key: string]: string } = {
+                                'honeymoon': '허니문',
+                                'family': '가족여행',
+                                'fit': 'FIT',
+                                'corporate': '기업/워크샵'
+                              };
+                              return themeMap[t] || t;
+                            }).join(', ')
+                          : '-'}
                       </div>
+                    </div>
 
-                      {/* 상품명 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          상품명
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {savedProductName || stateProps?.productName || '-'}
-                        </div>
+                    {/* 상품명 */}
+                    <div className="cost-hotel-card">
+                      <label>상품명</label>
+                      <div className="reservation-info-value">
+                        {savedProductName || stateProps?.productName || '-'}
                       </div>
+                    </div>
 
-                      {/* 여행기간 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          여행기간
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {customerInfo.travelPeriod || '-'}
-                        </div>
+                    {/* 여행기간 */}
+                    <div className="cost-hotel-card">
+                      <label>여행기간</label>
+                      <div className="reservation-info-value">
+                        {customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                          ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                          : '-'}
                       </div>
+                    </div>
 
-                      {/* 이용항공 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          이용항공
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {customerInfo.flightStyle && customerInfo.flightStyle.length > 0
-                            ? customerInfo.flightStyle.join(', ')
-                            : '-'}
-                        </div>
+                    {/* 이용항공 */}
+                    <div className="cost-hotel-card">
+                      <label>이용항공</label>
+                      <div className="reservation-info-value">
+                        {customerInfo.flightStyle && customerInfo.flightStyle.length > 0
+                          ? customerInfo.flightStyle.join(', ')
+                          : '-'}
                       </div>
+                    </div>
 
-                      {/* 이용호텔 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          이용호텔
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {selectedHotel?.hotelNameKo || '-'}
-                        </div>
+                    {/* 이용호텔 */}
+                    <div className="cost-hotel-card">
+                      <label>이용호텔</label>
+                      <div className="reservation-info-value">
+                        {selectedHotel?.hotelNameKo || '-'}
                       </div>
+                    </div>
 
-                      {/* 1인상품가 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          1인상품가
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {selectedHotel?.lowestPrice 
-                            ? `${Number(selectedHotel.lowestPrice).toLocaleString()}원`
-                            : '-'}
-                        </div>
+                    {/* 1인상품가 */}
+                    <div className="cost-hotel-card">
+                      <label>1인상품가</label>
+                      <div className="reservation-info-value">
+                        {selectedHotel?.lowestPrice 
+                          ? `${Number(selectedHotel.lowestPrice).toLocaleString()}원`
+                          : '-'}
                       </div>
+                    </div>
 
-                      {/* 총요금 */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '6px',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#333'
-                        }}>
-                          총요금
-                        </label>
-                        <div style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #e0e0e0',
-                          fontSize: '14px',
-                          color: '#333',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}>
-                          {selectedHotel?.lowestPrice 
-                            ? `${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}원`
-                            : '-'}
-                        </div>
+                    {/* 총요금 */}
+                    <div className="cost-hotel-card">
+                      <label>총요금</label>
+                      <div className="reservation-info-value">
+                        {selectedHotel?.lowestPrice 
+                          ? `${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}원`
+                          : '-'}
                       </div>
                     </div>
                   </div>
+
+                  
                 </div>
               )}
+            </div>
+
+            {/* 가격 정보 */}
+            <div className="summary-footer">
+              <div className="summary-footer-top">선택된 세부일정 제목</div>
+              <div className="summary-footer-bottom">
+                <div className="summary-footer-left">
+                  <div className="summary-footer-field">날짜</div>
+                  <div className="summary-footer-field">선택상품</div>
+                  <div className="summary-footer-field price-field">
+                    {selectedHotel?.lowestPrice 
+                      ? `￦ ${Number(selectedHotel.lowestPrice).toLocaleString()} /1인`
+                      : '요금 문의'}
+                  </div>
+                  <div className="summary-footer-field summary-footer-field-counter">
+                    <button className="summary-counter-btn">-</button>
+                    <span>2명</span>
+                    <button className="summary-counter-btn">+</button>
+                  </div>
+                </div>
+                <div className="summary-footer-right">
+                  <div className="summary-total-label">총요금</div>
+                  <div className="summary-total-price">
+                    {selectedHotel?.lowestPrice 
+                      ? `￦${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}`
+                      : '요금 문의'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div 
+              className="cost-price-section"
+              style={{
+                pointerEvents: isEditingPeriod ? 'none' : 'auto',
+                transition: 'opacity 0.2s ease'
+              }}
+            >
+              <div className="cost-price-row">
+                <div className="cost-price-label">여행기간</div>
+                <div className="cost-price-input-wrapper">
+                  <input
+                    type="text"
+                    className="cost-price-input"
+                    value={customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                      ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                      : ''}
+                    readOnly
+                  />
+                  <span className="cost-price-calendar-icon">📅</span>
+                </div>
+              </div>
+              <div className="cost-price-row">
+                <div className="cost-price-label">
+                  {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 ? (
+                    `${Number(selectedHotel.lowestPrice).toLocaleString()}원`
+                  ) : (
+                    <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
+                  )}
+                </div>
+                {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 && (
+                  <div className="cost-price-unit">/1인</div>
+                )}
+              </div>
+              <div className="cost-price-row">
+                <div className="cost-price-label">총요금</div>
+                <div className="cost-price-total">
+                  {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 ? (
+                    `₩${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}`
+                  ) : (
+                    <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
+                  )}
+                </div>
+              </div>
             </div>
             
             {/* 하단 버튼 */}
@@ -2551,7 +2934,9 @@ export default function EuropeScheduleCost() {
                       excludeItems: stateProps?.notIncludeNote 
                         ? stateProps.notIncludeNote.split('\n').filter((item: string) => item.trim())
                         : [],
-                      travelPeriod: customerInfo.travelPeriod || '',
+                      travelPeriod: customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                        ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                        : '',
                       reserveDate: customerInfo.reserveDate || '',
                       priceInfo: {
                         pricePerPerson: selectedHotel?.lowestPrice ? Number(selectedHotel.lowestPrice) : 0,
@@ -2584,7 +2969,9 @@ export default function EuropeScheduleCost() {
                       excludeItems: stateProps?.notIncludeNote 
                         ? stateProps.notIncludeNote.split('\n').filter((item: string) => item.trim())
                         : [],
-                      travelPeriod: customerInfo.travelPeriod || '',
+                      travelPeriod: customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                        ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                        : '',
                       reserveDate: customerInfo.reserveDate || '',
                       priceInfo: {
                         pricePerPerson: 0,
@@ -2619,7 +3006,7 @@ export default function EuropeScheduleCost() {
                   navigate('/counsel/europe/estimate', { state: updatedProductInfo });
                   window.scrollTo(0, 0);
                 }}
-              >견적보기</button>
+              >예역하기</button>
             </div>
           </div>
           </div>

@@ -124,7 +124,7 @@ export default function AstEstimatePage() {
     },
     {
       label: '여행기간',
-        value: customerInfo.travelPeriod || selectedHotelData.periodText || '여행기간',
+        value: customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}` : selectedHotelData.periodText || '여행기간',
       type: 'simple',
     },
     ];

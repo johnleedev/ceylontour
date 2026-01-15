@@ -16,6 +16,7 @@
     gap: 20px;
     width: 100%;
     height: 100%;
+    transition: all 0.3s ease;
 
     @media (min-width: 1024px) {
       flex-direction: row;
@@ -105,8 +106,9 @@
   }
 
   .rest-left-section {
-    flex: 1;
-    min-width: 0;
+    width: 60%;
+    padding: 20px;
+    box-sizing: border-box;
     overflow-y: auto;
     height: 100%;
     -ms-overflow-style: none; /* IE and Edge */
@@ -114,6 +116,10 @@
     
     &::-webkit-scrollbar {
       display: none; /* Chrome, Safari, Opera */
+    }
+
+    @media (max-width: 1023px) {
+      width: 100%;
     }
 
     .rest-estimate-header {
@@ -138,7 +144,13 @@
   }
 
   .rest-right-section {
-    width: 100%;
+    width: 40%;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
     overflow-y: auto;
     height: 100%;
     -ms-overflow-style: none; /* IE and Edge */
@@ -148,10 +160,8 @@
       display: none; /* Chrome, Safari, Opera */
     }
 
-    @media (min-width: 1024px) {
-      width: 37.33%;
-      min-width: 400px;
-      flex-shrink: 0;
+    @media (max-width: 1023px) {
+      width: 100%;
     }
   }
 
@@ -219,13 +229,62 @@
 
       .rest-hotel-info {
         flex: 1;
+        padding: 10px;
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
         gap: 8px;
 
-        .rest-p-instance {
-          margin-bottom: 0;
-          order: 3;
+        .rest-hotel-name-rating {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+
+        .rest-hotel-name-wrapper {
+          flex: 1;
+        }
+
+        .rest-hotel-name {
+          color: #000000;
+          font-size: 20px;
+          font-weight: 500;
+          line-height: 1.4;
+        }
+
+        .rest-hotel-rating {
+          display: flex;
+          align-items: center;
+          white-space: nowrap;
+        }
+
+        .rest-hotel-details {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .rest-hotel-room-type {
+          color: #222222;
+          font-size: 18px;
+          line-height: 1.64;
+        }
+
+        .rest-hotel-nights-text {
+          color: #000000;
+          font-size: 18px;
+          line-height: 1.4;
+        }
+
+        .rest-hotel-description-wrapper {
+          margin-top: 4px;
+        }
+
+        .rest-hotel-description {
+          color: #000000;
+          font-size: 18px;
+          line-height: 1.4;
         }
       }
     }
@@ -247,12 +306,20 @@
   }
 
 
+  .rest-estimate-sidebar {
+    width: 100%;
+    max-width: 670px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
   .rest-estimate-form {
     background-color: #ffffff;
     border-radius: 12px;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    padding: 24px;
-    margin-bottom: 24px;
+    padding: 30px;
+    margin-bottom: 0;
 
     .rest-form-section {
       margin-bottom: 24px;
@@ -298,19 +365,18 @@
         }
       }
 
-      .rest-hotel-nights {
+      .rest-hotel-info-wrapper {
         display: flex;
+        flex-direction: column;
         gap: 8px;
-        margin-top: 8px;
+      }
 
-        .rest-hotel-night {
-          color: #272727;
-          
+      .rest-hotel-form-item {
+        .rest-text-wrapper {
+          color: #000000;
           font-size: 15px;
           font-weight: 400;
-          padding: 4px 8px;
-          border: 1px solid #c3c3c3;
-          border-radius: 3px;
+          line-height: 1.6;
         }
       }
     }
@@ -320,7 +386,7 @@
     background-color: #ffffff;
     border-radius: 12px;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    padding: 24px;
+    padding: 30px;
 
     .rest-summary-item {
       display: flex;
@@ -497,10 +563,6 @@
 
   // P component styles
   .rest-p {
-    .rest-text-wrapper {
-      
-    }
-
     &.rest-p-instance {
       .rest-design-component-instance-node {
         color: #222222;
@@ -514,11 +576,31 @@
 // Mobile styles
 @media (max-width: 767px) {
   .rest-estimatePage {
-    padding: 16px;
+    padding: 0 20px;
 
-    .rest-left-section {
-      .rest-estimate-header {
-        margin-bottom: 24px;
+    .rest-estimate-content {
+      flex-direction: column;
+      gap: 20px;
+      height: auto;
+      min-height: calc(100vh - 100px);
+      overflow: visible;
+
+      .rest-left-section {
+        width: 100%;
+        height: auto;
+        overflow-y: visible;
+        padding: 15px;
+
+        .rest-estimate-header {
+          margin-bottom: 24px;
+        }
+      }
+
+      .rest-right-section {
+        width: 100%;
+        height: auto;
+        overflow-y: visible;
+        padding: 15px;
       }
     }
 
@@ -526,6 +608,10 @@
       .rest-hotel-item {
         padding: 16px;
       }
+    }
+
+    .rest-estimate-sidebar {
+      max-width: 100%;
     }
 
     .rest-estimate-form {

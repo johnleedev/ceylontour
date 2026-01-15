@@ -11,22 +11,24 @@
   .tour-estimate-content {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 20px;
     width: 100%;
     height: 100%;
     max-width: 1920px;
     margin: 0 auto;
+    transition: all 0.3s ease;
 
     @media (min-width: 1024px) {
       flex-direction: row;
-      gap: 32px;
+      gap: 20px;
       align-items: flex-start;
     }
   }
 
   .tour-left-section {
-    flex: 1;
-    min-width: 0;
+    width: 60%;
+    padding: 20px;
+    box-sizing: border-box;
     overflow-y: auto;
     height: 100%;
     -ms-overflow-style: none; /* IE and Edge */
@@ -34,6 +36,10 @@
     
     &::-webkit-scrollbar {
       display: none; /* Chrome, Safari, Opera */
+    }
+
+    @media (max-width: 1023px) {
+      width: 100%;
     }
 
     .tour-estimate-header {
@@ -42,7 +48,7 @@
       .tour-text-wrapper {
         color: #000000;
         
-        font-size: 23px;
+        font-size: 24px;
         font-weight: 500;
         margin: 0;
       }
@@ -51,14 +57,20 @@
     .tour-text-wrapper-2 {
       color: #000000;
       
-      font-size: 21px;
+      font-size: 20px;
       font-weight: 500;
       margin: 0 0 24px 0;
     }
   }
 
   .tour-right-section {
-    width: 100%;
+    width: 40%;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
     overflow-y: auto;
     height: 100%;
     -ms-overflow-style: none; /* IE and Edge */
@@ -68,10 +80,8 @@
       display: none; /* Chrome, Safari, Opera */
     }
 
-    @media (min-width: 1024px) {
-      width: 37.33%;
-      min-width: 400px;
-      flex-shrink: 0;
+    @media (max-width: 1023px) {
+      width: 100%;
     }
   }
 
@@ -139,41 +149,62 @@
 
       .tour-hotel-info {
         flex: 1;
+        padding: 10px;
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
         gap: 8px;
 
-        .tour-p-3,
-        .tour-p-5 {
-          margin-bottom: 0;
-          order: 1;
+        .tour-hotel-name-rating {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
         }
 
-        .tour-text-wrapper-6,
-        .tour-text-wrapper-7 {
-          color: #fbc400;
-          font-size: 16px;
-          margin: 0;
-          order: 2;
+        .tour-hotel-name-wrapper {
+          flex: 1;
         }
 
-        .tour-p-instance,
-        .tour-p-2 {
-          margin-bottom: 0;
-          order: 3;
+        .tour-hotel-name {
+          color: #000000;
+          font-size: 20px;
+          font-weight: 500;
+          line-height: 1.4;
         }
 
-        .tour-p-10,
-        .tour-p-12 {
-          margin-bottom: 0;
-          order: 4;
+        .tour-hotel-rating {
+          display: flex;
+          align-items: center;
+          white-space: nowrap;
         }
 
-        .tour-p-7,
-        .tour-p-9 {
-          margin-top: 8px;
-          margin-bottom: 0;
-          order: 5;
+        .tour-hotel-details {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .tour-hotel-room-type {
+          color: #222222;
+          font-size: 18px;
+          line-height: 1.64;
+        }
+
+        .tour-hotel-nights-text {
+          color: #000000;
+          font-size: 18px;
+          line-height: 1.4;
+        }
+
+        .tour-hotel-description-wrapper {
+          margin-top: 4px;
+        }
+
+        .tour-hotel-description {
+          color: #000000;
+          font-size: 18px;
+          line-height: 1.4;
         }
       }
     }
@@ -195,12 +226,20 @@
   }
 
 
+  .tour-estimate-sidebar {
+    width: 100%;
+    max-width: 670px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
   .tour-estimate-form {
     background-color: #ffffff;
     border-radius: 12px;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    padding: 24px;
-    margin-bottom: 24px;
+    padding: 30px;
+    margin-bottom: 0;
 
     .tour-form-section {
       margin-bottom: 24px;
@@ -231,7 +270,7 @@
       .tour-flight-info {
         color: #3b3b3b;
         
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 400;
           line-height: 1.6;
         margin-bottom: 8px;
@@ -246,19 +285,18 @@
         }
       }
 
-      .tour-hotel-nights {
+      .tour-hotel-info-wrapper {
         display: flex;
+        flex-direction: column;
         gap: 8px;
-        margin-top: 8px;
+      }
 
-        .tour-hotel-night {
-          color: #272727;
-          
-          font-size: 12px;
+      .tour-hotel-form-item {
+        .tour-text-wrapper {
+          color: #000000;
+          font-size: 15px;
           font-weight: 400;
-          padding: 4px 8px;
-          border: 1px solid #c3c3c3;
-          border-radius: 3px;
+          line-height: 1.6;
         }
       }
     }
@@ -268,7 +306,7 @@
     background-color: #ffffff;
     border-radius: 12px;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    padding: 24px;
+    padding: 30px;
 
     .tour-summary-item {
       display: flex;
@@ -293,21 +331,21 @@
         .tour-text-wrapper-13 {
           color: #000000;
           
-          font-size: 20px;
+          font-size: 15px;
           font-weight: 600;
         }
 
         .tour-text-wrapper-18 {
           color: #262626;
           
-          font-size: clamp(28px, 4vw, 35px);
+          font-size: 15px;
           font-weight: 500;
         }
 
         .tour-text-wrapper-17 {
           color: #333333;
           
-          font-size: 17px;
+          font-size: 15px;
           font-weight: 400;
         }
       }
@@ -323,7 +361,7 @@
       .tour-price-element {
         color: #242424;
         
-        font-size: 20px;
+        font-size: 15px;
         font-weight: 400;
         line-height: 1.5;
 
@@ -332,7 +370,7 @@
         }
 
         .tour-text-wrapper-14 {
-          font-size: 19px;
+          font-size: 15px;
           font-weight: 600;
         }
 
@@ -445,9 +483,6 @@
 
   // P component styles
   .tour-p {
-    .tour-text-wrapper {
-      
-    }
 
     &.tour-p-instance,
     &.tour-p-2 {
@@ -516,11 +551,31 @@
 // Mobile styles
 @media (max-width: 767px) {
   .tour-estimatePage {
-    padding: 16px;
+    padding: 0 20px;
 
-    .tour-left-section {
-      .tour-estimate-header {
-        margin-bottom: 24px;
+    .tour-estimate-content {
+      flex-direction: column;
+      gap: 20px;
+      height: auto;
+      min-height: calc(100vh - 100px);
+      overflow: visible;
+
+      .tour-left-section {
+        width: 100%;
+        height: auto;
+        overflow-y: visible;
+        padding: 15px;
+
+        .tour-estimate-header {
+          margin-bottom: 24px;
+        }
+      }
+
+      .tour-right-section {
+        width: 100%;
+        height: auto;
+        overflow-y: visible;
+        padding: 15px;
       }
     }
 
@@ -528,6 +583,10 @@
       .tour-hotel-item {
         padding: 16px;
       }
+    }
+
+    .tour-estimate-sidebar {
+      max-width: 100%;
     }
 
     .tour-estimate-form {

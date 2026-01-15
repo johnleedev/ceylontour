@@ -65,6 +65,9 @@ export default function EuropeCityDetail() {
 
 
   useEffect(() => {
+    // fromGo=true일 때는 장바구니 도시 일정을 가져오는 별도 로직 사용
+    if (fromGo) return;
+    
     const fetchHotelInfo = async () => {
       if (!ID) return;
       
@@ -92,7 +95,7 @@ export default function EuropeCityDetail() {
     };
 
     fetchHotelInfo();
-  }, [ID, NATION]);
+  }, [ID, NATION, fromGo]);
 
   // 장바구니에서 도시 목록 가져오기 (GO 버튼으로 진입한 경우)
   useEffect(() => {
@@ -149,8 +152,56 @@ export default function EuropeCityDetail() {
         const currentCityIndex = details.findIndex(c => c.id === Number(ID));
         if (currentCityIndex !== -1) {
           setSelectedCityTab(currentCityIndex);
+          // 첫 번째 도시 정보를 cityInfo에 설정
+          const firstCity = details[currentCityIndex];
+          const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${firstCity.id}`);
+          if (res.data && res.data.length > 0) {
+            setCityInfo(res.data[0]);
+          }
         } else if (details.length > 0) {
           setSelectedCityTab(0);
+          // 첫 번째 도시 정보를 cityInfo에 설정
+          const firstCity = details[0];
+          const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${firstCity.id}`);
+          if (res.data && res.data.length > 0) {
+            setCityInfo(res.data[0]);
+          }
+        }
+        
+        // 장바구니에 담은 모든 도시들의 국가 목록 추출
+        const cartNations = Array.from(new Set(details.map(city => city.nation).filter(Boolean) as string[]));
+        
+        // 모든 국가의 일정 가져오기
+        const allProducts: any[] = [];
+        for (const nation of cartNations) {
+          try {
+            const response = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${nation}`);
+            if (response.data && Array.isArray(response.data)) {
+              allProducts.push(...response.data);
+            }
+          } catch (error) {
+            console.error(`${nation} 국가 일정 가져오기 오류:`, error);
+          }
+        }
+        console.log('allProducts', allProducts);
+        
+        // 중복 제거 (같은 id를 가진 일정은 하나만 유지)
+        const uniqueProducts = allProducts.reduce((acc: any[], current: any) => {
+          const exists = acc.find(item => item.id === current.id);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        setProducts(uniqueProducts);
+        
+        // fromGo=true일 때는 탭 필터를 '전체'로 설정
+        setScheduleFilter('전체');
+        
+        // 첫 번째 도시를 기본 선택 (스케줄 필터링용)
+        if (details.length > 0) {
+          setSelectedCityForSchedule(details[0].id);
         }
       } catch (error) {
         console.error('도시 정보 가져오기 오류:', error);
@@ -160,7 +211,7 @@ export default function EuropeCityDetail() {
     fetchCityDetails();
   }, [cityCart, ID, fromDetail, fromGo]);
 
-  // 선택된 도시 탭에 따라 도시 정보 업데이트
+  // 선택된 도시 탭에 따라 도시 정보 업데이트 (fromGo=true일 때는 이미지 정보만 업데이트, 일정은 변경하지 않음)
   useEffect(() => {
     if (fromDetail || !fromGo || cityDetails.length === 0 || selectedCityTab === null) {
       return;
@@ -176,7 +227,7 @@ export default function EuropeCityDetail() {
           const city = res.data[0];
           setCityInfo(city);
           
-          // 도시 이미지 파싱
+          // 도시 이미지 파싱 (일정은 변경하지 않음 - 이미 장바구니 모든 도시의 일정을 가져왔으므로)
           try {
             const noticeImages = JSON.parse(city.imageNamesNotice || '[]');
             setImageNotice(Array.isArray(noticeImages) ? noticeImages : []);
@@ -212,16 +263,7 @@ export default function EuropeCityDetail() {
             setImageCafe([]);
           }
           
-          // 선택된 도시의 국가로 상품 가져오기
-          if (city.nation) {
-            const response = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${city.nation}`);
-            if (response.data) {
-              const copy = [...response.data];
-              setProducts(copy);
-            } else {
-              setProducts([]);
-            }
-          }
+          // fromGo=true일 때는 일정을 다시 가져오지 않음 (이미 장바구니 모든 도시의 일정을 가져왔으므로)
         }
       } catch (error) {
         console.error('선택된 도시 정보 가져오기 오류:', error);
@@ -233,9 +275,7 @@ export default function EuropeCityDetail() {
 
   // schedule 데이터 파싱 및 그룹화 (도시 기준, EuropeTripPage와 동일한 로직)
   const getGroupedSchedules = () => {
-    // 국가명을 사용 (EuropeTripPage와 동일하게 selectedCity 대신 nationName 사용)
-    const selectedNation = cityInfo?.nation || '';
-    if (!selectedNation || !products || products.length === 0) return {};
+    if (!products || products.length === 0) return {};
 
     const schedules = products.map((item: any) => {
       let nations: string[] = [];
@@ -262,7 +302,7 @@ export default function EuropeCityDetail() {
       };
     });
 
-    // 필터링 (EuropeTripPage와 동일한 로직)
+    // 필터링
     let filtered = schedules;
     
     // 검색 필터
@@ -272,28 +312,187 @@ export default function EuropeCityDetail() {
       );
     }
 
-    // 탭 필터 (EuropeTripPage와 동일한 로직, 국가명으로 비교)
-    if (!selectedNation) return {};
-    
-    if (scheduleFilter.includes('온니')) {
-      filtered = filtered.filter((s: any) => s.nation.length === 1 && s.nation[0] === selectedNation);
-    } else if (scheduleFilter.includes('외 1개국')) {
-      filtered = filtered.filter((s: any) => s.nation.length === 2 && s.nation.includes(selectedNation));
-    } else if (scheduleFilter.includes('외 2개국')) {
-      filtered = filtered.filter((s: any) => s.nation.length === 3 && s.nation.includes(selectedNation));
-    } else if (scheduleFilter.includes('외 3개국')) {
-      filtered = filtered.filter((s: any) => s.nation.length === 4 && s.nation.includes(selectedNation));
+    // fromGo=true일 때는 장바구니에 담은 도시들에 해당하는 스케줄만 표시
+    if (fromGo && cityDetails.length > 0) {
+      // 전체 장바구니 도시 이름 목록 추출 (매칭 개수 계산용)
+      const allCartCityNames = cityDetails.map(city => city.cityKo).filter(Boolean);
+      
+      // 선택된 도시가 있으면 해당 도시가 포함된 스케줄만 필터링
+      const selectedCityName = selectedCityForSchedule 
+        ? cityDetails.find(city => city.id === selectedCityForSchedule)?.cityKo
+        : null;
+      
+      // 각 스케줄에 포함된 장바구니 도시 개수를 계산하고 필터링
+      filtered = filtered.map((s: any) => {
+        // productScheduleData에서 도시 정보 추출
+        let scheduleCities: string[] = [];
+        try {
+          if (s.productScheduleData && s.productScheduleData !== '[]' && s.productScheduleData.trim() !== '') {
+            const parsed = JSON.parse(s.productScheduleData);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              scheduleCities = parsed.map((item: any) => {
+                // item이 객체면 city 필드, 문자열이면 그대로 사용
+                if (typeof item === 'string') {
+                  return item;
+                } else if (item && typeof item === 'object') {
+                  return item.city || item.cityKo || '';
+                }
+                return '';
+              }).filter(Boolean);
+            }
+          }
+        } catch (e) {
+          // 파싱 실패 시 무시하고 productName에서 추출 시도
+        }
+        
+        // productScheduleData에서 도시를 추출하지 못했으면 productName에서 추출
+        if (scheduleCities.length === 0 && s.productName) {
+          // productName에서 도시 이름 추출 (예: "루체른 1박 + 인터라켄 2박" 또는 "파리 4박")
+          const nameParts = s.productName.split('+').map((part: string) => {
+            // 숫자와 "박", "일" 제거하고 도시 이름만 추출
+            // 예: "파리 4박" -> "파리", "루체른 1박" -> "루체른"
+            return part.trim().replace(/\s*\d+\s*(박|일)\s*/g, '').trim();
+          });
+          scheduleCities = nameParts.filter(Boolean);
+        }
+        
+        // 장바구니 도시 중 스케줄에 포함된 도시 개수 계산 (전체 장바구니 기준)
+        let matchedCityCount = 0;
+        if (scheduleCities.length > 0) {
+          // 각 스케줄 도시가 장바구니 도시 중 하나와 매칭되는지 확인
+          matchedCityCount = allCartCityNames.filter(cartCity => 
+            scheduleCities.some(scheduleCity => {
+              // 정확히 일치하거나 서로 포함 관계인지 확인
+              const scheduleCityTrimmed = scheduleCity.trim();
+              const cartCityTrimmed = cartCity.trim();
+              return scheduleCityTrimmed === cartCityTrimmed || 
+                     scheduleCityTrimmed.includes(cartCityTrimmed) || 
+                     cartCityTrimmed.includes(scheduleCityTrimmed);
+            })
+          ).length;
+        }
+        
+        // 선택된 도시가 있으면 해당 도시가 포함된 스케줄인지 확인
+        let hasSelectedCity = false;
+        if (selectedCityName && scheduleCities.length > 0) {
+          hasSelectedCity = scheduleCities.some(scheduleCity => {
+            const scheduleCityTrimmed = scheduleCity.trim();
+            const selectedCityTrimmed = selectedCityName.trim();
+            return scheduleCityTrimmed === selectedCityTrimmed || 
+                   scheduleCityTrimmed.includes(selectedCityTrimmed) || 
+                   selectedCityTrimmed.includes(scheduleCityTrimmed);
+          });
+        }
+        
+        // 디버깅을 위한 로그
+        // console.log(`[스케줄 ID: ${s.id}] 상품명: ${s.productName}, 추출된 도시: [${scheduleCities.join(', ')}], 장바구니 도시: [${cartCityNames.join(', ')}], 매칭된 도시 수: ${matchedCityCount}`);
+        
+        // 포함된 장바구니 도시 개수와 선택된 도시 포함 여부를 스케줄 객체에 추가
+        return {
+          ...s,
+          matchedCityCount: matchedCityCount,
+          hasSelectedCity: hasSelectedCity
+        };
+      }).filter((s: any) => {
+        // 선택된 도시가 있으면 해당 도시가 포함된 스케줄만 표시
+        // 선택된 도시가 없으면 2개 이상 포함된 스케줄만 필터링
+        if (selectedCityForSchedule) {
+          return s.hasSelectedCity && s.matchedCityCount >= 2;
+        }
+        return s.matchedCityCount >= 2;
+      });
+    } else if (fromDetail || (!fromGo && cityInfo)) {
+      // fromDetail=true일 때는 기존 로직 (현재 도시의 국가 기준으로 필터링)
+      const selectedNation = cityInfo?.nation || '';
+      if (!selectedNation) return {};
+      
+      // 탭 필터 (EuropeTripPage와 동일한 로직, 국가명으로 비교)
+      if (scheduleFilter !== '전체') {
+        if (scheduleFilter.includes('온니')) {
+          filtered = filtered.filter((s: any) => s.nation.length === 1 && s.nation[0] === selectedNation);
+        } else if (scheduleFilter.includes('외 1개국')) {
+          filtered = filtered.filter((s: any) => s.nation.length === 2 && s.nation.includes(selectedNation));
+        } else if (scheduleFilter.includes('외 2개국')) {
+          filtered = filtered.filter((s: any) => s.nation.length === 3 && s.nation.includes(selectedNation));
+        } else if (scheduleFilter.includes('외 3개국')) {
+          filtered = filtered.filter((s: any) => s.nation.length === 4 && s.nation.includes(selectedNation));
+        }
+      }
     }
 
-    // 그룹화 (nation 배열을 기준으로, EuropeTripPage와 동일)
-    const grouped: { [key: string]: any[] } = {};
-    filtered.forEach((schedule: any) => {
-      const key = schedule.nation.join(' + ');
-      if (!grouped[key]) {
-        grouped[key] = [];
+    // 그룹화
+    let grouped: { [key: string]: any[] } = {};
+    
+    if (fromGo && cityDetails.length > 0) {
+      // 선택된 도시가 있으면 포함된 도시 개수에 따라 그룹화 (4개 이상 > 3개 이상 > 2개 이상)
+      if (selectedCityForSchedule) {
+        filtered.forEach((schedule: any) => {
+          const matchedCount = schedule.matchedCityCount || 0;
+          let key = '';
+          if (matchedCount >= 4) {
+            key = '4개 이상 포함';
+          } else if (matchedCount >= 3) {
+            key = '3개 이상 포함';
+          } else if (matchedCount >= 2) {
+            key = '2개 이상 포함';
+          }
+          
+          if (key) {
+            if (!grouped[key]) {
+              grouped[key] = [];
+            }
+            grouped[key].push(schedule);
+          }
+        });
+        
+        // 그룹 키를 포함된 도시 개수 순서로 정렬 (4개 이상 > 3개 이상 > 2개 이상)
+        const sortedGroupKeys = ['4개 이상 포함', '3개 이상 포함', '2개 이상 포함'].filter(key => grouped[key]);
+        
+        // 정렬된 순서대로 새로운 그룹 객체 생성
+        const sortedGrouped: { [key: string]: any[] } = {};
+        sortedGroupKeys.forEach(key => {
+          sortedGrouped[key] = grouped[key];
+        });
+        
+        return sortedGrouped;
       }
-      grouped[key].push(schedule);
-    });
+      
+      // 선택된 도시가 없으면 포함된 도시 개수에 따라 그룹화 (4개 > 3개 > 2개 순서)
+      filtered.forEach((schedule: any) => {
+        const matchedCount = schedule.matchedCityCount || 0;
+        if (matchedCount >= 2) {
+          const key = `${matchedCount}개 도시 포함`;
+          if (!grouped[key]) {
+            grouped[key] = [];
+          }
+          grouped[key].push(schedule);
+        }
+      });
+      
+      // 그룹 키를 포함된 도시 개수 순서로 정렬 (4개 > 3개 > 2개)
+      const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+        const countA = parseInt(a.replace('개 도시 포함', ''));
+        const countB = parseInt(b.replace('개 도시 포함', ''));
+        return countB - countA; // 내림차순
+      });
+      
+      // 정렬된 순서대로 새로운 그룹 객체 생성
+      const sortedGrouped: { [key: string]: any[] } = {};
+      sortedGroupKeys.forEach(key => {
+        sortedGrouped[key] = grouped[key];
+      });
+      
+      return sortedGrouped;
+    } else {
+      // 기존 로직: nation 배열을 기준으로 그룹화
+      filtered.forEach((schedule: any) => {
+        const key = schedule.nation.join(' + ');
+        if (!grouped[key]) {
+          grouped[key] = [];
+        }
+        grouped[key].push(schedule);
+      });
+    }
 
     return grouped;
   };
@@ -307,6 +506,29 @@ export default function EuropeCityDetail() {
         [cityId]: newNights
       };
     });
+  };
+
+  // 선택된 도시 정보를 일차별로 파싱하여 반환 (일정 데이터에 도시 정보 입력용)
+  // 예: "루체른 1박 + 인터라켄 2박" -> day1: 루체른, day2,3: 인터라켄
+  const getCityInfoPerDay = (cities: Array<{ index: number; city: any; nights: number }>) => {
+    const cityInfoPerDay: Array<{ dayIndex: number; cityName: string }> = [];
+    let currentDay = 0;
+
+    cities.forEach((cityItem) => {
+      const nights = cityItem.nights || 2;
+      const cityName = cityItem.city?.cityKo || cityItem.city?.city || '';
+
+      // 각 박수만큼 일정 일자에 도시 정보 추가
+      for (let i = 0; i < nights; i++) {
+        cityInfoPerDay.push({
+          dayIndex: currentDay,
+          cityName: cityName
+        });
+        currentDay++;
+      }
+    });
+
+    return cityInfoPerDay;
   };
 
   // 도시와 박수를 기반으로 일정 데이터 생성
@@ -447,6 +669,9 @@ export default function EuropeCityDetail() {
         dayNight: `${cityItem.nights}박`
       }));
 
+      // 일차별 도시 정보 파싱
+      const cityInfoPerDay = getCityInfoPerDay(validSelectedCities);
+
       // EuropeScheduleCost로 이동
       navigate('/counsel/europe/schedulerecommend', {
         state: {
@@ -456,7 +681,8 @@ export default function EuropeCityDetail() {
           nation: firstNation,
           isFromMakeButton: true, // '만들기' 버튼에서 온 것임을 표시
           customScheduleInfo: customScheduleInfo, // 도시 기반 일정 데이터
-          productScheduleData: JSON.stringify(productScheduleData) // 도시 탭 표시를 위한 데이터
+          productScheduleData: JSON.stringify(productScheduleData), // 도시 탭 표시를 위한 데이터
+          cityInfoPerDay: cityInfoPerDay // 일차별 도시 정보
         }
       });
       window.scrollTo(0, 0);
@@ -480,6 +706,7 @@ export default function EuropeCityDetail() {
   const [selectedMainImageIndex, setSelectedMainImageIndex] = React.useState(0);
   const [scheduleFilter, setScheduleFilter] = React.useState('전체');
   const [scheduleSearch, setScheduleSearch] = React.useState('');
+  const [selectedCityForSchedule, setSelectedCityForSchedule] = React.useState<number | null>(null); // fromGo=true일 때 선택된 도시 ID
 
   useEffect(() => {
     if (cityInfo) {
@@ -604,13 +831,13 @@ export default function EuropeCityDetail() {
   return (
     <div className="EuropeCityDetail">
       {/* 왼쪽 상단 뒤로가기 버튼 */}
-      <button
+      {/* <button
         type="button"
         className="left-back-btn"
         onClick={() => navigate(-1)}
       >
         <IoIosArrowBack />
-      </button>
+      </button> */}
 
       {/* 오른쪽 패널 토글 버튼 */}
       {!showRightPanel && (
@@ -652,7 +879,7 @@ export default function EuropeCityDetail() {
           )}
           {/* 도시 탭 (GO 버튼으로 진입한 경우에만 표시) */}
           {!fromDetail && fromGo && cityDetails.length > 0 && (
-            <div className="city-tabs-container">
+            <div className="city-tabs-container" style={{marginTop: showRightPanel ? '50px' : '0px'}}> 
               <div className="city-tabs-left">
                 {cityDetails.map((city, index) => (
                   <button
@@ -668,6 +895,42 @@ export default function EuropeCityDetail() {
             </div>
           )}
           <div className="city-center-wrapper">
+
+            {/* Breadcrumb Navigation */}
+            <div className="breadcrumb-nav">
+              <span 
+                className="breadcrumb-item"
+                onClick={() => navigate('/counsel')}
+              >
+                Home
+              </span>
+              <span className="breadcrumb-separator"> - </span>
+              <span 
+                className="breadcrumb-item"
+                onClick={() => navigate('/counsel/europe')}
+              >
+                유럽
+              </span>
+              {NATION && (
+                <>
+                  <span className="breadcrumb-separator"> - </span>
+                  <span 
+                    className="breadcrumb-item"
+                    onClick={() => navigate(-1)}
+                  >
+                    {NATION}
+                  </span>
+                </>
+              )}
+              {cityInfo?.cityKo && (
+                <>
+                  <span className="breadcrumb-separator"> - </span>
+                  <span className="breadcrumb-item breadcrumb-item-current">
+                    {cityInfo.cityKo}
+                  </span>
+                </>
+              )}
+            </div>
 
             <div className="room-container-wrapper">
               <div className="room-container-left">
@@ -900,7 +1163,7 @@ export default function EuropeCityDetail() {
                   
                 </div>
               </div>
-              {activeRightTab === 'info' && (
+              {/* {activeRightTab === 'info' && (
                 <div className="detail-info-content">
                   <div className="detail-main-image">
                     {(() => {
@@ -1275,47 +1538,121 @@ export default function EuropeCityDetail() {
                     })()}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {activeRightTab === 'product' && (
                 <div className="schedule-list-container">
-                  {/* 국가 제목 (EuropeTripPage와 동일) */}
-                  <h2 className="selected-nation-title">{cityInfo?.nation || cityInfo?.cityKo || ''}</h2>
+                  {/* 국가 제목 */}
+                  {fromGo && cityDetails.length > 0 ? (
+                    <h2 className="selected-nation-title">
+                      {cityDetails.map(city => city.cityKo).join(' + ')}
+                    </h2>
+                  ) : (
+                    <h2 className="selected-nation-title">{cityInfo?.nation || cityInfo?.cityKo || ''}</h2>
+                  )}
 
-                  {/* 탭 네비게이션 (EuropeTripPage와 동일하게 국가명 사용) */}
+                  {/* 탭 네비게이션 */}
                   <div className="schedule-tabs">
                     {(() => {
-                      const selectedNation = cityInfo?.nation || '';
-                      return ['전체', `${selectedNation}온니`, `${selectedNation}외 1개국`, `${selectedNation}외 2개국`, `${selectedNation}외 3개국`].map((tab) => (
-                        <button
-                          key={tab}
-                          className={`schedule-tab ${scheduleFilter === tab ? 'active' : ''}`}
-                          onClick={() => setScheduleFilter(tab)}
-                        >
-                          {tab}
-                        </button>
-                      ));
+                      if (fromGo && cityDetails.length > 0) {
+                        // fromGo=true일 때는 장바구니 도시들을 기반으로 탭 표시하지 않음 (전체만 표시)
+                        return ['전체'].map((tab) => (
+                          <button
+                            key={tab}
+                            className={`schedule-tab ${scheduleFilter === tab ? 'active' : ''}`}
+                            onClick={() => setScheduleFilter(tab)}
+                          >
+                            {tab}
+                          </button>
+                        ));
+                      } else {
+                        // fromDetail=true일 때는 기존 로직 (현재 도시의 국가 기준)
+                        const selectedNation = cityInfo?.nation || '';
+                        return ['전체', `${selectedNation}온니`, `${selectedNation}외 1개국`, `${selectedNation}외 2개국`, `${selectedNation}외 3개국`].map((tab) => (
+                          <button
+                            key={tab}
+                            className={`schedule-tab ${scheduleFilter === tab ? 'active' : ''}`}
+                            onClick={() => setScheduleFilter(tab)}
+                          >
+                            {tab}
+                          </button>
+                        ));
+                      }
                     })()}
                   </div>
 
-                  {/* 검색바 */}
-                  <div className="schedule-search">
-                    <input
-                      type="text"
-                      placeholder="상품검색"
-                      value={scheduleSearch}
-                      onChange={(e) => setScheduleSearch(e.target.value)}
-                      className="schedule-search-input"
-                    />
-                    <button className="schedule-search-btn">🔍</button>
-                  </div>
+                  {/* fromGo=true일 때는 도시 탭, 그 외에는 검색바 */}
+                  {fromGo && cityDetails.length > 0 ? (
+                    <div className="schedule-city-tabs" style={{ 
+                      display: 'flex', 
+                      gap: '8px', 
+                      marginBottom: '20px',
+                      flexWrap: 'wrap'
+                    }}>
+                      {cityDetails.map((city) => (
+                        <button
+                          key={city.id}
+                          type="button"
+                          onClick={() => setSelectedCityForSchedule(city.id)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            border: '1px solid #ddd',
+                            backgroundColor: selectedCityForSchedule === city.id ? '#333' : '#fff',
+                            color: selectedCityForSchedule === city.id ? '#fff' : '#333',
+                            fontSize: '14px',
+                            fontWeight: selectedCityForSchedule === city.id ? '600' : '400',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedCityForSchedule !== city.id) {
+                              e.currentTarget.style.backgroundColor = '#f5f5f5';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selectedCityForSchedule !== city.id) {
+                              e.currentTarget.style.backgroundColor = '#fff';
+                            }
+                          }}
+                        >
+                          {city.cityKo}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="schedule-search">
+                      <input
+                        type="text"
+                        placeholder="상품검색"
+                        value={scheduleSearch}
+                        onChange={(e) => setScheduleSearch(e.target.value)}
+                        className="schedule-search-input"
+                      />
+                      <button className="schedule-search-btn">🔍</button>
+                    </div>
+                  )}
 
                   {/* Schedule 리스트 */}
                   <div className="schedule-sections">
-                    {Object.keys(getGroupedSchedules()).length === 0 ? (
-                      <div className="no-schedules">일정이 없습니다.</div>
-                    ) : (
-                      Object.entries(getGroupedSchedules()).map(([groupKey, schedules]) => (
+                    {(() => {
+                      const groupedSchedules = getGroupedSchedules();
+                      // console.log('=== getGroupedSchedules() 결과 ===');
+                      // console.log('그룹화된 스케줄:', groupedSchedules);
+                      // console.log('그룹 키 목록:', Object.keys(groupedSchedules));
+                      Object.entries(groupedSchedules).forEach(([groupKey, schedules]) => {
+                        // console.log(`\n[${groupKey}] 그룹 (${schedules.length}개):`);
+                        schedules.forEach((schedule: any, index: number) => {
+                          // console.log(`  ${index + 1}. ID: ${schedule.id}, 국가: ${schedule.nation.join(' + ')}, 상품명: ${schedule.productName || 'N/A'}, 매칭된 도시 수: ${schedule.matchedCityCount || 'N/A'}`);
+                        });
+                      });
+                      // console.log('=====================================\n');
+                      
+                      return Object.keys(groupedSchedules).length === 0 ? (
+                        <div className="no-schedules">일정이 없습니다.</div>
+                      ) : (
+                        Object.entries(groupedSchedules).map(([groupKey, schedules]) => (
                         <div key={groupKey} className="schedule-section">
                           <div className="schedule-section-header">{groupKey}</div>
                           {schedules.map((schedule: any, index) => {
@@ -1368,7 +1705,8 @@ export default function EuropeCityDetail() {
                           })}
                         </div>
                       ))
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               )}

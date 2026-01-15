@@ -3,9 +3,9 @@ import './EuropeScheduleEdit.scss';
 import '../2city/EuropeCityDetail.scss';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { recoilCityCart, CityCartItem, recoilProductName, recoilScheduleInfo, recoilSelectedScheduleProduct } from '../../../../RecoilStore';
+import { recoilCityCart, CityCartItem, recoilProductName, recoilScheduleInfo, recoilSelectedScheduleProduct } from '../../../RecoilStore';
 import { IoIosArrowBack } from 'react-icons/io';
-import { AdminURL } from '../../../../MainURL';
+import { AdminURL } from '../../../MainURL';
 import axios from 'axios';
 
 export default function EuropeScheduleEdit() {

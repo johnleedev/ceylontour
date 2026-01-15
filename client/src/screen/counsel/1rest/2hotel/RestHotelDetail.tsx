@@ -75,6 +75,7 @@ export default function RestHotelDetail() {
         const res = await axios.get(`${AdminURL}/ceylontour/gethotelinfobyid/${ID}`);
         if (res.data) {
           const copy = [...res.data][0];
+          console.log('copy', copy);
           setHotelInfo(copy);
           const imageNamesAllViewCopy = copy.imageNamesAllView ? JSON.parse(copy.imageNamesAllView) : [];
           setImageAllView(imageNamesAllViewCopy);
@@ -655,6 +656,62 @@ export default function RestHotelDetail() {
     });
   };
 
+  // 선택된 호텔 정보를 일차별로 파싱하여 반환 (일정 데이터에 호텔 정보 입력용)
+  // 예: 2박 2박 2박 -> day0,1: 첫번째, day2: 첫번째-두번째, day3: 두번째, day4: 두번째-세번째, day5,6: 세번째
+  // 각 호텔은 nights + 1일이며, 두 번째 호텔부터는 첫 날이 이전 호텔의 마지막 날(전환일)과 겹침
+  const getHotelInfoPerDay = (hotels: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>) => {
+    const hotelInfoPerDay: Array<{ dayIndex: number; hotelName: string; hotelLevel: string }> = [];
+    
+    if (hotels.length === 0) {
+      return hotelInfoPerDay;
+    }
+
+    let currentDay = 0;
+
+    // 각 호텔에 대해 일정 생성
+    hotels.forEach((hotelItem, hotelIndex) => {
+      const nights = parseInt(hotelItem.dayNight || '1', 10);
+      const hotelName = hotelItem.hotel?.hotelNameKo || hotelItem.hotelSort || '';
+      const hotelLevel = hotelItem.hotel?.hotelLevel || '';
+      const nextHotel = hotelIndex < hotels.length - 1 ? hotels[hotelIndex + 1] : null;
+      const nextHotelName = nextHotel?.hotel?.hotelNameKo || nextHotel?.hotelSort || '';
+      const isFirstHotel = hotelIndex === 0;
+
+      // 첫 번째 호텔: nights일 + 전환 1일 = nights + 1일
+      // 이후 호텔: (nights - 1)일 + 전환 1일 = nights일 (첫 날은 이미 전환일에 포함)
+      const daysToAdd = isFirstHotel ? nights : nights - 1;
+      
+      // 현재 호텔의 날짜 추가
+      for (let i = 0; i < daysToAdd; i++) {
+        hotelInfoPerDay.push({
+          dayIndex: currentDay,
+          hotelName: hotelName,
+          hotelLevel: hotelLevel
+        });
+        currentDay++;
+      }
+
+      // 다음 호텔이 있으면 전환 날 추가
+      if (nextHotel) {
+        hotelInfoPerDay.push({
+          dayIndex: currentDay,
+          hotelName: `${hotelName} - ${nextHotelName}`,
+          hotelLevel: hotelLevel
+        });
+        currentDay++;
+      } else {
+        // 마지막 호텔인 경우 마지막 날 추가 (nights + 1일이므로)
+        hotelInfoPerDay.push({
+          dayIndex: currentDay,
+          hotelName: hotelName,
+          hotelLevel: hotelLevel
+        });
+      }
+    });
+
+    return hotelInfoPerDay;
+  };
+
   // 호텔과 박수를 기반으로 일정 데이터 생성
   const createScheduleFromHotels = (hotels: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>) => {
     let currentDay = 1;
@@ -907,13 +964,13 @@ export default function RestHotelDetail() {
   return (
     <div className="RestHotelDetail">
       {/* 왼쪽 상단 뒤로가기 버튼 */}
-      <button
+      {/* <button
         type="button"
         className="left-back-btn"
         onClick={() => navigate(-1)}
       >
         <IoIosArrowBack />
-      </button>
+      </button> */}
 
       {/* 오른쪽 패널 토글 버튼 */}
       {!showRightPanel && (
@@ -987,13 +1044,41 @@ export default function RestHotelDetail() {
           )}
           <div className="hotel-center-wrapper">
 
-            {/* <div className="tag-wrapper-container">
-              {divWrappers.map(({ text }, index) => (
-                <div key={index} className="tag-wrapper">
-                  <div>{text}</div>
-                </div>
-              ))}
-            </div> */}
+            {/* Breadcrumb Navigation */}
+            <div className="breadcrumb-nav">
+              <span 
+                className="breadcrumb-item"
+                onClick={() => navigate('/')}
+              >
+                Home
+              </span>
+              <span className="breadcrumb-separator"> - </span>
+              <span 
+                className="breadcrumb-item"
+                onClick={() => navigate('/counsel/rest')}
+              >
+                휴양지
+              </span>
+              {CITY && (
+                <>
+                  <span className="breadcrumb-separator"> - </span>
+                  <span 
+                    className="breadcrumb-item"
+                    onClick={() => navigate(-1)}
+                  >
+                    {CITY}
+                  </span>
+                </>
+              )}
+              {hotelInfo?.hotelNameKo && (
+                <>
+                  <span className="breadcrumb-separator"> - </span>
+                  <span className="breadcrumb-item breadcrumb-item-current">
+                    {hotelInfo.hotelNameKo}
+                  </span>
+                </>
+              )}
+            </div>
 
             <div className="room-container-wrapper">
               <div className="room-container-left">
@@ -1143,23 +1228,31 @@ export default function RestHotelDetail() {
                       </div>
                       <div className="location-nearby-list">
                         <div className="location-nearby-item">
-                          <span className="location-icon">◎</span>
-                          <span className="location-name">발리 국립 골프 클럽</span>
+                          <div className="location-nearby-item-icon-name">
+                            <span className="location-icon">◎</span>
+                            <span className="location-name">발리 국립 골프 클럽</span>
+                          </div>
                           <span className="location-time">도보 5분</span>
                         </div>
                         <div className="location-nearby-item">
-                          <span className="location-icon">◎</span>
-                          <span className="location-name">게러그비치</span>
+                          <div className="location-nearby-item-icon-name">
+                            <span className="location-icon">◎</span>
+                            <span className="location-name">게러그비치</span>
+                          </div>
                           <span className="location-time">도보 12분</span>
                         </div>
                         <div className="location-nearby-item">
-                          <span className="location-icon">◎</span>
-                          <span className="location-name">발리 컬렉션 쇼핑센터</span>
+                          <div className="location-nearby-item-icon-name">  
+                            <span className="location-icon">◎</span>
+                            <span className="location-name">발리 컬렉션 쇼핑센터</span>
+                          </div>
                           <span className="location-time">도보 17분</span>
                         </div>
                         <div className="location-nearby-item">
-                          <span className="location-icon">◎</span>
-                          <span className="location-name">웅우라라이 국제공항</span>
+                          <div className="location-nearby-item-icon-name">  
+                            <span className="location-icon">◎</span>
+                            <span className="location-name">웅우라라이 국제공항</span>
+                          </div>
                           <span className="location-time">차로 20분</span>
                         </div>
                       </div>
@@ -1331,13 +1424,17 @@ export default function RestHotelDetail() {
                               // 상품명을 RecoilStore에 저장
                               const productNameFromSchedule = getProductNameFromSchedule(product);
                               setProductName(productNameFromSchedule);
+
+                              // 일차별 호텔 정보 파싱
+                              const hotelInfoPerDay = getHotelInfoPerDay(selectedHotels);
                               
                               navigate('/counsel/rest/hotelcost', { 
                                 state: {
                                   hotelInfo: hotelInfo,
                                   productInfo: product,
                                   city: CITY,
-                                  selectedHotels: selectedHotels
+                                  selectedHotels: selectedHotels,
+                                  hotelInfoPerDay: hotelInfoPerDay
                                 }
                               });
                               window.scrollTo(0, 0);

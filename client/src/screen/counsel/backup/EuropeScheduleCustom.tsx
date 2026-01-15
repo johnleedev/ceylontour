@@ -27,13 +27,13 @@ import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle
 import rectangle677 from '../../../lastimages/counselrest/hotel/detail/rectangle-677.png';
 import vector105 from '../../../lastimages/counselrest/hotel/detail/vector-105.svg';
 import reviewimage from '../../../lastimages/counselrest/hotel/detail/review.png';
-import RatingBoard from '../../../common/RatingBoard';
-import ScheduleRederBox from '../../../common/ScheduleRederBox';
+import RatingBoard from '../../common/RatingBoard';
+import ScheduleRederBox from '../../common/ScheduleRederBox';
 import { useEffect } from 'react';
-import { AdminURL } from '../../../../MainURL';
+import { AdminURL } from '../../../MainURL';
 import axios from 'axios';
 import { useSetRecoilState } from 'recoil';
-import { recoilSelectedScheduleData } from '../../../../RecoilStore';
+import { recoilSelectedScheduleData } from '../../../RecoilStore';
 
 // 일정표 우측 패널 카드용 이미지 (투어 전용)
 import scheduleImg1 from '../../../lastimages/counseltour/schedule/image1.png';

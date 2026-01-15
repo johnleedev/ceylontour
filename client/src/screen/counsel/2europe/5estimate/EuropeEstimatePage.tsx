@@ -37,9 +37,28 @@ export default function EuropeEstimatePage() {
     return themeMap[theme[0]] || theme[0];
   };
 
-  // 고객명 가져오기
+  // 고객명 가져오기 (2명 모두)
   const getCustomerName = () => {
-    return customerInfo.customer1Name || customerInfo.customer2Name || '고객';
+    const names: string[] = [];
+    if (customerInfo.customer1Name) {
+      names.push(customerInfo.customer1Name);
+    }
+    if (customerInfo.customer2Name) {
+      names.push(customerInfo.customer2Name);
+    }
+    return names.length > 0 ? names.join(', ') : '고객';
+  };
+
+  // 연락처 가져오기 (2명 모두)
+  const getCustomerPhone = () => {
+    const phones: string[] = [];
+    if (customerInfo.customer1Phone) {
+      phones.push(customerInfo.customer1Phone);
+    }
+    if (customerInfo.customer2Phone) {
+      phones.push(customerInfo.customer2Phone);
+    }
+    return phones.length > 0 ? phones.join(', ') : '';
   };
 
   // 호텔 정보를 formSections 형식으로 변환
@@ -47,11 +66,23 @@ export default function EuropeEstimatePage() {
     if (!selectedHotelData.scheduleCards || selectedHotelData.scheduleCards.length === 0) {
       return [];
     }
-    return selectedHotelData.scheduleCards.map((card: any) => ({
-      name: card.title || '호텔명',
-      nights: (selectedHotelData.selectedNights?.[card.id] || card.nights || ''),
-      roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || ''
-    }));
+    return selectedHotelData.scheduleCards.map((card: any, index: number) => {
+      // 각 카드에 해당하는 호텔 정보 찾기
+      const selectedHotel = selectedHotelData.selectedHotels?.find(
+        (sh: any) => sh.index === index || sh.index === (card.id - 1)
+      );
+      const hotelInfoForCard = selectedHotel?.hotel || selectedHotelData.hotelInfo;
+      
+      // 위치 정보 (도시명)
+      const location = hotelInfoForCard?.city || selectedHotelData.hotelInfo?.city || '';
+      
+      return {
+        name: card.title || '호텔명',
+        nights: (selectedHotelData.selectedNights?.[card.id] || card.nights || ''),
+        roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || '',
+        location: location
+      };
+    });
   };
 
   // 호텔 아이템 생성
@@ -86,8 +117,9 @@ export default function EuropeEstimatePage() {
 
       // 평점 계산
       const rating = hotelInfoForCard?.tripAdviser || hotelInfoForCard?.customerScore || hotelInfoForCard?.hotelLevel || '0';
-      const ratingNum = parseFloat(rating);
-      const stars = '★'.repeat(Math.max(1, Math.min(5, Math.floor(ratingNum))));
+      const ratingNum = hotelInfoForCard?.hotelLevel
+        ? Math.max(0, Math.min(5, parseInt(String(hotelInfoForCard.hotelLevel), 10) || 0))
+        : 0;
 
       // 호텔명
       const hotelName = card.title || hotelInfoForCard?.hotelNameKo || '호텔명';
@@ -99,7 +131,7 @@ export default function EuropeEstimatePage() {
         id: card.id || index + 1,
         image: hotelImage,
         name: hotelName,
-        rating: stars || '★★★★★',
+        rating: ratingNum,
         roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || '객실',
         nights: selectedHotelData.selectedNights?.[card.id] 
           ? `${selectedHotelData.selectedNights[card.id]}박`
@@ -128,7 +160,7 @@ export default function EuropeEstimatePage() {
       },
       {
         label: '연락처',
-        value: customerInfo.customer1Phone || customerInfo.customer2Phone || '',
+        value: getCustomerPhone(),
         type: 'simple',
       },
       {
@@ -138,7 +170,7 @@ export default function EuropeEstimatePage() {
       },
       {
         label: '여행기간',
-        value: customerInfo.travelPeriod || selectedHotelData.travelPeriod || selectedHotelData.periodText || '여행기간',
+        value: customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}` : selectedHotelData.periodText || '여행기간',
         type: 'simple',
       },
       {
@@ -244,21 +276,24 @@ export default function EuropeEstimatePage() {
               {hotelItems.length > 0 ? hotelItems.map((hotel) => (
                 <div key={hotel.id} className="tour-hotel-item">
                   <img className="tour-hotel-image" alt={hotel.name} src={hotel.image} />
-                  <div className="tour-hotel-info" style={{ padding: '10px' }}>
+                  <div className="tour-hotel-info">
                     <div className="tour-hotel-name-rating">
-                      <div className="tour-p">
-                        <div className="tour-text-wrapper" style={{ fontSize: '20px' }}>{hotel.name}</div>
+                      <div className="tour-hotel-name-wrapper">
+                        <div className="tour-hotel-name">{hotel.name}</div>
                       </div>
-                      <div className="tour-text-wrapper-7">{hotel.rating}</div>
+                      <div className="tour-hotel-rating">
+                        <RatingBoard
+                          ratingSize={20}
+                          rating={hotel.rating}
+                        />
+                      </div>
                     </div>
-                    <div className={hotel.id === 1 ? "p p-instance" : "p"}>
-                      <div className="tour-text-wrapper design-component-instance-node"  style={{ fontSize: '18px' }}>{hotel.roomType}</div>
+                    <div className="tour-hotel-details">
+                      <div className="tour-hotel-room-type">{hotel.roomType}</div>
+                      <div className="tour-hotel-nights-text">{hotel.nights}</div>
                     </div>
-                    <div className="p">
-                      <div className="tour-text-wrapper"  style={{ fontSize: '18px' }}>{hotel.nights}</div>
-                    </div>
-                    <div className="p">
-                      <div className="tour-text-wrapper"  style={{ fontSize: '18px' }}>{hotel.description}</div>
+                    <div className="tour-hotel-description-wrapper">
+                      <div className="tour-hotel-description">{hotel.description}</div>
                     </div>
                   </div>
                 </div>
@@ -277,13 +312,15 @@ export default function EuropeEstimatePage() {
               {selectedScheduleData.selectedSchedule ? (
                 // 저장된 일정이 있으면 해당 일정만 표시
                 <ScheduleRederBox 
-                  id={selectedScheduleData.selectedSchedule?.id || selectedScheduleData.productInfo?.id || stateProps?.id} 
+                  id={selectedScheduleData.selectedSchedule?.id || selectedScheduleData.productInfo?.id ? String(selectedScheduleData.productInfo?.id) : null} 
                   scheduleInfo={selectedScheduleData.selectedSchedule}
+                  hideFloatingBox={true}
                 />
               ) : (
                 // 일정 정보가 없으면 상품 ID로 일정 가져오기
                 <ScheduleRederBox 
-                  id={selectedScheduleData.productInfo?.id || selectedHotelData.productInfo?.id || stateProps?.id} 
+                  id={selectedScheduleData.productInfo?.id || selectedHotelData.productInfo?.id ? String(selectedScheduleData.productInfo?.id) : null}
+                  hideFloatingBox={true}
                 />
               )}
             </div>
@@ -325,17 +362,12 @@ export default function EuropeEstimatePage() {
                 {section.type === 'hotel' && section.hotels && (
                   <div className="tour-hotel-info-wrapper">
                     {section.hotels.map((hotel: any, index: number) => (
-                      <div key={index} className="p">
-                        <div className="tour-text-wrapper">{hotel.name}</div>
+                      <div key={index} className="tour-hotel-form-item">
+                        <div className="tour-text-wrapper">
+                          {hotel.location ? `${hotel.location} - ` : ''}{hotel.name} - {hotel.nights}박 
+                        </div>
                       </div>
                     ))}
-                    <div className="tour-hotel-nights">
-                      {section.hotels.map((hotel: any, index: number) => (
-                        <div key={index} className="tour-hotel-night">
-                          {hotel.nights}
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
               </div>
