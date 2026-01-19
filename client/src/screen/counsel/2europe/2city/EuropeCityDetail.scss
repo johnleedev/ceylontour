@@ -3,8 +3,15 @@
   width: 100%;
   box-sizing: border-box;
   background-color: #fff;
-  height: calc(100vh - 100px);
-  overflow: hidden;
+
+
+  .city-detail-container {
+    padding: 0 20px;
+    max-width: 1920px;
+    margin: 0 auto;
+    height: calc(100vh - 100px);
+    overflow: hidden;
+  }
 
   // 왼쪽 상단 뒤로가기 버튼
   .left-back-btn {
@@ -93,6 +100,7 @@
       overflow: hidden;
       max-width: 1920px;
       margin: 0 auto;
+
       
       .left-section {
         width: 100vw;
@@ -100,7 +108,6 @@
         height: 100%;
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
-        padding: 0 50px;
         
         &::-webkit-scrollbar {
           display: none; /* Chrome, Safari, Opera */
@@ -208,10 +215,9 @@
 
       // 도시 탭 컨테이너
       .city-tabs-container {
-        margin-bottom: 50px;
         border-bottom: 1px solid #e0e0e0;
         max-width: 1100px;
-        margin: 0 auto;
+        margin: 20px auto ;
 
         .city-tabs-left {
           display: flex;
@@ -256,7 +262,7 @@
 
     // 오른쪽 영역: 비워둠
     .right-section {
-      flex: 4;
+      width: 30%;
       padding: 20px;
       box-sizing: border-box;
       position: relative;
@@ -308,48 +314,62 @@
       opacity: 1;
     }
   }
+
+  // Breadcrumb Navigation
+  .breadcrumb-nav-wrapper {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    margin-top: 30px;
+
+    .breadcrumb-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 16px;
+      color: #666;
+  
+      .breadcrumb-item {
+        cursor: pointer;
+        color: #333;
+        transition: color 0.2s ease;
+        height: 25px;
+        line-height: 25px;
+        font-weight: 400;
+        color: #666;
+  
+        &:hover {
+          color: #333;
+          text-decoration: underline;
+        }
+  
+        &.breadcrumb-item-current {
+          cursor: default;
+          color: #333;
+          font-weight: 600;
+  
+          &:hover {
+            color: #333;
+            text-decoration: none;
+            font-weight: 600;
+          }
+        }
+      }
+  
+      .breadcrumb-separator {
+        color: #999;
+        height: 25px;
+        line-height: 25px;
+      }
+    }
+  }
+  
   
   .city-center-wrapper {
     width: 100%;
     max-width: 1100px;
     margin: 0 auto;
 
-    // Breadcrumb Navigation
-    .breadcrumb-nav {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: 20px;
-      font-size: 16px;
-      color: #666;
-
-      .breadcrumb-item {
-        cursor: pointer;
-        color: #333;
-        transition: color 0.2s ease;
-
-        &:hover {
-          color: #26a9fb;
-          text-decoration: underline;
-        }
-
-        &.breadcrumb-item-current {
-          cursor: default;
-          color: #666;
-          font-weight: 500;
-
-          &:hover {
-            color: #666;
-            text-decoration: none;
-          }
-        }
-      }
-
-      .breadcrumb-separator {
-        color: #999;
-        user-select: none;
-      }
-    }
   }
 
   // 도시 소개 섹션
@@ -552,6 +572,10 @@
     .photo-main {
       width: 100%;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
 
       .photo-main-image {
         width: 100%;
@@ -566,6 +590,18 @@
         object-fit: cover;
         display: block;
         background-color: #000;
+      }
+      .photo-main-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+      }
+      .photo-main-notice {
+        font-size: 14px;
+        font-weight: 400; 
+        color: #333;
+        text-align: center;
       }
     }
   }
@@ -672,6 +708,18 @@
           height: 100%;
           object-fit: cover;
         }
+      }
+      .preview-image-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+      }
+      .preview-image-notice {
+        font-size: 14px;
+        font-weight: 400; 
+        color: #333;
+        text-align: center;
       }
     }
   }
@@ -2566,6 +2614,53 @@
             }
           }
         }
+      }
+    }
+  }
+
+  // 관련 상품 보기 버튼
+  .related-products-btn-wrapper {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    box-sizing: border-box;
+
+    .related-products-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 17px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: #000000;
+      color: #ffffff;
+
+      &:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+      }
+    }
+
+    @media (max-width: 1023px) {
+      padding: 16px 24px;
+
+      .related-products-btn {
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      padding: 12px 20px;
+
+      .related-products-btn {
+        padding: 12px;
+        font-size: 15px;
       }
     }
   }

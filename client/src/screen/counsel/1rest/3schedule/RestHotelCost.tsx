@@ -61,14 +61,16 @@ import { createDebugInfo } from './HotelCostComponent/hotelCostDebug';
 import { initializeHotels, updateScheduleCards } from './HotelCostComponent/hotelCostInitialization';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import ScheduleRederCustom from '../../../common/ScheduleRederCustom';
+import { FaRegCircle } from 'react-icons/fa6';
 
 
 export default function RestHotelCost() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
-  
+ 
   const setSelectedHotelData = useSetRecoilState(recoilSelectedHotelData);
+  const selectedHotelData = useRecoilValue(recoilSelectedHotelData);
   const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
   const exchangeRate = useRecoilValue(recoilExchangeRate);
   const savedProductName = useRecoilValue(recoilProductName);
@@ -81,6 +83,8 @@ export default function RestHotelCost() {
   const [imageAllView, setImageAllView] = React.useState<any[]>([]);
   const [imageRoomView, setImageRoomView] = React.useState<any[]>([]);
   const [imageEtcView, setImageEtcView] = React.useState<any[]>([]);
+  const [imageMainPoint, setImageMainPoint] = React.useState<any[]>([]);
+  const [imageBenefit, setImageBenefit] = React.useState<any[]>([]);
   const [roomTypes, setRoomTypes] = React.useState<any[]>([]);
   const [productInfo, setProductInfo] = React.useState<any | null>(null);
   const [includeItems, setIncludeItems] = React.useState<string[]>([]);
@@ -141,6 +145,9 @@ export default function RestHotelCost() {
   const [resortPoolvillaHotels, setResortPoolvillaHotels] = React.useState<Array<{ hotel: any; hotelSort: string; hotelName: string }>>([]);
   // 호텔 선택 모달에서 사용할 호텔 리스트 (이미지 데이터 포함)
   const [hotelsWithFullData, setHotelsWithFullData] = React.useState<any[]>([]);
+  // 드래그 앤 드롭 관련 state
+  const [draggedCardId, setDraggedCardId] = React.useState<number | null>(null);
+  const [dragOverCardId, setDragOverCardId] = React.useState<number | null>(null);
   // 일정표 토글
   const [showScheduleBox, setShowScheduleBox] = React.useState<boolean>(false);
   const [showScheduleEdit, setShowScheduleEdit] = React.useState<boolean>(false);
@@ -171,9 +178,9 @@ export default function RestHotelCost() {
   // 수정하기 영역 내부 탭 상태
   const [hotelDetailTab, setHotelDetailTab] = React.useState<'hotel' | 'schedule'>('hotel');
   const [summaryMainTab, setSummaryMainTab] = React.useState<'상세일정' | '항공' | '식사' | '계약특전'>('상세일정');
-  const [summarySubTab, setSummarySubTab] = React.useState<'전체' | '호텔베네핏' | '익스커션' | '강습/클래스' | '스파마사지' | '식사/다이닝' | '바/클럽' | '스냅촬영' | '차량/가이드' | '편의사항' | '기타'>('전체');
-  // 기간변경 모드 상태
-  const [isEditingPeriod, setIsEditingPeriod] = React.useState<boolean>(false);
+  const [summarySubTab, setSummarySubTab] = React.useState<'전체' | '익스커션' | '강습/클래스' | '스파마사지' | '식사/다이닝' | '바/클럽' | '스냅촬영' | '차량/가이드' | '편의사항' | '기타'>('전체');
+  // 기간변경 모드 상태 (항상 편집 모드)
+  const [isEditingPeriod, setIsEditingPeriod] = React.useState<boolean>(true);
   // 기간변경 모드 중 가격 계산용 원본 selectedNights 저장 (기간변경 모드일 때만 사용)
   const [originalSelectedNightsForPrice, setOriginalSelectedNightsForPrice] = React.useState<{ [key: number]: number }>({});
   // 상세일정 탭의 상세일정 리스트 데이터
@@ -192,7 +199,7 @@ export default function RestHotelCost() {
   // 각 탭별 데이터 개수 계산
   const tabCounts = React.useMemo(() => {
     const counts: { [key: string]: number } = {};
-    const definedTabs = ['호텔베네핏', '익스커션', '강습/클래스', '스파마사지', '식사/다이닝', '바/클럽', '스냅촬영', '차량/가이드', '편의사항'];
+    const definedTabs = ['익스커션', '강습/클래스', '스파마사지', '식사/다이닝', '바/클럽', '스냅촬영', '차량/가이드', '편의사항'];
     
     // 전체 개수
     counts['전체'] = scheduleDetailList.length;
@@ -209,6 +216,18 @@ export default function RestHotelCost() {
     
     return counts;
   }, [scheduleDetailList]);
+  
+  // 필터링된 상세일정 리스트
+  const filteredScheduleDetailList = React.useMemo(() => {
+    if (summarySubTab === '전체') {
+      return scheduleDetailList;
+    }
+    if (summarySubTab === '기타') {
+      const definedTabs = ['익스커션', '강습/클래스', '스파마사지', '식사/다이닝', '바/클럽', '스냅촬영', '차량/가이드', '편의사항'];
+      return scheduleDetailList.filter((item: any) => !definedTabs.includes(item.sort));
+    }
+    return scheduleDetailList.filter((item: any) => item.sort === summarySubTab);
+  }, [scheduleDetailList, summarySubTab]);
 
   // 분리된 유틸리티 함수들 사용
   const getRoomTypesForCardCallback = React.useCallback((card: any): string[] => {
@@ -254,6 +273,20 @@ export default function RestHotelCost() {
         setImageEtcView(Array.isArray(etcView) ? etcView : []);
       } catch {
         setImageEtcView([]);
+      }
+
+      try {
+        const mainPoint = h.imageNamesMainPoint ? JSON.parse(h.imageNamesMainPoint) : [];
+        setImageMainPoint(Array.isArray(mainPoint) ? mainPoint : []);
+      } catch {
+        setImageMainPoint([]);
+      }
+
+      try {
+        const benefit = h.imageNamesBenefit ? JSON.parse(h.imageNamesBenefit) : [];
+        setImageBenefit(Array.isArray(benefit) ? benefit : []);
+      } catch {
+        setImageBenefit([]);
       }
 
       try {
@@ -459,6 +492,20 @@ export default function RestHotelCost() {
       setImageEtcView(Array.isArray(etcView) ? etcView : []);
     } catch {
       setImageEtcView([]);
+    }
+
+    try {
+      const mainPoint = h.imageNamesMainPoint ? JSON.parse(h.imageNamesMainPoint) : [];
+      setImageMainPoint(Array.isArray(mainPoint) ? mainPoint : []);
+    } catch {
+      setImageMainPoint([]);
+    }
+
+    try {
+      const benefit = h.imageNamesBenefit ? JSON.parse(h.imageNamesBenefit) : [];
+      setImageBenefit(Array.isArray(benefit) ? benefit : []);
+    } catch {
+      setImageBenefit([]);
     }
 
     try {
@@ -693,8 +740,8 @@ export default function RestHotelCost() {
   }, [exchangeRate]);
 
   // 분리된 가격 계산 함수들 사용 (useMemo로 감싸서 메모이제이션)
-  // 기간변경 모드일 때는 원본 selectedNights를 사용하고, 아닐 때는 현재 selectedNights를 사용
-  const nightsForPriceCalculation = isEditingPeriod ? originalSelectedNightsForPrice : selectedNights;
+  // 항상 편집 모드이므로 현재 selectedNights를 사용
+  const nightsForPriceCalculation = selectedNights;
   
   const calculatedPoolvillaPrice = React.useMemo(() => {
     return calculatePoolvillaPrice(
@@ -977,21 +1024,39 @@ export default function RestHotelCost() {
     const newNights = { ...selectedNights, [newId]: 1 };
     setSelectedNights(newNights);
 
-    // scheduleInfo.scheduleDetailData에 맨 아래에 빈 day 1개만 추가
-    if (scheduleInfo && scheduleInfo.scheduleDetailData) {
-      const newScheduleInfo = { ...scheduleInfo };
+    // scheduleInfo.scheduleDetailData에 마지막 day의 내용을 복사해서 새로운 day에 추가하고, 마지막 day를 빈 일정으로 초기화
+    if (scheduleInfo && scheduleInfo.scheduleDetailData && Array.isArray(scheduleInfo.scheduleDetailData)) {
+      const newScheduleInfo = { 
+        ...scheduleInfo,
+        airlineData: scheduleInfo.airlineData || { sort: '', airlineCode: [] }
+      };
       const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
       
-      // 맨 아래에 빈 day 1개만 추가
-      newScheduleDetailData.push(createEmptyDay());
+      // 마지막 day가 있는 경우
+      if (newScheduleDetailData.length > 0) {
+        const lastDayIndex = newScheduleDetailData.length - 1;
+        const lastDay = newScheduleDetailData[lastDayIndex];
+        
+        // 마지막 day의 내용을 깊은 복사하여 새로운 day로 추가
+        const copiedDay = JSON.parse(JSON.stringify(lastDay));
+        newScheduleDetailData.push(copiedDay);
+        
+        // 마지막 day를 빈 일정으로 초기화
+        newScheduleDetailData[lastDayIndex] = createEmptyDay();
+      } else {
+        // 일정이 없으면 빈 day 1개 추가
+        newScheduleDetailData.push(createEmptyDay());
+      }
       
       newScheduleInfo.scheduleDetailData = newScheduleDetailData;
       setScheduleInfo(newScheduleInfo);
     } else {
       // scheduleInfo가 없으면 기본 구조를 만들고 빈 day 1개 추가
       const newScheduleInfo = {
-        airlineData: { sort: '', airlineCode: [] },
-        scheduleDetailData: [createEmptyDay()]
+        airlineData: scheduleInfo?.airlineData || { sort: '', airlineCode: [] },
+        scheduleDetailData: scheduleInfo?.scheduleDetailData && Array.isArray(scheduleInfo.scheduleDetailData) && scheduleInfo.scheduleDetailData.length > 0
+          ? [...scheduleInfo.scheduleDetailData, createEmptyDay()]
+          : [createEmptyDay()]
       };
       setScheduleInfo(newScheduleInfo);
     }
@@ -1089,6 +1154,91 @@ export default function RestHotelCost() {
     setScheduleCards(cardsWithUpdatedDates);
     updateProductNameFromCards(cardsWithUpdatedDates, selectedNights);
   }, [scheduleCards, selectedNights, customerInfo.travelPeriodStart, updateProductNameFromCards]);
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragStart = React.useCallback((e: React.DragEvent, cardId: number) => {
+    if (!isEditingPeriod) return;
+    setDraggedCardId(cardId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', '');
+  }, [isEditingPeriod]);
+
+  const handleDragOver = React.useCallback((e: React.DragEvent, cardId: number) => {
+    if (!isEditingPeriod || draggedCardId === null || draggedCardId === cardId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCardId(cardId);
+  }, [isEditingPeriod, draggedCardId]);
+
+  const handleDragLeave = React.useCallback(() => {
+    setDragOverCardId(null);
+  }, []);
+
+  const handleDrop = React.useCallback((e: React.DragEvent, targetCardId: number) => {
+    e.preventDefault();
+    if (!isEditingPeriod || draggedCardId === null || draggedCardId === targetCardId) {
+      setDraggedCardId(null);
+      setDragOverCardId(null);
+      return;
+    }
+
+    const draggedIndex = scheduleCards.findIndex(c => c.id === draggedCardId);
+    const targetIndex = scheduleCards.findIndex(c => c.id === targetCardId);
+
+    if (draggedIndex < 0 || targetIndex < 0) {
+      setDraggedCardId(null);
+      setDragOverCardId(null);
+      return;
+    }
+
+    const updatedCards = [...scheduleCards];
+    const [draggedCard] = updatedCards.splice(draggedIndex, 1);
+    updatedCards.splice(targetIndex, 0, draggedCard);
+
+    // selectedHotels도 함께 이동
+    setSelectedHotels(prev => {
+      const newHotels = [...prev];
+      if (newHotels.length > draggedIndex && newHotels.length > targetIndex) {
+        const [draggedHotel] = newHotels.splice(draggedIndex, 1);
+        newHotels.splice(targetIndex, 0, draggedHotel);
+      }
+      return newHotels;
+    });
+
+    // 날짜 재계산
+    let currentDate: Date | null = null;
+    if (customerInfo.travelPeriodStart) {
+      try {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+          currentDate = new Date(customerInfo.travelPeriodStart.trim());
+        }
+      } catch {
+        currentDate = null;
+      }
+    }
+
+    const cardsWithUpdatedDates = updatedCards.map((card, idx) => {
+      if (currentDate) {
+        const nights = selectedNights[card.id] || extractNightsNumber(card.nights || '') || 1;
+        const dayText = formatDate(currentDate);
+        currentDate.setDate(currentDate.getDate() + nights);
+        return { ...card, day: dayText };
+      } else {
+        return { ...card, day: `${idx + 1}일차` };
+      }
+    });
+
+    setScheduleCards(cardsWithUpdatedDates);
+    updateProductNameFromCards(cardsWithUpdatedDates, selectedNights);
+    setDraggedCardId(null);
+    setDragOverCardId(null);
+  }, [isEditingPeriod, draggedCardId, scheduleCards, selectedNights, customerInfo.travelPeriodStart, updateProductNameFromCards]);
+
+  const handleDragEnd = React.useCallback(() => {
+    setDraggedCardId(null);
+    setDragOverCardId(null);
+  }, []);
 
   // 호텔 구성 카드 삭제 함수
   const handleDeleteCard = React.useCallback((cardId: number) => {
@@ -1224,6 +1374,17 @@ export default function RestHotelCost() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelInfo?.city, stateProps?.city]);
+
+  // 상세일정 아이템 클릭 핸들러
+  const handleScheduleDetailItemClick = (item: any) => {
+    // 선택된 영역이 있는지 확인
+    const addFunction = (window as any).__addDetailItemToSelectedLocation;
+    if (addFunction && typeof addFunction === 'function') {
+      addFunction(item);
+    } else {
+      alert('먼저 일정표에서 "변경" 버튼을 클릭하여 추가할 위치를 선택해주세요.');
+    }
+  };
 
   // 플로팅 박스용 헬퍼 함수들
   const createEmptyDetail = () => ({
@@ -2049,36 +2210,19 @@ export default function RestHotelCost() {
     return null;
   }
 
-  const highlightItems = [
-    { image: rectangle661, title: '초럭셔리 체험' },
-    { image: rectangle662, title: '버틀러 시스템' },
-    { image: rectangle663, title: '프라이빗 비치' },
-    { image: rectangle664, title: '턴다운 서비스' },
-    { image: rectangle665, title: '허니문 인기' },
-  ];
+  // 핵심 포인트 아이템 생성 (데이터에서 가져온 이미지 사용)
+  const highlightItems = imageMainPoint.map((item: any) => ({
+    image: `${AdminURL}/images/hotelimages/${item.imageName}`,
+    title: item.title || '',
+    notice: item.notice || '',
+  }));
 
-  const benefitItems = [
-    {
-      title: '초럭셔리 체험',
-      text: '세계적 평가의 St. Regis 브랜드 & 발리 최고급 서비스',
-      image: rectangle76,
-    },
-    {
-      title: '버틀러 시스템',
-      text: '짐 언패킹, 패킹, 커피/티 서비스 예약대행',
-      image: rectangle78,
-    },
-    {
-      title: '턴다운 서비스',
-      text: '매일 밤 방을 편안하게 정리해주는 감동 포인트',
-      image: rectangle76,
-    },
-    {
-      title: '프라이빗 비치',
-      text: '게이티드 누사두아의 조용하고 품격 높은 해변',
-      image: rectangle619,
-    },
-  ];
+  // 베네핏 아이템 생성 (데이터에서 가져온 이미지 사용)
+  const benefitItems = imageBenefit.map((item: any) => ({
+    title: item.title || '',
+    text: item.notice || '',
+    image: `${AdminURL}/images/hotelimages/${item.imageName}`,
+  }));
 
   const reviewItems = [
     {
@@ -2107,424 +2251,34 @@ export default function RestHotelCost() {
 
   return (
     <div className="RestHotelCost">
-      {/* 오른쪽 패널 토글 버튼 */}
-      {!showRightPanel && (
-        <button
-          type="button"
-          className="right-panel-toggle-btn"
-          onClick={() => setShowRightPanel(true)}
-        >
-          <IoIosArrowBack />
-        </button>
-      )}
+      <div className="hotel-cost-container">
+        {/* 오른쪽 패널 토글 버튼 */}
+        {!showRightPanel && (
+          <button
+            type="button"
+            className="right-panel-toggle-btn"
+            onClick={() => setShowRightPanel(true)}
+          >
+            <IoIosArrowBack />
+          </button>
+        )}
 
-      <div className={`hotel-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
-        {/* 왼쪽 영역: 기존 내용 */}
-        <div className="left-section">
-          <div className="hotel-center-wrapper">
-           
-
-            <div
-              className="hotel-title-wrapper"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <IoIosArrowBack
-                  className="arrow-back"
-                  onClick={() => navigate(-1)}
-                />
-                <div className="hotel-title">
-                  <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
-                  <div className="text-subtitle">
-                    {hotelInfo?.hotelNameEn || ''}
-                  </div>
-                  <RatingBoard
-                    ratingSize={20}
-                    rating={
-                      hotelInfo && hotelInfo.hotelLevel
-                        ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
-                        : 0
-                    }
-                  />
-
-                  <div className="text-location">
-                    <p>{hotelInfo?.nation || ''}</p>
-                    <IoIosArrowForward />
-                    <p>{hotelInfo?.city || ''}</p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowScheduleBox(prev => !prev)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '999px',
-                  border: '1px solid #ddd',
-                  backgroundColor: '#fff',
-                  color: '#333',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {showScheduleBox ? '호텔정보 보기' : '일정보기'}
-              </button>
-            </div>
-
-
-            {showScheduleBox ? (
-              <div style={{ marginTop: '40px', position: 'relative' }}>
-                {showScheduleEdit ? (
-                  <ScheduleRederCustom
-                    id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
-                    productInfo={stateProps?.productInfo}
-                    scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
-                    useRecoil={true}
-                    hotelInfoPerDay={hotelInfoPerDay}
-                    hideFloatingBox={false}
-                  />
-                ) : (
-                  <ScheduleRederBox
-                    id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
-                    scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
-                    useRecoil={true}
-                    hotelInfoPerDay={hotelInfoPerDay}
-                    productInfo={productInfo}
-                  />
-                )}
-                <button 
-                  onClick={() => {
-                    if (showScheduleEdit) {
-                      // 저장&일정보기: 편집한 일정 저장
-                      // Recoil에서 최신 일정 데이터 가져오기
-                      const latestScheduleInfo = scheduleInfo;
-                      if (latestScheduleInfo) {
-                        // Recoil에 저장된 일정 데이터 확인
-                        console.log('일정 저장:', latestScheduleInfo);
-                        // 필요시 서버에 저장하는 API 호출을 여기에 추가할 수 있습니다
-                        // 예: await saveScheduleToServer(latestScheduleInfo);
-                        alert('일정이 저장되었습니다.');
-                      } else {
-                        alert('저장할 일정 데이터가 없습니다.');
-                      }
-                    }
-                    setShowScheduleEdit(!showScheduleEdit);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    padding: '6px 14px',
-                    borderRadius: '999px',
-                    border: '1px solid #333',
-                    backgroundColor: '#333',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {showScheduleEdit ? '저장&일정보기' : '일정수정하기'}
-                </button>
-                
-              </div>
-            ) : (
-              <>
-
-              {/* 리조트 + 풀빌라 조합인 경우 호텔 탭 버튼 */}
-              {resortPoolvillaHotels.length > 0 && (
-                  <div className="right-tab-container" style={{ marginBottom: '20px' }}>
-                    <div className="right-tab-left">
-                      {resortPoolvillaHotels.map((hotelInfo, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          className={`right-tab-button ${selectedHotelTabIndex === index ? 'active' : ''}`}
-                          onClick={() => setSelectedHotelTabIndex(index)}
-                        >
-                          {hotelInfo.hotelName}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-         
-
-                <div className="room-container-wrapper">
-                  <div className="room-container-left">
-                    {btnSolids.map(({ text }, index) => (
-                      <button
-                        key={text}
-                        type="button"
-                        className={`roomtabsort ${activeTab === index ? 'active' : ''}`}
-                        onClick={() => setActiveTab(index)}
-                      >
-                        {text}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="room-container-right">
-                    {roomTypes.map((room: any, index: number) => (
-                      <React.Fragment key={room.roomTypeName || index}>
-                        <span className="roomtype-text">{room.roomTypeName}</span>
-                        {index < roomTypes.length - 1 && (
-                          <span className="roomtype-separator"></span>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-
-               
-
-                <div className="photo-gallery">
-                  <div className="photo-main">
-                    {(() => {
-                      const images = getCurrentImages(activeTab, imageAllView, imageRoomView, imageEtcView);
-                      if (images && images.length > 0) {
-                        const main = images[selectedMainImageIndex];
-                        const isVideo = isVideoFile(main.imageName);
-                        
-                        if (isVideo) {
-                          return (
-                            <video
-                              className="photo-main-image"
-                              controls
-                              src={`${AdminURL}/images/hotelimages/${main.imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          );
-                        }
-                        
-                        return (
-                          <img
-                            className="photo-main-image"
-                            alt={main.title || '메인 이미지'}
-                            src={`${AdminURL}/images/hotelimages/${main.imageName}`}
-                          />
-                        );
-                      }
-                      return (
-                        <img
-                          className="photo-main-image"
-                          alt="메인 이미지"
-                          src={rectangle580}
-                        />
-                      );
-                    })()}
-                  </div>
-
-                  <div className="photo-thumbnails">
-                    {getCurrentImages(activeTab, imageAllView, imageRoomView, imageEtcView).map((img: any, index: number) => {
-                      const isVideo = isVideoFile(img.imageName);
-                      return (
-                        <div
-                          className={`photo-thumbnail ${selectedMainImageIndex === index ? 'active' : ''} ${isVideo ? 'video-thumbnail' : ''}`}
-                          key={index}
-                          onClick={() => setSelectedMainImageIndex(index)}
-                        >
-                          {isVideo ? (
-                            <div className="thumbnail-video-wrapper">
-                              <video
-                                className="thumbnail-video"
-                                src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                                muted
-                                preload="metadata"
-                              />
-                              <div className="video-play-icon">▶</div>
-                            </div>
-                          ) : (
-                            <img
-                              src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                              alt={img.title || `썸네일 ${index + 1}`}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="location-info">
-                  <div className="section-titlebox">
-                    <span className="location-title">호텔위치</span>
-                    <span className="text-wrapper-11">호텔 위치 보기</span>
-                  </div>
-
-                  <p className="text-wrapper-10">
-                    {hotelInfo?.hotelAddress || ''}
-                  </p>
-
-                  <div className="flexcontainer">
-                    <p className="text">
-                      <span className="span">누사두아 게이티드 지역의 고급 라인업</span>
-                    </p>
-
-                    <p className="text">
-                      <span className="span">공항 → 20~25분</span>
-                    </p>
-
-                    <p className="text">
-                      <span className="span">발리 컬렉션 쇼핑센터 → 차량 5분</span>
-                    </p>
-
-                    <p className="text">
-                      <span className="span">
-                        주변: 무려프 비치클럽·워터블로우·BTDC 산책로
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="highlight-section">
-                  <div className="highlight-title">핵심 포인트</div>
-                  <div className="highlight-list">
-                    {highlightItems.map(({ image, title }) => (
-                      <div className="highlight-item" key={title}>
-                        <div className="highlight-image-wrap">
-                          <img src={image} alt={title} />
-                        </div>
-                        <div className="highlight-item-title">{title}</div>
-                        <div className="highlight-item-desc">
-                          세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={`benefit-section`}>
-                  <div className="div-wrapper">
-                    <div className="text-wrapper">베네핏 포함사항</div>
-                  </div>
-          
-                  <div className="benefit-items">
-                    {benefitItems.map(({ title, text, image }, index) => (
-                      <div key={title} className="benefit-item">
-                        <img className="rectangle" alt="Rectangle" src={image} />
-                        <div className={`benefit-card benefit-card-${index + 1}`}>
-                          <div className="benefit-title">{title}</div>
-                          <div className="benefit-text">{text}</div>
-                        </div>
-                        <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
-                          실론투어
-                          <br />
-                          단독특전2
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className='review-cover'>
-                  {/* 후기 및 평점 섹션 */}
-                  <div className="review-section">
-                    <h2 className="section-title">후기 및 평점</h2>
-                    
-                    <div className="review-list">
-                      {reviewItems.map((review) => (
-                        <div key={review.id} className="review-item">
-                          <img className="review-image" alt="후기 이미지" src={review.image} />
-                          <div className="review-content">
-                            <div className="review-header">
-                              <h3 className="review-title">{review.title}</h3>
-                              <div className="review-rating">
-                                <RatingBoard ratingSize={20} rating={review.rating} />
-                              </div>
-                            </div>
-                            
-                            <p className="review-text">
-                              {review.text.split('\n').map((line, index, arr) => (
-                                <React.Fragment key={index}>
-                                  {line}
-                                  {index < arr.length - 1 && <br />}
-                                </React.Fragment>
-                              ))}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-
-                <ScheduleRederBox
-                    id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
-                    scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
-                    useRecoil={true}
-                    hotelInfoPerDay={hotelInfoPerDay}
-                  />
-              </>
-            )}
-
-            {/* 왼쪽 패널 하단 버튼들 */}
-            <div className="left-panel-bottom-buttons">
-              <button
-                type="button"
-                className="bottom-btn bottom-btn-estimate"
-                onClick={() => {
-                  setShowRightPanel(true);
-                  setActiveReservationTab('reserve');
-                }}
-              >
-                견적보기
-              </button>
-              {/* 플로팅 Top 버튼 */}
-              <button
-                type="button"
-                className="floating-top-btn"
-                onClick={() => {
-                  const leftSection = document.querySelector('.RestHotelCost .left-section');
-                  if (leftSection) {
-                    leftSection.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                }}
-              >
-                <IoIosArrowUp />
-              </button>
-              <button
-                type="button"
-                className="bottom-btn bottom-btn-edit"
-                onClick={() => {
-                  setShowRightPanel(true);
-                  setActiveReservationTab('edit');
-                }}
-              >
-                수정
-              </button>
-            </div>
-
-            <div style={{height: '100px'}}></div>
-
-          </div>
-        </div>
-
-        {/* 오른쪽 영역: 선택한 스케줄(여행상품) 정보 및 비용 */}
-        {showRightPanel && (
-          <div className="right-section">
-            {/* 닫기 버튼 */}
-            <button
-              type="button"
-              className="right-panel-close-btn"
-              onClick={() => setShowRightPanel(false)}
-            >
-              <IoMdClose />
-            </button>
+        <div className={`hotel-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
+          {/* 왼쪽 영역: 기존 내용 */}
+          <div className="left-section">
+            <div className="hotel-center-wrapper">
             
-            <div className="hotel-cost-component">
-              {/* 제품 정보 헤더 */}
-              <div className="cost-header">
-                <div className="cost-header-top">
-                  <div style={{ display: 'flex', alignItems: 'start', gap: '12px', flexDirection: 'column' }}>
-                    <div className="cost-badge">
-                      {productInfo?.scheduleSort || productInfo?.costType || '패키지'}
-                    </div>
+
+              <div
+                className="hotel-title-left-wrapper"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <IoIosArrowBack
+                    className="arrow-back"
+                    onClick={() => navigate(-1)}
+                  />
+                  <div className="cost-title-header" style={{ marginLeft: '10px' }}>
                     <div className="cost-product-name">
                       {getProductNameFromScheduleCallback()} - 
                       {periodText && (
@@ -2532,374 +2286,1152 @@ export default function RestHotelCost() {
                       )}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPeriodChangeModal(true);
-                      fetchNationProducts();
-                    }}
-                    style={{
-                      width:'100px',
-                      padding: '6px 14px',
-                      borderRadius: '6px',
-                      border: '1px solid #ddd',
-                      backgroundColor: '#fff',
-                      color: '#333',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    상품변경
-                  </button>
                 </div>
-                
-                {/* 예약하기 / 수정하기 탭 버튼 */}
-                <div
+
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleBox(prev => !prev)}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '8px',
-                    marginTop: '8px',
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                    border: '1px solid #ddd',
+                    backgroundColor: '#fff',
+                    color: '#333',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setActiveReservationTab('reserve')}
+                  {showScheduleBox ? '호텔정보 보기' : '일정보기'}
+                </button>
+              </div>
+
+
+              {showScheduleBox ? (
+                <div style={{ marginTop: '40px', position: 'relative' }}>
+                  {showScheduleEdit ? (
+                    <ScheduleRederCustom
+                      id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
+                      productInfo={stateProps?.productInfo}
+                      scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
+                      useRecoil={true}
+                      hotelInfoPerDay={hotelInfoPerDay}
+                      hideFloatingBox={false}
+                    />
+                  ) : (
+                    <ScheduleRederBox
+                      id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
+                      scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
+                      useRecoil={true}
+                      hotelInfoPerDay={hotelInfoPerDay}
+                      productInfo={productInfo}
+                    />
+                  )}
+                  {/* 포함/불포함  ----------------------------------------------------------------------------------  */}
+                  <div className="schedule_add_info_section_cover">
+                    <div className="included__items__section__wrapper">
+                      <div className="single__header__main">포함/불포함</div>
+                      <div className="included__items__wrapper">
+                        <div className="index__title__wrapper">
+                          <span className="included__icon"><FaRegCircle size={14}/></span>
+                          <span>포함사항</span>
+                        </div>
+                        <div className="elements__wrapper">
+                          {
+                            stateProps?.productInfo?.includeNote && (() => {
+                              const includeNote = typeof stateProps?.productInfo?.includeNote === 'string' ? JSON.parse(stateProps?.productInfo?.includeNote) : stateProps?.productInfo?.includeNote;
+                              return includeNote.map((item: any, index: any) => {
+                                return (
+                                  <span key={index}>- {item}</span>
+                                )
+                              })
+                            })()
+                          }
+                          {stateProps?.productInfo?.includeNoteText && <span>- {stateProps?.productInfo?.includeNoteText}</span>}
+                        </div>
+                        <div className="index__title__wrapper">
+                          <span className="unincluded__icon"><IoMdClose size={18}/></span>
+                          <span>불포함사항</span>
+                        </div>
+                        <div className="elements__wrapper">
+                          {
+                            stateProps?.productInfo?.notIncludeNote && (() => {
+                              const notIncludeNote = typeof stateProps?.productInfo?.notIncludeNote === 'string' ? JSON.parse(stateProps?.productInfo?.notIncludeNote) : stateProps?.productInfo?.notIncludeNote;
+                              return notIncludeNote.map((item: any, index: any) => {
+                                return (
+                                  <span key={index}>- {item}</span>
+                                )
+                              })
+                            })()
+                          }
+                          {stateProps?.productInfo?.notIncludeNoteText && <span>- {stateProps?.productInfo?.notIncludeNoteText}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="must__read__section__wrapper">
+                      <div className="single__header__main">필독사항</div>
+                      <div className="must__read__wrapper">
+                        {stateProps?.productInfo?.cautionNote && stateProps?.productInfo?.cautionNote !== '' && (
+                          <span style={{whiteSpace: 'pre-wrap'}}>{stateProps?.productInfo?.cautionNote}</span>
+                        )}
+                        <span>
+                          - 상기일정은 항공 및 현지사정으로 인하여 변경될 수 있습니다.
+                        </span>
+                        <span>- 환율변동에 의해 요금이 가/감 될 수 있습니다.</span>
+                        <span>
+                          - 취소시 항공 및 호텔(리조트, 풀빌라 등)의 취소 수수료가 발생하는
+                          상품입니다.
+                        </span>
+                        <span>
+                          - 예약시 여권상의 정확한 영문이름으로 예약하셔야 하며 여권
+                          유효기간은 출발일 기준 6개월 이상 남아있어야 합니다.
+                        </span>
+                        <span>
+                          - 외국/이중 국적자의 해외여행은 도착지국가의 출입국 정책이
+                          상이하므로, 반드시 여행자 본인이 해당국의 대사관에 확인하셔야
+                          합니다.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      if (showScheduleEdit) {
+                        // 저장&일정보기: 편집한 일정 저장
+                        // Recoil에서 최신 일정 데이터 가져오기
+                        const latestScheduleInfo = scheduleInfo;
+                        if (latestScheduleInfo) {
+                          // Recoil에 저장된 일정 데이터 확인
+                          console.log('일정 저장:', latestScheduleInfo);
+                          // 필요시 서버에 저장하는 API 호출을 여기에 추가할 수 있습니다
+                          // 예: await saveScheduleToServer(latestScheduleInfo);
+                          alert('일정이 저장되었습니다.');
+                        } else {
+                          alert('저장할 일정 데이터가 없습니다.');
+                        }
+                      }
+                      setShowScheduleEdit(!showScheduleEdit);
+                    }}
                     style={{
-                      width: '100px',
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
                       padding: '6px 14px',
                       borderRadius: '999px',
                       border: '1px solid #333',
-                      backgroundColor: activeReservationTab === 'reserve' ? '#333' : '#fff',
-                      color: activeReservationTab === 'reserve' ? '#fff' : '#333',
+                      backgroundColor: '#333',
+                      color: '#fff',
+                      cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: 500,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.2s'
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    견적
+                    {showScheduleEdit ? '저장&일정보기' : '일정수정하기'}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveReservationTab('edit')}
-                    style={{
-                      width: '100px',
-                      padding: '6px 14px',
-                      borderRadius: '999px',
-                      border: '1px solid #ddd',
-                      backgroundColor: activeReservationTab === 'edit' ? '#333' : '#fff',
-                      color: activeReservationTab === 'edit' ? '#fff' : '#333',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    수정
-                  </button>
-                </div>
-              </div>
-
-              {/* 예약하기 탭: 정보 표시 */}
-              {activeReservationTab === 'reserve' ? (
-                <div className="reservation-info-section">
-                  <h3 className="reservation-info-title">
-                    예약 정보
-                  </h3>
                   
-                  <div className="cost-hotel-cards">
-                    {/* 성명 */}
-                    <div className="cost-hotel-card">
-                      <label>성명</label>
-                      <div className="reservation-info-value">
-                        {customerInfo.customer1Name || customerInfo.customer2Name || '-'}
-                      </div>
-                    </div>
-
-                    {/* 여행형태 */}
-                    <div className="cost-hotel-card">
-                      <label>여행형태</label>
-                      <div className="reservation-info-value">
-                        {customerInfo.theme && customerInfo.theme.length > 0
-                          ? customerInfo.theme.map((t: string) => {
-                              const themeMap: { [key: string]: string } = {
-                                'honeymoon': '허니문',
-                                'family': '가족여행',
-                                'fit': 'FIT',
-                                'corporate': '기업/워크샵'
-                              };
-                              return themeMap[t] || t;
-                            }).join(', ')
-                          : '-'}
-                      </div>
-                    </div>
-
-                    {/* 상품명 */}
-                    <div className="cost-hotel-card">
-                      <label>상품명</label>
-                      <div className="reservation-info-value">
-                        {savedProductName || '-'}
-                      </div>
-                    </div>
-
-                    {/* 여행기간 */}
-                    <div className="cost-hotel-card">
-                      <label>여행기간</label>
-                      <div className="reservation-info-value">
-                        {customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
-                          ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
-                          : '-'}
-                      </div>
-                    </div>
-
-                    {/* 이용항공 */}
-                    <div className="cost-hotel-card">
-                      <label>이용항공</label>
-                      <div className="reservation-info-value">
-                        {customerInfo.flightStyle && customerInfo.flightStyle.length > 0
-                          ? customerInfo.flightStyle.join(', ')
-                          : '-'}
-                      </div>
-                    </div>
-
-                    {/* 이용호텔 */}
-                    <div className="cost-hotel-card">
-                      <label>이용호텔</label>
-                      <div className="reservation-info-value">
-                        {selectedHotels && selectedHotels.length > 0
-                          ? selectedHotels
-                              .filter((sh: any) => sh.hotel && sh.hotel.hotelNameKo)
-                              .map((sh: any) => sh.hotel.hotelNameKo)
-                              .join(', ') || '-'
-                          : '-'}
-                      </div>
-                    </div>
-
-                    {/* 1인상품가 */}
-                    <div className="cost-hotel-card">
-                      <label>1인상품가</label>
-                      <div className="reservation-info-value">
-                        {finalPricePerPerson && finalPricePerPerson > 0
-                          ? `${finalPricePerPerson.toLocaleString()}원`
-                          : '-'}
-                      </div>
-                    </div>
-
-                    {/* 총요금 */}
-                    <div className="cost-hotel-card">
-                      <label>총요금</label>
-                      <div className="reservation-info-value">
-                        {finalTotalPrice && finalTotalPrice > 0
-                          ? `${finalTotalPrice.toLocaleString()}원`
-                          : '-'}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <>
-                  {/* 호텔구성/상세일정 탭 */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                    marginTop: '20px',
-                    borderBottom: '1px solid #e0e0e0'
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => setHotelDetailTab('hotel')}
-                      style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        borderBottom: hotelDetailTab === 'hotel' ? '2px solid #333' : '2px solid transparent',
-                        backgroundColor: 'transparent',
-                        color: hotelDetailTab === 'hotel' ? '#333' : '#999',
-                        fontSize: '16px',
-                        fontWeight: hotelDetailTab === 'hotel' ? 'bold' : 'normal',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      호텔구성
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHotelDetailTab('schedule')}
-                      style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        borderBottom: hotelDetailTab === 'schedule' ? '2px solid #333' : '2px solid transparent',
-                        backgroundColor: 'transparent',
-                        color: hotelDetailTab === 'schedule' ? '#333' : '#999',
-                        fontSize: '16px',
-                        fontWeight: hotelDetailTab === 'schedule' ? 'bold' : 'normal',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      상세일정
-                    </button>
+
+                {/* 리조트 + 풀빌라 조합인 경우 호텔 탭 버튼 */}
+                {resortPoolvillaHotels.length > 0 && (
+                    <div className="right-tab-container" style={{ marginBottom: '20px' }}>
+                      <div className="right-tab-left">
+                        {resortPoolvillaHotels.map((hotelInfo, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className={`right-tab-button ${selectedHotelTabIndex === index ? 'active' : ''}`}
+                            onClick={() => setSelectedHotelTabIndex(index)}
+                          >
+                            {hotelInfo.hotelName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+          
+
+                  <div className="room-container-wrapper">
+                    <div className="room-container-left">
+                      {btnSolids.map(({ text }, index) => (
+                        <button
+                          key={text}
+                          type="button"
+                          className={`roomtabsort ${activeTab === index ? 'active' : ''}`}
+                          onClick={() => setActiveTab(index)}
+                        >
+                          {text}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="room-container-right">
+                      {roomTypes.map((room: any, index: number) => (
+                        <React.Fragment key={room.roomTypeName || index}>
+                          <span className="roomtype-text">{room.roomTypeName}</span>
+                          {index < roomTypes.length - 1 && (
+                            <span className="roomtype-separator"></span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
                   </div>
 
+                
 
-                  {/* 호텔구성 탭 내용 */}
-                  {hotelDetailTab === 'hotel' && (
-                    <>
-                      {/* 호텔 구성 카드들 - productScheduleData 기반 */}
-                      <div className="cost-hotel-cards">
-                      {(scheduleCards.length > 0 ? scheduleCards : []).map((card, index) => (
-                        <div key={card.id} className="cost-hotel-card" style={{ position: 'relative' }}>
-                          <div className="cost-card-date" style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center',
-                            gap: isEditingPeriod ? '4px' : '0'
-                          }}>
-                            {isEditingPeriod && (
-                              <button
-                                type="button"
-                                onClick={() => handleMoveCardUp(card.id)}
-                                disabled={index === 0}
-                                style={{
-                                  padding: '4px 8px',
-                                  border: 'none',
-                                  backgroundColor: index === 0 ? '#f5f5f5' : '#fff',
-                                  color: index === 0 ? '#ccc' : '#333',
-                                  fontSize: '12px',
-                                  cursor: index === 0 ? 'not-allowed' : 'pointer',
-                                  borderRadius: '4px',
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  minWidth: '20px',
-                                  height: '20px'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (index > 0) {
-                                    e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (index > 0) {
-                                    e.currentTarget.style.backgroundColor = '#fff';
-                                  }
-                                }}
-                                title="위로 이동"
+                  <div className="photo-gallery">
+                    <div className="photo-main">
+                      {(() => {
+                        const images = getCurrentImages(activeTab, imageAllView, imageRoomView, imageEtcView);
+                        if (images && images.length > 0) {
+                          const main = images[selectedMainImageIndex];
+                          const isVideo = isVideoFile(main.imageName);
+                          
+                          if (isVideo) {
+                            return (
+                              <video
+                                className="photo-main-image"
+                                controls
+                                src={`${AdminURL}/images/hotelimages/${main.imageName}`}
                               >
-                                <IoIosArrowUp />
-                              </button>
-                            )}
-                            {card.day}
-                            {isEditingPeriod && (
-                              <button
-                                type="button"
-                                onClick={() => handleMoveCardDown(card.id)}
-                                disabled={index === scheduleCards.length - 1}
-                                style={{
-                                  padding: '4px 8px',
-                                  border: 'none',
-                                  backgroundColor: index === scheduleCards.length - 1 ? '#f5f5f5' : '#fff',
-                                  color: index === scheduleCards.length - 1 ? '#ccc' : '#333',
-                                  fontSize: '12px',
-                                  cursor: index === scheduleCards.length - 1 ? 'not-allowed' : 'pointer',
-                                  borderRadius: '4px',
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  minWidth: '20px',
-                                  height: '20px'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (index < scheduleCards.length - 1) {
-                                    e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (index < scheduleCards.length - 1) {
-                                    e.currentTarget.style.backgroundColor = '#fff';
-                                  }
-                                }}
-                                title="아래로 이동"
-                              >
-                                <IoIosArrowDown />
-                              </button>
+                                브라우저가 비디오 태그를 지원하지 않습니다.
+                              </video>
+                            );
+                          }
+                          
+                          return (
+                            <img
+                              className="photo-main-image"
+                              alt={main.title || '메인 이미지'}
+                              src={`${AdminURL}/images/hotelimages/${main.imageName}`}
+                            />
+                          );
+                        }
+                        return (
+                          <img
+                            className="photo-main-image"
+                            alt="메인 이미지"
+                            src={rectangle580}
+                          />
+                        );
+                      })()}
+                    </div>
+
+                    <div className="photo-thumbnails">
+                      {getCurrentImages(activeTab, imageAllView, imageRoomView, imageEtcView).map((img: any, index: number) => {
+                        const isVideo = isVideoFile(img.imageName);
+                        return (
+                          <div
+                            className={`photo-thumbnail ${selectedMainImageIndex === index ? 'active' : ''} ${isVideo ? 'video-thumbnail' : ''}`}
+                            key={index}
+                            onClick={() => setSelectedMainImageIndex(index)}
+                          >
+                            {isVideo ? (
+                              <div className="thumbnail-video-wrapper">
+                                <video
+                                  className="thumbnail-video"
+                                  src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                  muted
+                                  preload="metadata"
+                                />
+                                <div className="video-play-icon">▶</div>
+                              </div>
+                            ) : (
+                              <img
+                                src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                alt={img.title || `썸네일 ${index + 1}`}
+                              />
                             )}
                           </div>
-                          <div className="cost-card-header" style={{ position: 'relative' }}>
-                            <div className="cost-card-badge">
-                              {card.badge}
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="hotel-intro-section">
+                    <div className="hotel-intro-rating">
+                      <RatingBoard
+                        ratingSize={30}
+                        rating={
+                          hotelInfo && hotelInfo.hotelLevel
+                            ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                            : 0
+                        }
+                      />
+                    </div>
+                    <div className="hotel-intro-tagline">
+                      프라이빗 비치와 세심한 서비스가 완성하는 품격있는 휴식
+                    </div>
+                    {hotelInfo?.logoImage && (
+                      <div className="hotel-intro-logo">
+                        <img 
+                          src={`${AdminURL}/images/hotellogos/${hotelInfo.logoImage}`} 
+                          alt="호텔 로고"
+                        />
+                      </div>
+                    )}
+                    <div className="hotel-intro-entitle">
+                      <p>{hotelInfo?.hotelNameEn || ''}</p>
+                    </div>
+                    <div className="hotel-intro-description">
+                      <p>정교한 설계와 세심한 서비스는 허니문 동안 럭셔리 그 자체를 선사합니다.</p>
+                      <p>2017년 새롭게 단장을 마치고 모던 럭셔리를 지향하는 호텔로 거듭났습니다.</p>
+                      <p>모든 객실에 자쿠지와 개인용 풀장이 설치되어 있는 것이 특징입니다.</p>
+                    </div>
+                  </div>
+
+                  {highlightItems.length > 0 && (
+                    <div className="highlight-section">
+                      <div className="highlight-title">핵심 포인트</div>
+                      <div className="highlight-list">
+                        {highlightItems.map(({ image, title, notice }, index) => (
+                          <div className="highlight-item" key={`${title}-${index}`}>
+                            <div className="highlight-image-wrap">
+                              <img src={image} alt={title} />
                             </div>
-                            <div className="cost-card-title"
-                             onClick={() => isEditingPeriod ? handleHotelChange(card.id) : null}
-                             style={{
-                               cursor: isEditingPeriod ? 'pointer' : 'default',
-                               userSelect: 'none',
-                               transition: 'all 0.2s'
-                             }}
-                             onMouseEnter={(e) => {
-                               if (isEditingPeriod) {
-                                 e.currentTarget.style.opacity = '0.8';
-                                 e.currentTarget.style.transform = 'scale(1.05)';
-                               }
-                             }}
-                             onMouseLeave={(e) => {
-                               if (isEditingPeriod) {
-                                 e.currentTarget.style.opacity = '1';
-                                 e.currentTarget.style.transform = 'scale(1)';
-                               }
-                             }}
-                            >{card.title}</div>
+                            <div className="highlight-item-title">{title}</div>
+                            <div className="highlight-item-desc">
+                              {notice || '세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스'}
+                            </div>
                           </div>
-                          <div className="cost-card-content">
-                            <div className="cost-card-roomtype" style={{ width: isEditingPeriod ? '100%' : 'auto'}}>
-                              {
-                                isEditingPeriod 
-                                ?
-                                <select
-                                  value={selectedRoomTypes[card.id] || (getRoomTypesForCardCallback(card)[0] || '')}
-                                  onChange={(e) => {
-                                    const newRoomType = e.target.value;
-                                    setSelectedRoomTypes(prev => ({
-                                      ...prev,
-                                      [card.id]: newRoomType
-                                    }));
-                                  }}
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {benefitItems.length > 0 && (
+                    <div className={`benefit-section`}>
+                      <div className="div-wrapper">
+                        <div className="text-wrapper">베네핏 포함사항</div>
+                      </div>
+              
+                      <div className="benefit-items">
+                        {benefitItems.map(({ title, text, image }, index) => (
+                          <div key={`${title}-${index}`} className="benefit-item">
+                            <img className="rectangle" alt="Rectangle" src={image} />
+                            <div className={`benefit-card benefit-card-${index + 1}`}>
+                              <div className="benefit-title">{title}</div>
+                              <div className="benefit-text">{text}</div>
+                            </div>
+                            <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
+                              실론투어
+                              <br />
+                              단독특전2
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 후기 및 평점 섹션 */}
+                  {/* <div className='review-cover'>
+                
+                    <div className="review-section">
+                      <h2 className="section-title">후기 및 평점</h2>
+                      
+                      <div className="review-list">
+                        {reviewItems.map((review) => (
+                          <div key={review.id} className="review-item">
+                            <img className="review-image" alt="후기 이미지" src={review.image} />
+                            <div className="review-content">
+                              <div className="review-header">
+                                <h3 className="review-title">{review.title}</h3>
+                                <div className="review-rating">
+                                  <RatingBoard ratingSize={20} rating={review.rating} />
+                                </div>
+                              </div>
+                              
+                              <p className="review-text">
+                                {review.text.split('\n').map((line, index, arr) => (
+                                  <React.Fragment key={index}>
+                                    {line}
+                                    {index < arr.length - 1 && <br />}
+                                  </React.Fragment>
+                                ))}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div> */}
+
+                  <ScheduleRederBox
+                      id={stateProps?.isFromMakeButton ? undefined : scheduleProductId}
+                      scheduleInfo={stateProps?.isFromMakeButton ? stateProps?.customScheduleInfo : undefined}
+                      useRecoil={true}
+                      hotelInfoPerDay={hotelInfoPerDay}
+                    />
+
+                  {/* 포함/불포함  ----------------------------------------------------------------------------------  */}
+                  <div className="schedule_add_info_section_cover">
+                    <div className="included__items__section__wrapper">
+                      <div className="single__header__main">포함/불포함</div>
+                      <div className="included__items__wrapper">
+                        <div className="index__title__wrapper">
+                          <span className="included__icon"><FaRegCircle size={14}/></span>
+                          <span>포함사항</span>
+                        </div>
+                        <div className="elements__wrapper">
+                          {
+                            stateProps?.productInfo?.includeNote && (() => {
+                              const includeNote = typeof stateProps?.productInfo?.includeNote === 'string' ? JSON.parse(stateProps?.productInfo?.includeNote) : stateProps?.productInfo?.includeNote;
+                              return includeNote.map((item: any, index: any) => {
+                                return (
+                                  <span key={index}>- {item}</span>
+                                )
+                              })
+                            })()
+                          }
+                          {stateProps?.productInfo?.includeNoteText && <span>- {stateProps?.productInfo?.includeNoteText}</span>}
+                        </div>
+                        <div className="index__title__wrapper">
+                          <span className="unincluded__icon"><IoMdClose size={18}/></span>
+                          <span>불포함사항</span>
+                        </div>
+                        <div className="elements__wrapper">
+                          {
+                            stateProps?.productInfo?.notIncludeNote && (() => {
+                              const notIncludeNote = typeof stateProps?.productInfo?.notIncludeNote === 'string' ? JSON.parse(stateProps?.productInfo?.notIncludeNote) : stateProps?.productInfo?.notIncludeNote;
+                              return notIncludeNote.map((item: any, index: any) => {
+                                return (
+                                  <span key={index}>- {item}</span>
+                                )
+                              })
+                            })()
+                          }
+                          {stateProps?.productInfo?.notIncludeNoteText && <span>- {stateProps?.productInfo?.notIncludeNoteText}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="must__read__section__wrapper">
+                      <div className="single__header__main">필독사항</div>
+                      <div className="must__read__wrapper">
+                        {stateProps?.productInfo?.cautionNote && stateProps?.productInfo?.cautionNote !== '' && (
+                          <span style={{whiteSpace: 'pre-wrap'}}>{stateProps?.productInfo?.cautionNote}</span>
+                        )}
+                        <span>
+                          - 상기일정은 항공 및 현지사정으로 인하여 변경될 수 있습니다.
+                        </span>
+                        <span>- 환율변동에 의해 요금이 가/감 될 수 있습니다.</span>
+                        <span>
+                          - 취소시 항공 및 호텔(리조트, 풀빌라 등)의 취소 수수료가 발생하는
+                          상품입니다.
+                        </span>
+                        <span>
+                          - 예약시 여권상의 정확한 영문이름으로 예약하셔야 하며 여권
+                          유효기간은 출발일 기준 6개월 이상 남아있어야 합니다.
+                        </span>
+                        <span>
+                          - 외국/이중 국적자의 해외여행은 도착지국가의 출입국 정책이
+                          상이하므로, 반드시 여행자 본인이 해당국의 대사관에 확인하셔야
+                          합니다.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 왼쪽 패널 하단 버튼들 */}
+              <div className="left-panel-bottom-buttons">
+                <button
+                  type="button"
+                  className="bottom-btn bottom-btn-edit"
+                  onClick={() => {
+                    setShowRightPanel(true);
+                    setActiveReservationTab('edit');
+                  }}
+                >
+                  일정수정
+                </button>
+                {/* 플로팅 Top 버튼 */}
+                <button
+                  type="button"
+                  className="floating-top-btn"
+                  onClick={() => {
+                    const leftSection = document.querySelector('.RestHotelCost .left-section');
+                    if (leftSection) {
+                      leftSection.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                >
+                  <IoIosArrowUp />
+                </button>
+                <button
+                  type="button"
+                  className="bottom-btn bottom-btn-estimate"
+                  onClick={() => {
+                    // productInfo에 상품명 업데이트 (savedProductName이 있으면 사용)
+                    const updatedProductInfo = savedProductName 
+                      ? { ...productInfo, productName: savedProductName }
+                      : productInfo;
+
+                    // 호텔 데이터를 Recoil에 저장
+                    setSelectedHotelData({
+                      hotelInfo: hotelInfo,
+                      productInfo: updatedProductInfo,
+                      scheduleCards: scheduleCards,
+                      selectedHotels: selectedHotels,
+                      periodText: periodText,
+                      includeItems: includeItems,
+                      excludeItems: excludeItems,
+                      selectedRoomTypes: selectedRoomTypes,
+                      selectedNights: selectedNights,
+                      travelPeriod: travelPeriodDisplay,
+                      reserveDate: customerInfo.reserveDate,
+                      locationInfo: {
+                        address: hotelInfo?.hotelAddress || '',
+                        details: [
+                          '누사두아 게이티드 지역의 고급 라인업',
+                          '공항 → 20~25분',
+                          '발리 컬렉션 쇼핑센터 → 차량 5분',
+                          '주변: 무려프 비치클럽·워터블로우·BTDC 산책로'
+                        ]
+                      },
+                      benefitItems: benefitItems.map((item) => ({
+                        title: item.title,
+                        text: item.text,
+                        image: item.image
+                      })),
+                      priceInfo: {
+                        pricePerPerson: finalPricePerPerson || 0,
+                        totalPrice: finalTotalPrice || 0,
+                        guestCount: guestCount
+                      }
+                    });
+
+                    // 일정 데이터를 Recoil에 저장
+                    const scheduleDataToSave = stateProps?.isFromMakeButton 
+                      ? stateProps?.customScheduleInfo 
+                      : scheduleInfo;
+                    
+                    if (scheduleDataToSave) {
+                      setSelectedScheduleData({
+                        productInfo: updatedProductInfo,
+                        selectedSchedule: scheduleDataToSave,
+                        totalPrice: finalTotalPrice || 0,
+                        guestCount: guestCount
+                      });
+                    } else {
+                      // scheduleInfo가 없으면 상품 ID만 저장
+                      setSelectedScheduleData({
+                        productInfo: updatedProductInfo,
+                        selectedSchedule: null,
+                        totalPrice: finalTotalPrice || 0,
+                        guestCount: guestCount
+                      });
+                    }
+
+                    navigate('/counsel/rest/estimate', { state: updatedProductInfo });
+                    window.scrollTo(0, 0);
+                  }}
+                >
+                  예약하기
+                </button>
+              </div>
+
+              <div style={{height: '100px'}}></div>
+
+            </div>
+          </div>
+
+          {/* 오른쪽 영역: 선택한 스케줄(여행상품) 정보 및 비용 */}
+          {showRightPanel && (
+            <div className="right-section">
+              {/* 닫기 버튼 */}
+              <button
+                type="button"
+                className="right-panel-close-btn"
+                onClick={() => setShowRightPanel(false)}
+              >
+                <IoMdClose />
+              </button>
+              
+              <div className="hotel-cost-component">
+                {/* 제품 정보 헤더 */}
+                <div className="cost-header">
+                  <div className="cost-header-top">
+                    <div className="hotel-title-right-wrapper">
+                      <div className="text-title-wrapper">
+                        <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPeriodChangeModal(true);
+                            fetchNationProducts();
+                          }}
+                          className='change-product-btn'
+                        >
+                          상품변경
+                        </button>
+                      </div>
+                      <div className="text-subtitle-rating-location-wrapper">
+                        <div className="text-subtitle">
+                          {hotelInfo?.hotelNameEn || ''}
+                        </div>
+                        <RatingBoard
+                          ratingSize={14}
+                          rating={
+                            hotelInfo && hotelInfo.hotelLevel
+                              ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                              : 0
+                          }
+                        />
+                      </div>
+                      <div className="text-location">
+                        <p>{hotelInfo?.nation || ''}</p>
+                        <IoIosArrowForward />
+                        <p>{hotelInfo?.city || ''}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 예약하기 / 수정하기 탭 버튼 */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      gap: '8px',
+                      marginTop: '8px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveReservationTab('reserve')}
+                      style={{
+                        width: '100px',
+                        padding: '6px 14px',
+                        borderRadius: '999px',
+                        border: '1px solid #333',
+                        backgroundColor: activeReservationTab === 'reserve' ? '#333' : '#fff',
+                        color: activeReservationTab === 'reserve' ? '#fff' : '#333',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      견적
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveReservationTab('edit')}
+                      style={{
+                        width: '100px',
+                        padding: '6px 14px',
+                        borderRadius: '999px',
+                        border: '1px solid #ddd',
+                        backgroundColor: activeReservationTab === 'edit' ? '#333' : '#fff',
+                        color: activeReservationTab === 'edit' ? '#fff' : '#333',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      수정
+                    </button>
+                  </div>
+                </div>
+
+                {/* 예약하기 탭: 정보 표시 */}
+                {activeReservationTab === 'reserve' ? (
+                  <div className="reservation-info-section">
+                    <h3 className="reservation-info-title">
+                      예약 정보
+                    </h3>
+                    
+                    <div className="cost-hotel-cards">
+                      {/* 성명 */}
+                      <div className="cost-hotel-card">
+                        <label>성명</label>
+                        <div className="reservation-info-value">
+                          {customerInfo.customer1Name || customerInfo.customer2Name || '-'}
+                        </div>
+                      </div>
+
+                      {/* 여행형태 */}
+                      <div className="cost-hotel-card">
+                        <label>여행형태</label>
+                        <div className="reservation-info-value">
+                          {customerInfo.theme && customerInfo.theme.length > 0
+                            ? customerInfo.theme.map((t: string) => {
+                                const themeMap: { [key: string]: string } = {
+                                  'honeymoon': '허니문',
+                                  'family': '가족여행',
+                                  'fit': 'FIT',
+                                  'corporate': '기업/워크샵'
+                                };
+                                return themeMap[t] || t;
+                              }).join(', ')
+                            : '-'}
+                        </div>
+                      </div>
+
+                      {/* 상품명 */}
+                      <div className="cost-hotel-card">
+                        <label>상품명</label>
+                        <div className="reservation-info-value">
+                          {savedProductName || '-'}
+                        </div>
+                      </div>
+
+                      {/* 여행기간 */}
+                      <div className="cost-hotel-card">
+                        <label>여행기간</label>
+                        <div className="reservation-info-value">
+                          {customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                            ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                            : '-'}
+                        </div>
+                      </div>
+
+                      {/* 이용항공 */}
+                      <div className="cost-hotel-card">
+                        <label>이용항공</label>
+                        <div className="reservation-info-value">
+                          {customerInfo.flightStyle && customerInfo.flightStyle.length > 0
+                            ? customerInfo.flightStyle.join(', ')
+                            : '-'}
+                        </div>
+                      </div>
+
+                      {/* 이용호텔 */}
+                      <div className="cost-hotel-card">
+                        <label>이용호텔</label>
+                        <div className="reservation-info-value">
+                          {selectedHotels && selectedHotels.length > 0
+                            ? selectedHotels
+                                .filter((sh: any) => sh.hotel && sh.hotel.hotelNameKo)
+                                .map((sh: any) => sh.hotel.hotelNameKo)
+                                .join(', ') || '-'
+                            : '-'}
+                        </div>
+                      </div>
+
+                      {/* 계약특전 */}
+                      <div className="cost-hotel-card">
+                        <label>계약특전</label>
+                        <div className="reservation-info-value">
+                          {selectedHotelData?.benefitItems && selectedHotelData.benefitItems.length > 0
+                            ? selectedHotelData.benefitItems.map((item: any, index: number) => (
+                                <div key={index} style={{ marginBottom: index < selectedHotelData.benefitItems!.length - 1 ? '4px' : '0' }}>
+                                  - {item.title}
+                                </div>
+                              ))
+                            : (benefitItems && benefitItems.length > 0
+                              ? benefitItems.map((item: any, index: number) => (
+                                  <div key={index} style={{ marginBottom: index < benefitItems.length - 1 ? '4px' : '0' }}>
+                                    - {item.title}
+                                  </div>
+                                ))
+                              : '-')}
+                        </div>
+                      </div>
+
+                      {/* 1인상품가 */}
+                      <div className="cost-hotel-card">
+                        <label>1인상품가</label>
+                        <div className="reservation-info-value">
+                          {finalPricePerPerson && finalPricePerPerson > 0
+                            ? `${finalPricePerPerson.toLocaleString()}원`
+                            : '-'}
+                        </div>
+                      </div>
+
+                      {/* 총요금 */}
+                      <div className="cost-hotel-card">
+                        <label>총요금</label>
+                        <div className="reservation-info-value">
+                          {finalTotalPrice && finalTotalPrice > 0
+                            ? `${finalTotalPrice.toLocaleString()}원`
+                            : '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 프로모션 및 할인 섹션 */}
+                    <div style={{ marginTop: '30px', paddingTop: '30px', borderTop: '1px solid #e0e0e0' }}>
+                      {/* 프로모션 적용사항 */}
+                      <div style={{ marginBottom: '30px' }}>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
+                          프로모션 적용사항
+                        </div>
+                        <div style={{ 
+                          padding: '12px',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: '4px',
+                          minHeight: '100px',
+                          color: '#666',
+                          fontSize: '14px',
+                          lineHeight: '1.6',
+                          whiteSpace: 'pre-line'
+                        }}>
+                          내용을 적는 곳입니다.
+                          {'\n'}내용을 적는 곳입니다.
+                          {'\n'}내용을 적는 곳입니다.
+                          {'\n'}내용을 적는 곳입니다.
+                        </div>
+                      </div>
+
+                      {/* 박람회 특가 */}
+                      <div style={{ marginBottom: '30px' }}>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
+                          박람회 특가
+                        </div>
+                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                            <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <span>당일계약</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                            <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <span>할인요금</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 할인 이벤트 */}
+                      <div>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
+                          할인 이벤트
+                        </div>
+                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                            <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <span>계약리뷰</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                            <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <span>후기리뷰</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                            <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <span>여행 후 평점 참여</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                            <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <span>블로그 작성</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* 호텔구성/상세일정 탭 */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      
+                      borderBottom: '1px solid #e0e0e0'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowScheduleBox(false);
+                          setHotelDetailTab('hotel');
+                        }}
+                        style={{
+                          width: '50%',
+                          padding: '10px 20px',
+                          border: 'none',
+                          borderBottom: hotelDetailTab === 'hotel' ? '2px solid #333' : '2px solid transparent',
+                          backgroundColor: 'transparent',
+                          color: hotelDetailTab === 'hotel' ? '#333' : '#999',
+                          fontSize: '16px',
+                          fontWeight: hotelDetailTab === 'hotel' ? 'bold' : 'normal',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        호텔
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowScheduleBox(true);
+                          setHotelDetailTab('schedule');
+                        }}
+                        style={{
+                          width: '50%',
+                          padding: '10px 20px',
+                          border: 'none',
+                          borderBottom: hotelDetailTab === 'schedule' ? '2px solid #333' : '2px solid transparent',
+                          backgroundColor: 'transparent',
+                          color: hotelDetailTab === 'schedule' ? '#333' : '#999',
+                          fontSize: '16px',
+                          fontWeight: hotelDetailTab === 'schedule' ? 'bold' : 'normal',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        상세
+                      </button>
+                    </div>
+
+                    {/* 호텔구성 탭 내용 */}
+                    {hotelDetailTab === 'hotel' && (
+                      <>
+                        {/* 호텔 구성 카드들 - productScheduleData 기반 */}
+                        <div className="cost-hotel-cards">
+                        {(scheduleCards.length > 0 ? scheduleCards : []).map((card, index) => (
+                          <div 
+                            key={card.id} 
+                            className="cost-hotel-card" 
+                            style={{ 
+                              position: 'relative',
+                              opacity: draggedCardId === card.id ? 0.5 : 1,
+                              transform: dragOverCardId === card.id ? 'translateY(10px)' : 'translateY(0)',
+                              transition: draggedCardId === null ? 'all 0.2s' : 'none',
+                              borderTop: dragOverCardId === card.id && draggedCardId !== card.id ? '3px solid #5fb7ef' : 'none',
+                              cursor: isEditingPeriod ? 'move' : 'default'
+                            }}
+                            draggable={isEditingPeriod}
+                            onDragStart={(e) => handleDragStart(e, card.id)}
+                            onDragOver={(e) => handleDragOver(e, card.id)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, card.id)}
+                            onDragEnd={handleDragEnd}
+                          >
+                            <div className="cost-card-header">
+                              <div className="cost-card-date-badge-wrapper">
+                                <div className="cost-card-date" style={{ 
+                                  display: 'flex', 
+                                  flexDirection: 'column', 
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  {(() => {
+                                    // card.day가 이미 날짜 형식인지 확인
+                                    if (card.day && !card.day.includes('일차')) {
+                                      return card.day;
+                                    }
+                                    
+                                    // 날짜 형식이 아니면 계산
+                                    let startDate: Date | null = null;
+                                    if (customerInfo.travelPeriodStart) {
+                                      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                                      if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+                                        startDate = new Date(customerInfo.travelPeriodStart.trim());
+                                      }
+                                    }
+                                    
+                                    if (!startDate) {
+                                      return `호텔${index + 1}`;
+                                    }
+                                    
+                                    // 현재 카드까지의 일수 계산
+                                    let currentDate = new Date(startDate);
+                                    for (let i = 0; i < index; i++) {
+                                      const prevCard = scheduleCards[i];
+                                      if (prevCard) {
+                                        const nights = selectedNights[prevCard.id] || extractNightsNumber(prevCard.nights || '') || 1;
+                                        currentDate.setDate(currentDate.getDate() + nights);
+                                      }
+                                    }
+                                    
+                                    // 날짜 포맷팅
+                                    const year = currentDate.getFullYear();
+                                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(currentDate.getDate()).padStart(2, '0');
+                                    
+                                    return `${year}-${month}-${day}`;
+                                  })()}
+                                </div>
+                                <div className="cost-card-badge"
+                                  onClick={() => isEditingPeriod ? handleHotelChange(card.id) : null}
                                   style={{
-                                    width: '100%',
-                                    padding: '8px',
-                                    borderRadius: '4px',
-                                    border: '1px solid #ddd',
-                                    fontSize: '14px',
-                                    backgroundColor: '#fff',
-                                    cursor: 'pointer'
+                                    cursor: isEditingPeriod ? 'pointer' : 'default',
+                                    userSelect: 'none',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (isEditingPeriod) {
+                                      e.currentTarget.style.opacity = '0.8';
+                                      e.currentTarget.style.transform = 'scale(1.05)';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (isEditingPeriod) {
+                                      e.currentTarget.style.opacity = '1';
+                                      e.currentTarget.style.transform = 'scale(1)';
+                                    }
                                   }}
                                 >
-                                  {getRoomTypesForCardCallback(card).map((roomType) => (
-                                    <option key={roomType} value={roomType}>
-                                      {roomType}
-                                    </option>
-                                  ))}
-                                </select>
-                                :
-                                <p>{selectedRoomTypes[card.id] || (getRoomTypesForCardCallback(card)[0] || '')}</p>
-                              }
+                                  {card.badge}
+                                </div>
+                              </div>
+                              <div className="cost-card-title">{card.title}</div>
                             </div>
-                            <div className="cost-card-nights-control">
-                              {isEditingPeriod && (
-                                <button 
-                                  className="nights-btn"
-                                  onClick={() => {
-                                    const currentNights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
-                                    if (currentNights > 1) {
+                            <div className="cost-card-content">
+                              <div className="cost-card-roomtype" style={{ width: isEditingPeriod ? '100%' : 'auto'}}>
+                                {(() => {
+                                  // selectedHotels에서 해당 카드의 호텔 정보 찾기
+                                  const cardIndex = card.id - 1; // card.id는 1부터 시작
+                                  // index 속성으로 찾기 (더 안전)
+                                  const selectedHotel = selectedHotels.find(sh => sh.index === cardIndex) || selectedHotels[cardIndex];
+                                  const hotel = selectedHotel?.hotel;
+                                  
+                                  // 호텔의 hotelRoomTypes에서 룸타입 추출
+                                  let roomTypes: string[] = [];
+                                  
+                                  if (hotel && hotel.hotelRoomTypes) {
+                                    try {
+                                      const roomTypesData = JSON.parse(hotel.hotelRoomTypes);
+                                      if (Array.isArray(roomTypesData)) {
+                                        roomTypes = roomTypesData
+                                          .map((rt: any) => rt.roomTypeName)
+                                          .filter((name: string) => name && name.trim() !== '');
+                                      }
+                                    } catch (e) {
+                                      console.error('hotelRoomTypes 파싱 오류:', e);
+                                    }
+                                  }
+                                  
+                                  // hotelRoomTypes가 없으면 기존 방식 사용
+                                  if (roomTypes.length === 0) {
+                                    roomTypes = getRoomTypesForCardCallback(card);
+                                  }
+                                  
+                                  const currentRoomType = selectedRoomTypes[card.id] || (roomTypes[0] || '');
+                                  
+                                  return isEditingPeriod ? (
+                                    <select
+                                      value={currentRoomType}
+                                      onChange={(e) => {
+                                        const newRoomType = e.target.value;
+                                        setSelectedRoomTypes(prev => ({
+                                          ...prev,
+                                          [card.id]: newRoomType
+                                        }));
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '8px',
+                                        borderRadius: '4px',
+                                        border: '1px solid #ddd',
+                                        fontSize: '14px',
+                                        backgroundColor: '#fff',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      {roomTypes.length > 0 ? (
+                                        roomTypes.map((roomType) => (
+                                          <option key={roomType} value={roomType}>
+                                            {roomType}
+                                          </option>
+                                        ))
+                                      ) : (
+                                        <option value="">룸타입 없음</option>
+                                      )}
+                                    </select>
+                                  ) : (
+                                    <p>{currentRoomType || '룸타입 없음'}</p>
+                                  );
+                                })()}
+                              </div>
+                              <div className="cost-card-nights-control">
+                                {isEditingPeriod && (
+                                  <button 
+                                    className="nights-btn"
+                                    onClick={() => {
+                                      const currentNights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
+                                      if (currentNights > 1) {
+                                        const previousNights = currentNights;
+                                        const newNightsValue = currentNights - 1;
+                                        
+                                        setSelectedNights(prev => {
+                                          const newNights = {
+                                            ...prev,
+                                            [card.id]: newNightsValue
+                                          };
+                                          // 박수 변경 시 상품명 업데이트
+                                          updateProductNameFromCards(scheduleCards, newNights);
+                                          
+                                          // 박수 감소 시 일정표에서 day 삭제
+                                          if (scheduleInfo && scheduleInfo.scheduleDetailData) {
+                                            // 각 호텔 카드의 day 범위 계산 (이전 박수 기준)
+                                            let currentDayIndex = 0;
+                                            let targetCardEndDay = -1;
+                                            const nextHotel = index < scheduleCards.length - 1 ? selectedHotels[index + 1] : null;
+                                            
+                                            scheduleCards.forEach((c, cIdx) => {
+                                              const nights = cIdx === index 
+                                                ? previousNights 
+                                                : (prev[c.id] || extractNightsNumber(c.nights || '') || 1);
+                                              const isFirstHotel = cIdx === 0;
+                                              const cNextHotel = cIdx < scheduleCards.length - 1 ? selectedHotels[cIdx + 1] : null;
+                                              
+                                              if (isFirstHotel) {
+                                                const endDay = currentDayIndex + nights - 1;
+                                                if (cIdx === index) {
+                                                  targetCardEndDay = endDay;
+                                                }
+                                                if (cNextHotel) {
+                                                  currentDayIndex = currentDayIndex + nights + 1;
+                                                } else {
+                                                  currentDayIndex = endDay + 1;
+                                                }
+                                              } else {
+                                                const endDay = currentDayIndex + nights - 1;
+                                                if (cIdx === index) {
+                                                  targetCardEndDay = endDay;
+                                                }
+                                                if (cNextHotel) {
+                                                  currentDayIndex = currentDayIndex + nights + 1;
+                                                } else {
+                                                  currentDayIndex = endDay + 1;
+                                                }
+                                              }
+                                            });
+                                            
+                                            // 삭제할 day 개수
+                                            const daysToDelete = previousNights - newNightsValue;
+                                            if (daysToDelete > 0 && targetCardEndDay >= 0) {
+                                              const newScheduleInfo = { ...scheduleInfo };
+                                              const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
+                                              // targetCardEndDay 다음부터 daysToDelete 개 삭제
+                                              // 다음 호텔이 있으면 전환일이 있으므로 targetCardEndDay + 2부터 삭제
+                                              // 다음 호텔이 없으면 targetCardEndDay + 1부터 삭제
+                                              const deleteStartIndex = nextHotel ? targetCardEndDay + 2 : targetCardEndDay + 1;
+                                              
+                                              if (deleteStartIndex < newScheduleDetailData.length && deleteStartIndex >= 0) {
+                                                const actualDeleteCount = Math.min(daysToDelete, newScheduleDetailData.length - deleteStartIndex);
+                                                if (actualDeleteCount > 0) {
+                                                  newScheduleDetailData.splice(deleteStartIndex, actualDeleteCount);
+                                                  newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+                                                  setScheduleInfo(newScheduleInfo);
+                                                }
+                                              }
+                                            }
+                                          }
+                                          
+                                          return newNights;
+                                        });
+                                      }
+                                    }}
+                                  >-</button>
+                                )}
+                                <span className="nights-value">
+                                  {(selectedNights[card.id] || extractNightsNumber(card.nights || '') || 0)}박
+                                </span>
+                                {isEditingPeriod && (
+                                  <button 
+                                    className="nights-btn"
+                                    onClick={() => {
+                                      const currentNights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
                                       const previousNights = currentNights;
-                                      const newNightsValue = currentNights - 1;
+                                      const newNightsValue = currentNights + 1;
                                       
                                       setSelectedNights(prev => {
                                         const newNights = {
@@ -2909,7 +3441,7 @@ export default function RestHotelCost() {
                                         // 박수 변경 시 상품명 업데이트
                                         updateProductNameFromCards(scheduleCards, newNights);
                                         
-                                        // 박수 감소 시 일정표에서 day 삭제
+                                        // 박수 증가 시 일정표에 day 추가
                                         if (scheduleInfo && scheduleInfo.scheduleDetailData) {
                                           // 각 호텔 카드의 day 범위 계산 (이전 박수 기준)
                                           let currentDayIndex = 0;
@@ -2946,167 +3478,82 @@ export default function RestHotelCost() {
                                             }
                                           });
                                           
-                                          // 삭제할 day 개수
-                                          const daysToDelete = previousNights - newNightsValue;
-                                          if (daysToDelete > 0 && targetCardEndDay >= 0) {
+                                          // 추가할 day 개수
+                                          const daysToAdd = newNightsValue - previousNights;
+                                          if (daysToAdd > 0 && targetCardEndDay >= 0) {
                                             const newScheduleInfo = { ...scheduleInfo };
                                             const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
-                                            // targetCardEndDay 다음부터 daysToDelete 개 삭제
-                                            // 다음 호텔이 있으면 전환일이 있으므로 targetCardEndDay + 2부터 삭제
-                                            // 다음 호텔이 없으면 targetCardEndDay + 1부터 삭제
-                                            const deleteStartIndex = nextHotel ? targetCardEndDay + 2 : targetCardEndDay + 1;
+                                            // targetCardEndDay 다음에 빈 day 추가
+                                            // 다음 호텔이 있으면 전환일이 있으므로 targetCardEndDay + 2 위치에 추가
+                                            // 다음 호텔이 없으면 targetCardEndDay + 1 위치에 추가
+                                            const insertIndex = nextHotel ? targetCardEndDay + 2 : targetCardEndDay + 1;
                                             
-                                            if (deleteStartIndex < newScheduleDetailData.length && deleteStartIndex >= 0) {
-                                              const actualDeleteCount = Math.min(daysToDelete, newScheduleDetailData.length - deleteStartIndex);
-                                              if (actualDeleteCount > 0) {
-                                                newScheduleDetailData.splice(deleteStartIndex, actualDeleteCount);
-                                                newScheduleInfo.scheduleDetailData = newScheduleDetailData;
-                                                setScheduleInfo(newScheduleInfo);
+                                            // insertIndex가 유효한 범위인지 확인
+                                            if (insertIndex >= 0 && insertIndex <= newScheduleDetailData.length) {
+                                              for (let i = 0; i < daysToAdd; i++) {
+                                                newScheduleDetailData.splice(insertIndex, 0, createEmptyDay());
                                               }
+                                              newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+                                              setScheduleInfo(newScheduleInfo);
                                             }
                                           }
                                         }
                                         
                                         return newNights;
                                       });
-                                    }
-                                  }}
-                                >-</button>
-                              )}
-                              <span className="nights-value">
-                                {(selectedNights[card.id] || extractNightsNumber(card.nights || '') || 0)}박
-                              </span>
-                              {isEditingPeriod && (
-                                <button 
-                                  className="nights-btn"
-                                  onClick={() => {
-                                    const currentNights = selectedNights[card.id] || extractNightsNumber(card.nights || '');
-                                    const previousNights = currentNights;
-                                    const newNightsValue = currentNights + 1;
-                                    
-                                    setSelectedNights(prev => {
-                                      const newNights = {
-                                        ...prev,
-                                        [card.id]: newNightsValue
-                                      };
-                                      // 박수 변경 시 상품명 업데이트
-                                      updateProductNameFromCards(scheduleCards, newNights);
-                                      
-                                      // 박수 증가 시 일정표에 day 추가
-                                      if (scheduleInfo && scheduleInfo.scheduleDetailData) {
-                                        // 각 호텔 카드의 day 범위 계산 (이전 박수 기준)
-                                        let currentDayIndex = 0;
-                                        let targetCardEndDay = -1;
-                                        const nextHotel = index < scheduleCards.length - 1 ? selectedHotels[index + 1] : null;
-                                        
-                                        scheduleCards.forEach((c, cIdx) => {
-                                          const nights = cIdx === index 
-                                            ? previousNights 
-                                            : (prev[c.id] || extractNightsNumber(c.nights || '') || 1);
-                                          const isFirstHotel = cIdx === 0;
-                                          const cNextHotel = cIdx < scheduleCards.length - 1 ? selectedHotels[cIdx + 1] : null;
-                                          
-                                          if (isFirstHotel) {
-                                            const endDay = currentDayIndex + nights - 1;
-                                            if (cIdx === index) {
-                                              targetCardEndDay = endDay;
-                                            }
-                                            if (cNextHotel) {
-                                              currentDayIndex = currentDayIndex + nights + 1;
-                                            } else {
-                                              currentDayIndex = endDay + 1;
-                                            }
-                                          } else {
-                                            const endDay = currentDayIndex + nights - 1;
-                                            if (cIdx === index) {
-                                              targetCardEndDay = endDay;
-                                            }
-                                            if (cNextHotel) {
-                                              currentDayIndex = currentDayIndex + nights + 1;
-                                            } else {
-                                              currentDayIndex = endDay + 1;
-                                            }
-                                          }
-                                        });
-                                        
-                                        // 추가할 day 개수
-                                        const daysToAdd = newNightsValue - previousNights;
-                                        if (daysToAdd > 0 && targetCardEndDay >= 0) {
-                                          const newScheduleInfo = { ...scheduleInfo };
-                                          const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
-                                          // targetCardEndDay 다음에 빈 day 추가
-                                          // 다음 호텔이 있으면 전환일이 있으므로 targetCardEndDay + 2 위치에 추가
-                                          // 다음 호텔이 없으면 targetCardEndDay + 1 위치에 추가
-                                          const insertIndex = nextHotel ? targetCardEndDay + 2 : targetCardEndDay + 1;
-                                          
-                                          // insertIndex가 유효한 범위인지 확인
-                                          if (insertIndex >= 0 && insertIndex <= newScheduleDetailData.length) {
-                                            for (let i = 0; i < daysToAdd; i++) {
-                                              newScheduleDetailData.splice(insertIndex, 0, createEmptyDay());
-                                            }
-                                            newScheduleInfo.scheduleDetailData = newScheduleDetailData;
-                                            setScheduleInfo(newScheduleInfo);
-                                          }
-                                        }
+                                    }}
+                                  >+</button>
+                                )}
+                                {isEditingPeriod && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm('이 호텔을 삭제하시겠습니까?')) {
+                                        handleDeleteCard(card.id);
                                       }
-                                      
-                                      return newNights;
-                                    });
-                                  }}
-                                >+</button>
-                              )}
+                                    }}
+                                    disabled={scheduleCards.length <= 1}
+                                    style={{
+                                      border: '1px solid #ddd',
+                                      backgroundColor: scheduleCards.length <= 1 ? '#f5f5f5' : '#fff',
+                                      color: scheduleCards.length <= 1 ? '#ccc' : '#e74c3c',
+                                      fontSize: '10px',
+                                      cursor: scheduleCards.length <= 1 ? 'not-allowed' : 'pointer',
+                                      borderRadius: '4px',
+                                      transition: 'all 0.2s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      minWidth: '20px',
+                                      height: '24px',
+                                      zIndex: 10
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (scheduleCards.length > 1) {
+                                        e.currentTarget.style.backgroundColor = '#fee';
+                                        e.currentTarget.style.borderColor = '#e74c3c';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (scheduleCards.length > 1) {
+                                        e.currentTarget.style.backgroundColor = '#fff';
+                                        e.currentTarget.style.borderColor = '#ddd';
+                                      }
+                                    }}
+                                    title="삭제"
+                                  >
+                                    <IoMdClose />
+                                  </button>
+                                )}
+                              </div>
+                              
                             </div>
-                            {isEditingPeriod && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (window.confirm('이 호텔을 삭제하시겠습니까?')) {
-                                    handleDeleteCard(card.id);
-                                  }
-                                }}
-                                disabled={scheduleCards.length <= 1}
-                                style={{
-                                  border: '1px solid #ddd',
-                                  backgroundColor: scheduleCards.length <= 1 ? '#f5f5f5' : '#fff',
-                                  color: scheduleCards.length <= 1 ? '#ccc' : '#e74c3c',
-                                  fontSize: '10px',
-                                  cursor: scheduleCards.length <= 1 ? 'not-allowed' : 'pointer',
-                                  borderRadius: '4px',
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  minWidth: '20px',
-                                  height: '24px',
-                                  zIndex: 10
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (scheduleCards.length > 1) {
-                                    e.currentTarget.style.backgroundColor = '#fee';
-                                    e.currentTarget.style.borderColor = '#e74c3c';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (scheduleCards.length > 1) {
-                                    e.currentTarget.style.backgroundColor = '#fff';
-                                    e.currentTarget.style.borderColor = '#ddd';
-                                  }
-                                }}
-                                title="삭제"
-                              >
-                                <IoMdClose />
-                              </button>
-                            )}
                           </div>
+                        ))}
                         </div>
-                      ))}
-                      </div>
 
-                      {/* 기간변경 버튼 */}
-                      <div style={{ display: 'flex', justifyContent: 'center'}}>
-                        {
-                          isEditingPeriod && 
-                          <>
+                        {/* 호텔 추가 버튼 */}
+                        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end'}}>
                           <button
                             type="button"
                             onClick={handleAddHotel}
@@ -3119,8 +3566,7 @@ export default function RestHotelCost() {
                               fontWeight: '500',
                               cursor: 'pointer',
                               borderRadius: '6px',
-                              transition: 'all 0.2s',
-                              marginRight: '10px'
+                              transition: 'all 0.2s'
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.backgroundColor = '#f5f5f5';
@@ -3129,528 +3575,759 @@ export default function RestHotelCost() {
                               e.currentTarget.style.backgroundColor = '#fff';
                             }}
                           >
-                            호텔 추가
+                            + 호텔 추가
                           </button>
-                          </>
-                        }
-                        
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isEditingPeriod) {
-                              // 기간변경 모드 시작: 현재 selectedNights를 원본으로 저장
-                              setOriginalSelectedNightsForPrice({ ...selectedNights });
-                              setIsEditingPeriod(true);
-                            } else {
-                              // 완료: 현재 selectedNights를 그대로 사용 (이미 변경된 값이므로)
-                              setIsEditingPeriod(false);
-                              // 원본 값은 초기화하지 않아도 되지만, 다음 기간변경을 위해 초기화
-                              setOriginalSelectedNightsForPrice({});
-                              
-                              // 완료 시 상품명 업데이트
-                              updateProductNameFromCards(scheduleCards, selectedNights);
-                              
-                              // 완료 시 scheduleInfo의 호텔 정보 업데이트
-                              if (scheduleInfo && scheduleInfo.scheduleDetailData) {
-                                // 각 호텔 카드가 담당하는 day 범위 계산 (겹치는 부분 고려)
-                                let currentDayIndex = 0;
-                                const cardDayRanges: Array<{ cardIndex: number; startDay: number; endDay: number; hotel: any; card: any; nextHotel?: any; nextCard?: any; transitionDay?: number | null }> = [];
-                                
-                                scheduleCards.forEach((card, cardIndex) => {
-                                  const nights = selectedNights[card.id] || extractNightsNumber(card.nights || '') || 1;
-                                  const isFirstHotel = cardIndex === 0;
-                                  
-                                  const nextHotel = cardIndex < scheduleCards.length - 1 ? selectedHotels[cardIndex + 1] : null;
-                                  const nextCard = cardIndex < scheduleCards.length - 1 ? scheduleCards[cardIndex + 1] : null;
-                                  
-                                  let startDay: number;
-                                  let endDay: number;
-                                  let transitionDay: number | null = null;
-                                  
-                                  if (isFirstHotel) {
-                                    // 첫 번째 호텔: nights일 (day 0~nights-1)
-                                    startDay = currentDayIndex;
-                                    endDay = currentDayIndex + nights - 1;
-                                    // 다음 호텔이 있으면 전환일
-                                    if (nextHotel) {
-                                      transitionDay = currentDayIndex + nights;
-                                    }
-                                    // 다음 호텔이 있으면 전환일 다음부터, 없으면 마지막 날 다음
-                                    currentDayIndex = nextHotel ? transitionDay! + 1 : endDay + 1;
-                                  } else {
-                                    // 이후 호텔: currentDayIndex부터 시작 (이전 호텔의 전환일 다음 날)
-                                    startDay = currentDayIndex;
-                                    endDay = currentDayIndex + nights - 1;
-                                    // 다음 호텔이 있으면 전환일
-                                    if (nextHotel) {
-                                      transitionDay = currentDayIndex + nights;
-                                    }
-                                    // 다음 호텔이 있으면 전환일 다음부터, 없으면 마지막 날 다음
-                                    currentDayIndex = nextHotel ? transitionDay! + 1 : endDay + 1;
-                                  }
-                                  
-                                  cardDayRanges.push({
-                                    cardIndex,
-                                    startDay,
-                                    endDay,
-                                    hotel: selectedHotels[cardIndex],
-                                    card,
-                                    nextHotel,
-                                    nextCard,
-                                    transitionDay
-                                  });
-                                });
-                                
-                                // 각 day에 해당하는 호텔 정보 적용
-                                const newScheduleDetailData = scheduleInfo.scheduleDetailData.map((dayItem: any, dayIndex: number) => {
-                                  // 전환일인지 먼저 확인 (다음 호텔의 시작일)
-                                  const transitionRange = cardDayRanges.find(range => 
-                                    range.transitionDay !== null && dayIndex === range.transitionDay
-                                  );
-                                  
-                                  if (transitionRange) {
-                                    // 전환일: "호텔1 - 호텔2" 형식
-                                    const { hotel, card, nextHotel, nextCard } = transitionRange;
-                                    const currentHotelName = hotel?.hotel?.hotelNameKo || card.title || '';
-                                    const nextHotelName = nextHotel?.hotel?.hotelNameKo || nextCard?.title || '';
-                                    const newHotelName = `${currentHotelName} - ${nextHotelName}`;
-                                    const newHotelLevel = hotel?.hotel?.hotelLevel || '';
-                                    
-                                    return {
-                                      ...dayItem,
-                                      hotel: newHotelName,
-                                      score: newHotelLevel
-                                    };
-                                  }
-                                  
-                                  // 일반 날짜: 이 dayIndex에 해당하는 호텔 카드 찾기
-                                  const matchingCardRange = cardDayRanges.find(range => 
-                                    dayIndex >= range.startDay && dayIndex <= range.endDay
-                                  );
-                                  
-                                  if (matchingCardRange) {
-                                    const { hotel, card } = matchingCardRange;
-                                    const newHotelLevel = hotel?.hotel?.hotelLevel || '';
-                                    const newHotelName = hotel?.hotel?.hotelNameKo || card.title || '';
-                                    
-                                    // dayItem 복사본 생성 (읽기 전용 속성 에러 방지)
-                                    return {
-                                      ...dayItem,
-                                      hotel: newHotelName,
-                                      score: newHotelLevel
-                                    };
-                                  }
-                                  
-                                  return dayItem; // 매칭되는 카드가 없으면 변경 없음
-                                });
-                                
-                                const newScheduleInfo = {
-                                  ...scheduleInfo,
-                                  scheduleDetailData: newScheduleDetailData
-                                };
-                                setScheduleInfo(newScheduleInfo);
-                              }
-                            }
-                          }}
-                          style={{
-                            width: '150px',
-                            padding: '5px 15px',
-                            border: '1px solid #333',
-                            backgroundColor: isEditingPeriod ? '#333' : '#fff',
-                            color: isEditingPeriod ? '#fff' : '#333',
-                            fontSize: '15px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            borderRadius: '6px',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          {isEditingPeriod ? '완료' : '기간&호텔변경'}
-                        </button>
-                      </div>
-
-                      
-                    </>
-                  )}
-
-                  {/* 상세일정 탭 내용 */}
-                  {hotelDetailTab === 'schedule' && (
-                    <div className="schedule-summary-content" style={{ marginTop: '20px' }}>
-                      <div className="summary-card">
-                        <div className="summary-header">
-                          <div className="summary-sub-tabs" style={{
-                            display: 'flex',
-                            gap: '12px',
-                            marginTop: '12px',
-                            flexWrap: 'wrap'
-                          }}>
-                            {['전체','호텔베네핏','익스커션','강습/클래스','스파마사지','식사/다이닝','바/클럽','스냅촬영','차량/가이드','편의사항','기타'].map(label => (
-                              <span
-                                key={label}
-                                className={`sub-tab ${summarySubTab === label ? 'active' : ''}`}
-                                onClick={() => setSummarySubTab(label as typeof summarySubTab)}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '4px',
-                                  backgroundColor: summarySubTab === label ? '#333' : '#f5f5f5',
-                                  color: summarySubTab === label ? '#fff' : '#666',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                }}
-                              >
-                                <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
-                                <span style={{ fontSize: '14px' }}>
-                                  {tabCounts[label] || 0}
-                                </span>
-                              </span>
-                            ))}
-                          </div>
                         </div>
-                        
-                        <div className="summary-grid" style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                          gap: '16px',
-                          marginTop: '20px'
-                        }}>
-                          {isLoadingScheduleDetail ? (
-                            <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
-                              로딩 중...
+                      </>
+                    )}
+
+                    
+
+                    {/* 상세일정 탭 내용 */}
+                    {hotelDetailTab === 'schedule' && (
+                      <div className="schedule-summary-content">
+                        <div className="summary-card">
+                          <div className="summary-header">
+                            <div className="summary-sub-tabs" style={{
+                              display: 'flex',
+                              gap: '12px',
+                              marginTop: '12px',
+                              flexWrap: 'wrap'
+                            }}>
+                              {['전체','익스커션','강습/클래스','스파마사지','식사/다이닝','바/클럽','스냅촬영','차량/가이드','편의사항','기타'].map(label => (
+                                <span
+                                  key={label}
+                                  className={`sub-tab ${summarySubTab === label ? 'active' : ''}`}
+                                  onClick={() => setSummarySubTab(label as typeof summarySubTab)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '4px',
+                                    backgroundColor: summarySubTab === label ? '#333' : '#f5f5f5',
+                                    color: summarySubTab === label ? '#fff' : '#666',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                  }}
+                                >
+                                  <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
+                                  <span style={{ fontSize: '14px' }}>
+                                    {tabCounts[label] || 0}
+                                  </span>
+                                </span>
+                              ))}
                             </div>
-                          ) : scheduleDetailList.length === 0 ? (
-                            <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
-                              상세일정이 없습니다.
-                            </div>
-                          ) : (
-                            scheduleDetailList
-                              .filter((item: any) => {
-                                // '전체' 탭일 때는 모든 항목 표시
-                                if (summarySubTab === '전체') {
-                                  return true;
-                                }
-                                // '기타' 탭일 때는 정의된 탭에 속하지 않는 항목만 표시
-                                if (summarySubTab === '기타') {
-                                  const definedTabs = ['호텔베네핏', '익스커션', '강습/클래스', '스파마사지', '식사/다이닝', '바/클럽', '스냅촬영', '차량/가이드', '편의사항'];
-                                  return !definedTabs.includes(item.sort);
-                                }
-                                // 다른 탭일 때는 sort 값과 일치하는 항목만 필터링
-                                return item.sort === summarySubTab;
-                              })
-                              .map((item: any) => {
-                              // inputImage가 JSON 배열 문자열인 경우 파싱
-                              let imageUrl = scheduleImg1; // 기본 이미지
-                              if (item.inputImage) {
-                                try {
-                                  const imageArray = JSON.parse(item.inputImage);
-                                  if (Array.isArray(imageArray) && imageArray.length > 0) {
-                                    imageUrl = `${AdminURL}/images/scheduledetailboximages/${imageArray[0]}`;
+                          </div>
+                          
+                          <div className="summary-grid">
+                            {isLoadingScheduleDetail ? (
+                              <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
+                                로딩 중...
+                              </div>
+                            ) : filteredScheduleDetailList.length === 0 ? (
+                              <div style={{ padding: '40px', textAlign: 'center', color: '#888', gridColumn: '1 / -1' }}>
+                                상세일정이 없습니다.
+                              </div>
+                            ) : (
+                              filteredScheduleDetailList.map((item: any) => {
+                                // inputImage가 JSON 배열 문자열인 경우 파싱
+                                let imageUrl = scheduleImg1; // 기본 이미지
+                                if (item.inputImage) {
+                                  try {
+                                    const imageArray = JSON.parse(item.inputImage);
+                                    if (Array.isArray(imageArray) && imageArray.length > 0) {
+                                      imageUrl = `${AdminURL}/images/scheduledetailboximages/${imageArray[0]}`;
+                                    }
+                                  } catch (e) {
+                                    // 파싱 실패 시 기본 이미지 사용
+                                    console.error('이미지 파싱 오류:', e);
                                   }
-                                } catch (e) {
-                                  // 파싱 실패 시 기본 이미지 사용
-                                  console.error('이미지 파싱 오류:', e);
                                 }
-                              }
-                              
-                              return (
-                                <div key={item.id} className="summary-item" style={{
-                                  border: '1px solid #e0e0e0',
-                                  borderRadius: '8px',
-                                  overflow: 'hidden',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s'
-                                }}
-                                onClick={() => {
-                                  // 선택된 영역이 있는지 확인
-                                  const addFunction = (window as any).__addDetailItemToSelectedLocation;
-                                  if (addFunction && typeof addFunction === 'function') {
-                                    addFunction(item);
-                                  } else {
-                                    alert('먼저 일정표에서 "묶음일정" 또는 "상세일정" 버튼을 클릭하여 추가할 위치를 선택해주세요.');
-                                  }
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.borderColor = '#5fb7ef';
-                                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(95, 183, 239, 0.2)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.borderColor = '#e0e0e0';
-                                  e.currentTarget.style.boxShadow = 'none';
-                                }}>
-                                  <img className="summary-item-image" alt={item.productName || '상세일정'} src={imageUrl} style={{
-                                    width: '100%',
-                                    height: '150px',
-                                    objectFit: 'cover'
-                                  }} />
-                                  <div className="summary-item-content" style={{ padding: '12px' }}>
-                                    <p className="summary-item-title" style={{
-                                      margin: '0 0 8px 0',
-                                      fontSize: '16px',
-                                      fontWeight: 700,
-                                      color: '#333',
-                                      lineHeight: '1.4'
-                                    }}>
-                                      {item.productName || '-'}
-                                    </p>
-                                    <div className="summary-item-rating" style={{
-                                      marginBottom: '8px',
-                                      fontSize: '13px',
-                                      color: '#ff6b00'
-                                    }}>★ {item.scores || '5.0'}</div>
-                                    <div className="summary-item-price-row" style={{
-                                      display: 'flex',
-                                      alignItems: 'baseline',
-                                      gap: '4px'
-                                    }}>
-                                      <span className="summary-item-price" style={{
-                                        fontSize: '16px',
-                                        fontWeight: 'bold',
-                                        color: '#333'
-                                      }}>가격 문의</span>
+                                
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className="summary-item"
+                                    onClick={() => handleScheduleDetailItemClick(item)}
+                                  >
+                                    <img className="summary-item-image" alt={item.productName || '상세일정'} src={imageUrl} />
+                                    <div className="summary-item-content">
+                                      <p className="summary-item-title">
+                                        {item.productName || '-'}
+                                      </p>
+                                      <RatingBoard rating={parseInt(item.scores) || 0} ratingSize={16} />
+                                      <div className="summary-item-price-row">
+                                        <span className="summary-item-price">{item.price}/1인</span>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            })
-                          )}
+                                );
+                              })
+                            )}
+                          </div>
+
                         </div>
-
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  
-                </>
-              )}
-            </div>
-            {/* 가격 정보 */}
-            <div className="summary-footer">
-              <div className="summary-footer-top">선택된 세부일정 제목</div>
-              <div className="summary-footer-bottom">
-                <div className="summary-footer-left">
-                  <div className="summary-footer-field">날짜</div>
-                  <div className="summary-footer-field">선택상품</div>
-                  <div className="summary-footer-field price-field">￦ 50,000 /1인</div>
-                  <div className="summary-footer-field summary-footer-field-counter">
-                    <button className="summary-counter-btn">-</button>
-                    <span>2명</span>
-                    <button className="summary-counter-btn">+</button>
+                    
+                  </>
+                )}
+              </div>
+              {/* 가격 정보 */}
+              {/* <div className="summary-footer">
+                <div className="summary-footer-top">선택된 세부일정 제목</div>
+                <div className="summary-footer-bottom">
+                  <div className="summary-footer-left">
+                    <div className="summary-footer-field">날짜</div>
+                    <div className="summary-footer-field">선택상품</div>
+                    <div className="summary-footer-field price-field">￦ 50,000 /1인</div>
+                    <div className="summary-footer-field summary-footer-field-counter">
+                      <button className="summary-counter-btn">-</button>
+                      <span>2명</span>
+                      <button className="summary-counter-btn">+</button>
+                    </div>
+                  </div>
+                  <div className="summary-footer-right">
+                    <div className="summary-total-label">총요금</div>
+                    <div className="summary-total-price">￦100,000</div>
                   </div>
                 </div>
-                <div className="summary-footer-right">
-                  <div className="summary-total-label">총요금</div>
-                  <div className="summary-total-price">￦100,000</div>
+              </div> */}
+              <div 
+                className="cost-price-section"
+              >
+                <div className="cost-price-row">
+                  <div className="cost-price-label">여행기간</div>
+                  <div className="cost-price-input-wrapper">
+                    <input
+                      type="text"
+                      className="cost-price-input"
+                      value={travelPeriodDisplay}
+                      readOnly
+                    />
+                    <span className="cost-price-calendar-icon">📅</span>
+                  </div>
+                </div>
+                <div className="cost-price-row">
+                  <div className="cost-price-label">
+                    {finalPricePerPerson && finalPricePerPerson > 0 ? (
+                      `${finalPricePerPerson.toLocaleString()}원`
+                    ) : (
+                      <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
+                    )}
+                  </div>
+                  {finalPricePerPerson && finalPricePerPerson > 0 && <div className="cost-price-unit">/1인</div>}
+                </div>
+                <div className="cost-price-row">
+                  <div className="cost-price-label">총요금</div>
+                  <div className="cost-price-total">
+                    {finalPricePerPerson && finalPricePerPerson > 0 && finalTotalPrice && finalTotalPrice > 0 ? (
+                      `₩${finalTotalPrice.toLocaleString()}`
+                    ) : (
+                      <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div 
-              className="cost-price-section"
-              style={{
-                pointerEvents: isEditingPeriod ? 'none' : 'auto',
-                transition: 'opacity 0.2s ease'
-              }}
-            >
-              <div className="cost-price-row">
-                <div className="cost-price-label">여행기간</div>
-                <div className="cost-price-input-wrapper">
-                  <input
-                    type="text"
-                    className="cost-price-input"
-                    value={travelPeriodDisplay}
-                    readOnly
-                  />
-                  <span className="cost-price-calendar-icon">📅</span>
-                </div>
-              </div>
-              <div className="cost-price-row">
-                <div className="cost-price-label">
-                  {finalPricePerPerson && finalPricePerPerson > 0 ? (
-                    `${finalPricePerPerson.toLocaleString()}원`
-                  ) : (
-                    <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
-                  )}
-                </div>
-                {finalPricePerPerson && finalPricePerPerson > 0 && <div className="cost-price-unit">/1인</div>}
-              </div>
-              <div className="cost-price-row">
-                <div className="cost-price-label">총요금</div>
-                <div className="cost-price-total">
-                  {finalPricePerPerson && finalPricePerPerson > 0 && finalTotalPrice && finalTotalPrice > 0 ? (
-                    `₩${finalTotalPrice.toLocaleString()}`
-                  ) : (
-                    <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="cost-schedule-btn-wrapper">
-              <button className="cost-schedule-btn cost-schedule-btn-prev"
-                onClick={() => {
-                  navigate('/counsel/rest/schedule', { state : productInfo})
-                  window.scrollTo(0, 0);
-                }}
-              >이전</button>
-              <button className="cost-schedule-btn cost-schedule-btn-next"
-                onClick={() => {
-                  // productInfo에 상품명 업데이트 (savedProductName이 있으면 사용)
-                  const updatedProductInfo = savedProductName 
-                    ? { ...productInfo, productName: savedProductName }
-                    : productInfo;
+              <div className="cost-schedule-btn-wrapper">
+                <button className="cost-schedule-btn cost-schedule-btn-prev"
+                  onClick={() => {
+                    navigate('/counsel/rest/schedule', { state : productInfo})
+                    window.scrollTo(0, 0);
+                  }}
+                >이전</button>
+                <button className="cost-schedule-btn cost-schedule-btn-prev"
+                  onClick={() => {
+                    setShowScheduleBox(prev => !prev);
+                  }}
+                >{showScheduleBox ? '호텔보기' : '일정보기'}</button>
+                <button className="cost-schedule-btn cost-schedule-btn-next"
+                  onClick={() => {
+                    // productInfo에 상품명 업데이트 (savedProductName이 있으면 사용)
+                    const updatedProductInfo = savedProductName 
+                      ? { ...productInfo, productName: savedProductName }
+                      : productInfo;
 
-                  // 호텔 데이터를 Recoil에 저장
-                  setSelectedHotelData({
-                    hotelInfo: hotelInfo,
-                    productInfo: updatedProductInfo,
-                    scheduleCards: scheduleCards,
-                    selectedHotels: selectedHotels,
-                    periodText: periodText,
-                    includeItems: includeItems,
-                    excludeItems: excludeItems,
-                    selectedRoomTypes: selectedRoomTypes,
-                    selectedNights: selectedNights,
-                    travelPeriod: travelPeriodDisplay,
-                    reserveDate: customerInfo.reserveDate,
-                    locationInfo: {
-                      address: hotelInfo?.hotelAddress || '',
-                      details: [
-                        '누사두아 게이티드 지역의 고급 라인업',
-                        '공항 → 20~25분',
-                        '발리 컬렉션 쇼핑센터 → 차량 5분',
-                        '주변: 무려프 비치클럽·워터블로우·BTDC 산책로'
-                      ]
-                    },
-                    benefitItems: benefitItems.map((item) => ({
-                      title: item.title,
-                      text: item.text,
-                      image: item.image
-                    })),
-                    priceInfo: {
-                      pricePerPerson: finalPricePerPerson || 0,
-                      totalPrice: finalTotalPrice || 0,
-                      guestCount: guestCount
+                    // 호텔 데이터를 Recoil에 저장
+                    setSelectedHotelData({
+                      hotelInfo: hotelInfo,
+                      productInfo: updatedProductInfo,
+                      scheduleCards: scheduleCards,
+                      selectedHotels: selectedHotels,
+                      periodText: periodText,
+                      includeItems: includeItems,
+                      excludeItems: excludeItems,
+                      selectedRoomTypes: selectedRoomTypes,
+                      selectedNights: selectedNights,
+                      travelPeriod: travelPeriodDisplay,
+                      reserveDate: customerInfo.reserveDate,
+                      locationInfo: {
+                        address: hotelInfo?.hotelAddress || '',
+                        details: [
+                          '누사두아 게이티드 지역의 고급 라인업',
+                          '공항 → 20~25분',
+                          '발리 컬렉션 쇼핑센터 → 차량 5분',
+                          '주변: 무려프 비치클럽·워터블로우·BTDC 산책로'
+                        ]
+                      },
+                      benefitItems: benefitItems.map((item) => ({
+                        title: item.title,
+                        text: item.text,
+                        image: item.image
+                      })),
+                      priceInfo: {
+                        pricePerPerson: finalPricePerPerson || 0,
+                        totalPrice: finalTotalPrice || 0,
+                        guestCount: guestCount
+                      }
+                    });
+
+                    // 일정 데이터를 Recoil에 저장
+                    const scheduleDataToSave = stateProps?.isFromMakeButton 
+                      ? stateProps?.customScheduleInfo 
+                      : scheduleInfo;
+                    
+                    if (scheduleDataToSave) {
+                      setSelectedScheduleData({
+                        productInfo: updatedProductInfo,
+                        selectedSchedule: scheduleDataToSave,
+                        totalPrice: finalTotalPrice || 0,
+                        guestCount: guestCount
+                      });
+                    } else {
+                      // scheduleInfo가 없으면 상품 ID만 저장
+                      setSelectedScheduleData({
+                        productInfo: updatedProductInfo,
+                        selectedSchedule: null,
+                        totalPrice: finalTotalPrice || 0,
+                        guestCount: guestCount
+                      });
                     }
-                  });
 
-                  // 일정 데이터를 Recoil에 저장
-                  const scheduleDataToSave = stateProps?.isFromMakeButton 
-                    ? stateProps?.customScheduleInfo 
-                    : scheduleInfo;
-                  
-                  if (scheduleDataToSave) {
-                    setSelectedScheduleData({
-                      productInfo: updatedProductInfo,
-                      selectedSchedule: scheduleDataToSave,
-                      totalPrice: finalTotalPrice || 0,
-                      guestCount: guestCount
-                    });
-                  } else {
-                    // scheduleInfo가 없으면 상품 ID만 저장
-                    setSelectedScheduleData({
-                      productInfo: updatedProductInfo,
-                      selectedSchedule: null,
-                      totalPrice: finalTotalPrice || 0,
-                      guestCount: guestCount
-                    });
-                  }
-
-                  navigate('/counsel/rest/estimate', { state: updatedProductInfo });
-                  window.scrollTo(0, 0);
+                    navigate('/counsel/rest/estimate', { state: updatedProductInfo });
+                    window.scrollTo(0, 0);
+                  }}
+                >예약하기</button>
+              </div>
+            </div>
+          )}
+          
+        </div>
+        
+        {/* 호텔 선택 모달 */}
+        {showHotelSelectModal && selectedCardIndex !== null && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => {
+            setShowHotelSelectModal(false);
+            setSelectedCardIndex(null);
+          }}
+          >
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '30px',
+              maxWidth: '900px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setShowHotelSelectModal(false);
+                  setSelectedCardIndex(null);
                 }}
-              >예약</button>
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#999',
+                  padding: '0',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+              
+              <h2 style={{
+                margin: '0 0 24px 0',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#000'
+              }}>
+                동급 다른 호텔
+              </h2>
+              
+              {(() => {
+                const card = scheduleCards.find(c => c.id === selectedCardIndex);
+                if (!card) return null;
+                
+                return (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '24px'
+                  }}>
+                    {hotelsWithFullData.length === 0 ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                        해당 타입의 호텔이 없습니다.
+                      </div>
+                    ) : (
+                      hotelsWithFullData.map((hotel: any) => {
+                        // 호텔 이미지 가져오기
+                        let hotelImage = '';
+                        if (hotel.imageNamesAllView) {
+                          try {
+                            const images = JSON.parse(hotel.imageNamesAllView);
+                            if (images && images.length > 0) {
+                              const imageName = typeof images[0] === 'string' ? images[0] : images[0].imageName;
+                              if (imageName) {
+                                hotelImage = `${AdminURL}/images/hotelimages/${imageName}`;
+                              }
+                            }
+                          } catch (e) {
+                            console.error('Failed to parse hotel images:', e);
+                          }
+                        }
+                        
+                        // 평점 계산
+                        const rating = hotel.hotelLevel 
+                          ? Math.max(0, Math.min(5, parseInt(String(hotel.hotelLevel), 10) || 0))
+                          : 0;
+                        
+                        // 가격 정보
+                        const pricePerNight = hotel.lowestPrice 
+                          ? Number(hotel.lowestPrice).toLocaleString()
+                          : '문의요청';
+                        
+                        // 선택된 카드의 박수 정보
+                        const nights = selectedNights[card.id] || card.nights || '';
+                        const nightsText = nights ? (typeof nights === 'number' ? `${nights}박` : nights) : '';
+                        
+                        return (
+                          <div
+                            key={hotel.id}
+                            style={{
+                              display: 'flex',
+                              gap: '20px',
+                              padding: '24px',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '12px',
+                              backgroundColor: '#fff',
+                              boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.1)',
+                              transition: 'all 0.2s',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow = '0px 4px 20px rgba(0, 0, 0, 0.15)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0px 0px 15px rgba(0, 0, 0, 0.1)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            {/* 호텔 이미지 */}
+                            <div style={{
+                              width: '280px',
+                              height: '200px',
+                              flexShrink: 0,
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              backgroundColor: '#f5f5f5'
+                            }}>
+                              {hotelImage ? (
+                                <img 
+                                  src={hotelImage} 
+                                  alt={hotel.hotelNameKo || '호텔 이미지'}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#999',
+                                  fontSize: '14px'
+                                }}>
+                                  이미지 없음
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* 호텔 정보 */}
+                            <div style={{
+                              flex: 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '12px'
+                            }}>
+                              {/* 호텔명 */}
+                              <div style={{
+                                fontWeight: 'bold',
+                                fontSize: '20px',
+                                color: '#000',
+                                lineHeight: '1.4'
+                              }}>
+                                {hotel.hotelNameKo || '호텔명'}
+                              </div>
+                              
+                              {/* 별점 */}
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}>
+                                <RatingBoard
+                                  ratingSize={20}
+                                  rating={rating}
+                                />
+                                <span style={{
+                                  fontSize: '14px',
+                                  color: '#666',
+                                  marginLeft: '4px'
+                                }}>
+                                  ★ {hotel.tripAdviser || hotel.customerScore || rating || '5.0'}
+                                </span>
+                              </div>
+                              
+                              {/* 특징 리스트 */}
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px'
+                              }}>
+                                {hotel.hotelRoomTypes && (() => {
+                                  try {
+                                    const roomTypes = JSON.parse(hotel.hotelRoomTypes);
+                                    if (Array.isArray(roomTypes) && roomTypes.length > 0) {
+                                      return roomTypes.slice(0, 4).map((room: any, idx: number) => (
+                                        <div key={idx} style={{
+                                          fontSize: '14px',
+                                          color: '#333',
+                                          lineHeight: '1.6'
+                                        }}>
+                                          -{room.roomTypeName || room} {nightsText}
+                                        </div>
+                                      ));
+                                    }
+                                  } catch (e) {
+                                    console.error('Failed to parse room types:', e);
+                                  }
+                                  return null;
+                                })()}
+                                {hotel.hotelIntro && (
+                                  <div style={{
+                                    fontSize: '14px',
+                                    color: '#333',
+                                    lineHeight: '1.6'
+                                  }}>
+                                    -{hotel.hotelIntro.length > 50 ? hotel.hotelIntro.substring(0, 50) + '...' : hotel.hotelIntro}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* 가격 및 선택 버튼 */}
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-end',
+                                marginTop: 'auto',
+                                gap: '16px'
+                              }}>
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '4px'
+                                }}>
+                                  <div style={{
+                                    fontSize: '12px',
+                                    color: '#666'
+                                  }}>
+                                    1박(1인)
+                                  </div>
+                                  <div style={{
+                                    fontSize: '20px',
+                                    fontWeight: 'bold',
+                                    color: '#000'
+                                  }}>
+                                    {pricePerNight === '문의요청' ? pricePerNight : `₩${pricePerNight}~`}
+                                  </div>
+                                </div>
+                                
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleHotelSelect(hotel);
+                                  }}
+                                  style={{
+                                    padding: '12px 24px',
+                                    backgroundColor: '#000',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '15px',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#333';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#000';
+                                  }}
+                                >
+                                  선택하기
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
-        
-      </div>
-      
-      {/* 호텔 선택 모달 */}
-      {showHotelSelectModal && selectedCardIndex !== null && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}
-        onClick={() => {
-          setShowHotelSelectModal(false);
-          setSelectedCardIndex(null);
-        }}
-        >
+
+        {/* 상품변경 모달 */}
+        {showPeriodChangeModal && (
           <div style={{
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            padding: '30px',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            position: 'relative'
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={() => {
+            setShowPeriodChangeModal(false);
+          }}
           >
-            <button
-              onClick={() => {
-                setShowHotelSelectModal(false);
-                setSelectedCardIndex(null);
-              }}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#999',
-                padding: '0',
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              padding: '30px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
             >
-              ×
-            </button>
-            
-            <h2 style={{
-              margin: '0 0 20px 0',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              color: '#333'
-            }}>
-              호텔 변경
-            </h2>
-            
-            {(() => {
-              const card = scheduleCards.find(c => c.id === selectedCardIndex);
-              if (!card) return null;
-              
-              return (
-                <div style={{
+              <button
+                onClick={() => {
+                  setShowPeriodChangeModal(false);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#999',
+                  width: '30px',
+                  height: '30px',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px'
-                }}>
-                  {hotelsWithFullData.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-                      해당 타입의 호텔이 없습니다.
-                    </div>
-                  ) : (
-                    hotelsWithFullData.map((hotel: any) => (
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+
+              <h2 style={{
+                margin: '0 0 20px 0',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                여행상품 선택
+              </h2>
+              
+              <div className="product-list" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                {products.length === 0 ? (
+                  <div className="empty-message" style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#999',
+                    fontSize: '14px'
+                  }}>
+                    연관된 여행상품이 없습니다.
+                  </div>
+                ) : (
+                  products.map((product: any) => {
+                    const headerText =
+                      product.headerText ||
+                      `${product.nation || stateProps?.nation || ''} 추천상품`;
+                    
+                    const productName = getProductNameFromScheduleForModal(product);
+
+                    const badgeType = product.badgeType || 'recommend';
+                    const badgeText = product.badgeText || '추천상품';
+
+                    return (
                       <div
-                        key={hotel.id}
-                        onClick={() => handleHotelSelect(hotel)}
+                        key={product.id}
+                        className="product-item"
+                        onClick={async () => {
+                          // 선택한 상품 기준으로 호텔/스케줄/요금 정보를 현재 페이지에서 갱신
+                          const selectedHotels = await getSelectedHotelsFromSchedule(product);
+
+                          // 상품명을 RecoilStore에 저장
+                          const productNameFromModal = getProductNameFromScheduleForModal(product);
+                          setSavedProductName(productNameFromModal);
+
+                          // 상품 정보 갱신
+                          setProductInfo(product);
+                          setSelectedHotels(selectedHotels);
+
+                          // 일차별 호텔 정보 갱신
+                          const updatedHotelInfoPerDay = getHotelInfoPerDay(selectedHotels);
+                          setHotelInfoPerDay(updatedHotelInfoPerDay);
+
+                          // 여행 기간 텍스트 갱신
+                          if (product.tourPeriodData) {
+                            try {
+                              const periodData = JSON.parse(product.tourPeriodData);
+                              const night = periodData.periodNight || '';
+                              const day = periodData.periodDay || '';
+                              const txt = `${night} ${day}`.trim();
+                              setPeriodText(txt);
+                            } catch {
+                              setPeriodText('');
+                            }
+                          } else {
+                            setPeriodText('');
+                          }
+
+                          // 포함/불포함 사항 갱신
+                          try {
+                            const includes = product.includeNote ? JSON.parse(product.includeNote) : [];
+                            setIncludeItems(Array.isArray(includes) ? includes : []);
+                          } catch {
+                            setIncludeItems([]);
+                          }
+
+                          try {
+                            const excludes = product.notIncludeNote ? JSON.parse(product.notIncludeNote) : [];
+                            setExcludeItems(Array.isArray(excludes) ? excludes : []);
+                          } catch {
+                            setExcludeItems([]);
+                          }
+
+                          // 호텔 구성 카드용 스케줄 카드 갱신
+                          try {
+                            const sched = product.productScheduleData ? JSON.parse(product.productScheduleData) : [];
+
+                            // Recoil에서 travelPeriod 시작 날짜 가져오기 (기존 로직 재사용)
+                            let startDate: Date | null = null;
+                            if (customerInfo.travelPeriodStart) {
+                              const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                              if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+                                startDate = new Date(customerInfo.travelPeriodStart.trim());
+                              }
+                            }
+
+                            let currentDate = startDate ? new Date(startDate) : null;
+
+                            const cards = (Array.isArray(sched) ? sched : []).map((s: any, idx: number) => {
+                              const hotelSort = s.sort || s.hotelSort || '';
+                              let hotelName = s.roomTypeName || hotelSort || '';
+
+                              // 기간변경에서 계산한 selectedHotels를 우선 사용
+                              const selectedHotel = selectedHotels.find(
+                                (sh: { index: number }) => sh.index === idx
+                              );
+                              if (selectedHotel?.hotel?.hotelNameKo) {
+                                hotelName = selectedHotel.hotel.hotelNameKo;
+                              }
+
+                              // 날짜 계산
+                              let dayText = `${idx + 1}일차`;
+                              if (currentDate) {
+                                dayText = formatDate(currentDate);
+
+                                const nights = extractNightsNumber(s.dayNight || '');
+                                if (nights > 0) {
+                                  const nextDate = new Date(currentDate);
+                                  nextDate.setDate(nextDate.getDate() + nights);
+                                  currentDate = nextDate;
+                                }
+                              }
+
+                              return {
+                                id: idx + 1,
+                                day: dayText,
+                                badge: hotelSort,
+                                title: hotelName,
+                                nights: s.dayNight || '',
+                              };
+                            });
+
+                            setScheduleCards(cards);
+                          } catch {
+                            setScheduleCards([]);
+                          }
+
+                          // ScheduleRederBox에서 사용할 상품 ID도 함께 변경
+                          setScheduleProductId(
+                            product.id !== undefined && product.id !== null
+                              ? String(product.id)
+                              : null
+                          );
+
+                          // Recoil 상태 초기화 (새로운 상품의 일정을 로드하기 위해)
+                          setScheduleInfo(null);
+
+                          setShowPeriodChangeModal(false);
+                        }}
                         style={{
-                          padding: '15px',
+                          padding: '16px',
                           border: '1px solid #e0e0e0',
                           borderRadius: '8px',
                           cursor: 'pointer',
@@ -3666,309 +4343,57 @@ export default function RestHotelCost() {
                           e.currentTarget.style.borderColor = '#e0e0e0';
                         }}
                       >
-                        <div style={{
-                          fontWeight: 'bold',
-                          fontSize: '16px',
-                          color: '#333',
-                          marginBottom: '5px'
+                        <div className="product-header" style={{
+                          marginBottom: '8px'
                         }}>
-                          {hotel.hotelNameKo}
-                        </div>
-                        {hotel.hotelNameEn && (
-                          <div style={{
-                            fontSize: '14px',
-                            color: '#666',
-                            marginBottom: '5px'
-                          }}>
-                            {hotel.hotelNameEn}
-                          </div>
-                        )}
-                        <div style={{
-                          fontSize: '12px',
-                          color: '#999'
-                        }}>
-                          {hotel.city || ''} {hotel.nation || ''}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* 상품변경 모달 */}
-      {showPeriodChangeModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}
-        onClick={() => {
-          setShowPeriodChangeModal(false);
-        }}
-        >
-          <div style={{
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            padding: '30px',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            position: 'relative'
-          }}
-          onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                setShowPeriodChangeModal(false);
-              }}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#999',
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ×
-            </button>
-
-            <h2 style={{
-              margin: '0 0 20px 0',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              color: '#333'
-            }}>
-              여행상품 선택
-            </h2>
-            
-            <div className="product-list" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}>
-              {products.length === 0 ? (
-                <div className="empty-message" style={{
-                  padding: '40px',
-                  textAlign: 'center',
-                  color: '#999',
-                  fontSize: '14px'
-                }}>
-                  연관된 여행상품이 없습니다.
-                </div>
-              ) : (
-                products.map((product: any) => {
-                  const headerText =
-                    product.headerText ||
-                    `${product.nation || stateProps?.nation || ''} 추천상품`;
-                  
-                  const productName = getProductNameFromScheduleForModal(product);
-
-                  const badgeType = product.badgeType || 'recommend';
-                  const badgeText = product.badgeText || '추천상품';
-
-                  return (
-                    <div
-                      key={product.id}
-                      className="product-item"
-                      onClick={async () => {
-                        // 선택한 상품 기준으로 호텔/스케줄/요금 정보를 현재 페이지에서 갱신
-                        const selectedHotels = await getSelectedHotelsFromSchedule(product);
-
-                        // 상품명을 RecoilStore에 저장
-                        const productNameFromModal = getProductNameFromScheduleForModal(product);
-                        setSavedProductName(productNameFromModal);
-
-                        // 상품 정보 갱신
-                        setProductInfo(product);
-                        setSelectedHotels(selectedHotels);
-
-                        // 일차별 호텔 정보 갱신
-                        const updatedHotelInfoPerDay = getHotelInfoPerDay(selectedHotels);
-                        setHotelInfoPerDay(updatedHotelInfoPerDay);
-
-                        // 여행 기간 텍스트 갱신
-                        if (product.tourPeriodData) {
-                          try {
-                            const periodData = JSON.parse(product.tourPeriodData);
-                            const night = periodData.periodNight || '';
-                            const day = periodData.periodDay || '';
-                            const txt = `${night} ${day}`.trim();
-                            setPeriodText(txt);
-                          } catch {
-                            setPeriodText('');
-                          }
-                        } else {
-                          setPeriodText('');
-                        }
-
-                        // 포함/불포함 사항 갱신
-                        try {
-                          const includes = product.includeNote ? JSON.parse(product.includeNote) : [];
-                          setIncludeItems(Array.isArray(includes) ? includes : []);
-                        } catch {
-                          setIncludeItems([]);
-                        }
-
-                        try {
-                          const excludes = product.notIncludeNote ? JSON.parse(product.notIncludeNote) : [];
-                          setExcludeItems(Array.isArray(excludes) ? excludes : []);
-                        } catch {
-                          setExcludeItems([]);
-                        }
-
-                        // 호텔 구성 카드용 스케줄 카드 갱신
-                        try {
-                          const sched = product.productScheduleData ? JSON.parse(product.productScheduleData) : [];
-
-                          // Recoil에서 travelPeriod 시작 날짜 가져오기 (기존 로직 재사용)
-                          let startDate: Date | null = null;
-                          if (customerInfo.travelPeriodStart) {
-                            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                            if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
-                              startDate = new Date(customerInfo.travelPeriodStart.trim());
-                            }
-                          }
-
-                          let currentDate = startDate ? new Date(startDate) : null;
-
-                          const cards = (Array.isArray(sched) ? sched : []).map((s: any, idx: number) => {
-                            const hotelSort = s.sort || s.hotelSort || '';
-                            let hotelName = s.roomTypeName || hotelSort || '';
-
-                            // 기간변경에서 계산한 selectedHotels를 우선 사용
-                            const selectedHotel = selectedHotels.find(
-                              (sh: { index: number }) => sh.index === idx
-                            );
-                            if (selectedHotel?.hotel?.hotelNameKo) {
-                              hotelName = selectedHotel.hotel.hotelNameKo;
-                            }
-
-                            // 날짜 계산
-                            let dayText = `${idx + 1}일차`;
-                            if (currentDate) {
-                              dayText = formatDate(currentDate);
-
-                              const nights = extractNightsNumber(s.dayNight || '');
-                              if (nights > 0) {
-                                const nextDate = new Date(currentDate);
-                                nextDate.setDate(nextDate.getDate() + nights);
-                                currentDate = nextDate;
-                              }
-                            }
-
-                            return {
-                              id: idx + 1,
-                              day: dayText,
-                              badge: hotelSort,
-                              title: hotelName,
-                              nights: s.dayNight || '',
-                            };
-                          });
-
-                          setScheduleCards(cards);
-                        } catch {
-                          setScheduleCards([]);
-                        }
-
-                        // ScheduleRederBox에서 사용할 상품 ID도 함께 변경
-                        setScheduleProductId(
-                          product.id !== undefined && product.id !== null
-                            ? String(product.id)
-                            : null
-                        );
-
-                        // Recoil 상태 초기화 (새로운 상품의 일정을 로드하기 위해)
-                        setScheduleInfo(null);
-
-                        setShowPeriodChangeModal(false);
-                      }}
-                      style={{
-                        padding: '16px',
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        backgroundColor: '#fff'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                        e.currentTarget.style.borderColor = '#5fb7ef';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fff';
-                        e.currentTarget.style.borderColor = '#e0e0e0';
-                      }}
-                    >
-                      <div className="product-header" style={{
-                        marginBottom: '8px'
-                      }}>
-                        <span className="product-header-text" style={{
-                          fontSize: '12px',
-                          color: '#999'
-                        }}>{headerText}</span>
-                      </div>
-                      <div className="product-content">
-                        <p className="product-name" style={{
-                          margin: '0 0 8px 0',
-                          fontSize: '16px',
-                          fontWeight: 500,
-                          color: '#333',
-                          lineHeight: '1.4'
-                        }}>
-                          {productName}
-                        </p>
-                        <div className="product-badge-wrapper" style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}>
-                          <div className={`product-badge badge-${badgeType}`} style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
+                          <span className="product-header-text" style={{
                             fontSize: '12px',
+                            color: '#999'
+                          }}>{headerText}</span>
+                        </div>
+                        <div className="product-content">
+                          <p className="product-name" style={{
+                            margin: '0 0 8px 0',
+                            fontSize: '16px',
                             fontWeight: 500,
-                            backgroundColor: badgeType === 'recommend' ? '#5fb7ef' : '#ff6b00',
-                            color: '#fff'
+                            color: '#333',
+                            lineHeight: '1.4'
                           }}>
-                            <span>{badgeText}</span>
-                          </div>
-                          {product.landCompany && (
-                            <p className="product-land-company" style={{
-                              margin: 0,
+                            {productName}
+                          </p>
+                          <div className="product-badge-wrapper" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <div className={`product-badge badge-${badgeType}`} style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
                               fontSize: '12px',
-                              color: '#666'
-                            }}>{product.landCompany}</p>
-                          )}
+                              fontWeight: 500,
+                              backgroundColor: badgeType === 'recommend' ? '#5fb7ef' : '#ff6b00',
+                              color: '#fff'
+                            }}>
+                              <span>{badgeText}</span>
+                            </div>
+                            {product.landCompany && (
+                              <p className="product-land-company" style={{
+                                margin: 0,
+                                fontSize: '12px',
+                                color: '#666'
+                              }}>{product.landCompany}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

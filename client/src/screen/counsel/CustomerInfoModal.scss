@@ -202,24 +202,24 @@
           cursor: pointer;
           user-select: none;
           font-size: 14px;
-          font-weight: 300;
+          font-weight: 500;
           color: #555555;
           
 
           input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
             appearance: none;
-            border: 1px solid #d5d5d5;
-            border-radius: 3px;
+            border: 1px solid #272727;
+            border-radius: 4px;
             position: relative;
             background-color: white;
             transition: all 0.2s ease;
 
             &:checked {
-              background-color: white;
-              border-color: #272727;
+              background-color: #4169E1;
+              border-color: #4169E1;
 
               &::after {
                 content: '✓';
@@ -227,15 +227,56 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                color: #272727;
-                font-size: 12px;
-                font-weight: bold;
+                color: white;
+                font-size: 16px;
+                font-weight: 900;
               }
             }
           }
 
           span {
             white-space: nowrap;
+          }
+        }
+      }
+
+      .form-row {
+        .checkbox-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          user-select: none;
+          font-size: 14px;
+          font-weight: 500;
+          color: #555555;
+
+          input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            appearance: none;
+            border: 1px solid #272727;
+            border-radius: 4px;
+            position: relative;
+            background-color: white;
+            transition: all 0.2s ease;
+
+            &:checked {
+              background-color: #4169E1;
+              border-color: #4169E1;
+
+              &::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 16px;
+                font-weight: 900;
+              }
+            }
           }
         }
       }

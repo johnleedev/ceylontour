@@ -9,10 +9,14 @@
     width: 100%;
     box-sizing: border-box;
     background-color: #fff;
-    padding: 0 50px;
-    height: calc(100vh - 100px);
+
+    .hotel-cost-container {
+      padding: 0 20px;
+      max-width: 1920px;
+      margin: 0 auto;
+      height: calc(100vh - 100px);
     overflow: hidden;
-  
+    }
     // 오른쪽 패널 토글 버튼
     .right-panel-toggle-btn {
       position: fixed;
@@ -57,7 +61,6 @@
         justify-content: center;
   
         .left-section {
-          // max-width: 1100px;
           width: 100%;
           overflow-y: auto; // 독립 스크롤
           height: 100%;
@@ -89,8 +92,7 @@
   
       // 왼쪽 영역: 기존 내용
       .left-section {
-        width: 60%;
-        padding: 20px;
+        width: 70%;
         box-sizing: border-box;
         overflow-y: auto;
         height: 100%;
@@ -100,6 +102,7 @@
         &::-webkit-scrollbar {
           display: none; /* Chrome, Safari, Opera */
         }
+
 
         // 왼쪽 패널 하단 버튼들
         .left-panel-bottom-buttons {
@@ -293,52 +296,174 @@
         opacity: 1;
       }
     }
+
+    .schedule_add_info_section_cover {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      padding: 50px;
+      background-color: #fff;
+      margin-top: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+
+      .single__header__main {
+        font-weight: 500;
+        font-size: 18px;
+        color: rgba(0, 0, 0, 1);
+        margin-bottom: 10px;
+      }
+
+      .included__items__section__wrapper {
+      
+  
+        .included__items__wrapper {
+          @media (min-width: 800px) {
+            display: grid;
+            grid-template-columns: 0.25fr 0.75fr;
+            border-top: 1px solid rgba(0, 0, 0, 1);
+            & > div {
+              border-bottom: 1px solid rgba(187, 187, 187, 1);
+            }
+            & > div:nth-of-type(odd) {
+              border-right: 1px solid rgba(187, 187, 187, 1);
+            }
+          }
+          .index__title__wrapper {
+            display: flex;
+            color: rgba(0, 0, 0, 1);
+            align-items: center;
+            font-size: clamp(16px, 1vw, 20px);
+            justify-content: center;
+            background-color: rgba(248, 248, 248, 1);
+            gap: 5px;
+            @media (max-width: 800px) {
+              align-items: flex-start;
+              justify-content: flex-start;
+              background-color: rgba(255, 255, 255, 1);
+              border-bottom: 1px solid rgba(0, 0, 0, 1);
+              padding: 5px 0;
+            }
+            .included__icon {
+              @include middle();
+              font-weight: 700;
+              color: rgba(40, 171, 225, 1);
+            }
+            .unincluded__icon {
+              @include middle();
+              font-weight: 700;
+              color: rgba(224, 49, 49, 1);
+            }
+          }
+          .elements__wrapper {
+            display: flex;
+            flex-direction: column;
+            color: rgba(51, 51, 51, 1);
+            font-size: clamp(13px, 0.78vw, 15px);
+            gap: 0.2vw;
+            padding: 1vw 2vw;
+            @media (max-width: 800px) {
+              padding: 10px 0 30px;
+              gap: 2px;
+            }
+          }
+        }
+      }
+    
+      // 필독사항 --------------------------------------------
+      .must__read__section__wrapper {
+        .must__read__wrapper {
+          display: flex;
+          flex-direction: column;
+          color: rgba(51, 51, 51, 1);
+          font-size: clamp(13px, 0.78vw, 15px);
+          gap: 0.4vw;
+          padding: 2vw 0;
+          border-top: 1px solid rgba(0, 0, 0, 1);
+          border-bottom: 1px solid rgba(187, 187, 187, 1);
+          white-space: pre-line;
+          @media (max-width: 800px) {
+            border-bottom: none;
+            padding: 10px 0 30px;
+            gap: 2px;
+            line-height: 1.6;
+          }
+        }
+      }
+    }
     
     .hotel-center-wrapper {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1300px;
       margin: 0 auto;
     }
   
-    .hotel-title-wrapper {
+    .hotel-title-left-wrapper {
       display: flex;
       align-items: center;
+      margin-bottom: 20px;
+      margin-top: 20px;
   
       .arrow-back {
         font-size: 20px;
         margin-right: 10px;
       }
   
-      .hotel-title {
-        margin: 20px;
+      .cost-title-header {
         display: flex;
-        align-items: end;
-        
-        .arrow-back {
-          font-size: 20px;
-          margin-right: 10px;
-        }
-        
-        .text-title {
-          font-size: 33px ;
-          margin-right: 10px;
-          
-        }
-    
-        .text-subtitle {
-          font-size: 16px ;
-          margin-right: 20px;
-        }
-        .text-location {
-          display: flex;
-          align-items: center;
-          font-size: 16px ;
+        align-items: center;
+
+        .cost-product-name {
+          font-size: 22px;
+          font-weight: 500;
+          color: #000;
+          background-color: #fff;
           margin-right: 10px;
         }
       }
     
     }
   
+    .hotel-title-right-wrapper {
+     
+      .text-title-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 5px;
+        
+        .text-title {
+          font-size: 24px ;
+          margin-right: 10px;
+        }
+        .change-product-btn {
+          padding: 4px 10px;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+          background-color: #fff;
+          color: #333;
+          font-size: 13px;
+        }
+      }
+      
+      .text-subtitle-rating-location-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 5px;
+
+        .text-subtitle {
+          font-size: 16px ;
+        }
+      }
+      .text-location {
+        display: flex;
+        align-items: center;
+        font-size: 14px ;
+        color: #8B8B8B;
+      }
+    }
     
   
     // 호텔 탭 컨테이너 (리조트 + 풀빌라 조합)
@@ -574,7 +699,73 @@
     
       
     }
-  
+
+    .hotel-intro-section {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto 60px;
+      padding: 60px 40px;
+      text-align: center;
+      background-color: #fff;
+
+      .hotel-intro-rating {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .hotel-intro-tagline {
+        font-size: 36px;
+        font-weight: 700;
+        color: #000;
+        margin-bottom: 20px;
+        line-height: 1.4;
+      }
+      .hotel-intro-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+        img {
+          max-width: 300px;
+          max-height: 200px;
+          object-fit: cover;
+          border-radius: 10px;
+        }
+      }
+      .hotel-intro-entitle {
+        font-size: 35px;
+        font-weight: 700;
+        color: #8B8B8B;
+        margin-bottom: 40px;
+        line-height: 1.4;
+      }
+      .hotel-intro-name {
+        font-size: 35px;
+        font-weight: 700;
+        color: #8B8B8B;
+        margin-bottom: 40px;
+        line-height: 1.4;
+      }
+
+      .hotel-intro-description {
+        text-align: center;
+        max-width: 900px;
+        margin: 0 auto;
+
+        p {
+          font-size: 16px;
+          line-height: 1;
+          color: #666;
+          margin-bottom: 20px;
+          font-weight: bold;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+    }
     
     
     .location-info {
@@ -1103,6 +1294,7 @@
 
         // 헤더
         .cost-header {
+          
           .cost-header-top {
             display: flex;
             flex-direction: column;
@@ -1186,42 +1378,46 @@
             justify-content: space-between;
             gap: 12px;
 
-            .cost-card-date {
-              width: 10%;
-              color: #555555;
-              
-              font-size: 14px;
-              font-weight: 400;
-              @include middle();
-            }
-
             .cost-card-header {
-              width: 50%;
+              width: 60%;
               display: flex;
-              justify-content: left;
-              display: flex;
-              align-items: center;
-              justify-content: left;
-              
-
-              .cost-card-badge {
-                width: 70px;
-                padding: 4px 12px;
-                border: 1px solid #999999;
-                border-radius: 5px;
-                color: #888888;
-                font-size: 14px;
-                font-weight: 400;
-                text-align: center;
-                background-color: #f9f9f9;
-                margin-right: 20px;
-
-                &.main {
-                  border-color: #fbc400;
-                  color: #e49400;
-                  background-color: #fffbf0;
+              flex-direction: column;
+              align-items: flex-start;
+              justify-content: center;
+              gap: 5px;
+                
+              .cost-card-date-badge-wrapper {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                
+                .cost-card-date {
+                  color: #555555;
+                  font-size: 14px;
+                  font-weight: 400;
+                  @include middle();
+                }
+  
+                .cost-card-badge {
+                  padding: 2px 12px;
+                  border: 1px solid #999999;
+                  border-radius: 5px;
+                  color: #888888;
+                  font-size: 14px;
+                  font-weight: 400;
+                  text-align: center;
+                  background-color: #f9f9f9;
+                  margin-right: 20px;
+  
+                  &.main {
+                    border-color: #fbc400;
+                    color: #e49400;
+                    background-color: #fffbf0;
+                  }
                 }
               }
+              
               .cost-card-title {
                 color: #010101;
                 font-family: "Inter", Helvetica;
@@ -1234,9 +1430,10 @@
             .cost-card-content {
               width: 40%;
               display: flex;
-              justify-content: space-between;
-              align-items: center;
-              gap: 12px;
+              flex-direction: column;
+              justify-content: center;
+              align-items: flex-end;
+              gap: 5px;
               
               .cost-card-roomtype {
                 color: #555555;
@@ -1253,8 +1450,6 @@
                 .nights-btn {
                   width: 20px;
                   height: 20px;
-                  border: 1px solid #ddd;
-                  border-radius: 4px;
                   background: #fff;
                   color: #333;
                   font-size: 16px;
@@ -1264,6 +1459,7 @@
                   align-items: center;
                   justify-content: center;
                   padding: 0;
+                  border: none;
 
                   &:hover {
                     background: #f5f5f5;
@@ -2832,6 +3028,119 @@
                 }
               }
             }
+          }
+        }
+      }
+    }
+
+    .schedule-summary-content {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+
+      .summary-card {
+        width: 100%;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .summary-header {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          .summary-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+          }
+
+          .summary-sub-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 14px;
+
+            .sub-tab {
+              color: #858585;
+              cursor: pointer;
+              white-space: nowrap;
+
+              &.active {
+                color: #000;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+
+        .summary-grid {
+          gap: 16px;
+          margin-top: 16px;
+
+          .summary-item {
+            display: flex;
+            gap: 8px;
+            background-color: #ffffff;
+            border: 1px solid #e3e3e3;
+            height: 120px;
+            overflow: hidden;
+            margin-bottom: 10px;
+
+            .summary-item-image {
+              width: 150px;
+              height: 120px;
+              object-fit: cover;
+              flex-shrink: 0;
+            }
+
+            .summary-item-content {
+              padding: 10px;
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              flex: 1;
+
+              .summary-item-title {
+                font-size: 15px;
+                font-weight: 500;
+                color: #000;
+              }
+
+              .summary-item-rating {
+                font-size: 13px;
+                color: #ffb400;
+              }
+
+              .summary-item-price-row {
+                display: flex;
+                justify-content: flex-end;
+                gap: 4px;
+                align-items: baseline;
+                margin-top: 4px;
+
+                .summary-item-price {
+                  font-size: 14px;
+                  color: #000;
+                }
+              
+                .summary-item-unit {
+                  font-size: 12px;
+                  color: #777;
+                }
+              }
+            }
+          }
+          .summary-item:hover {
+            border: 1px solid #26a9fb;
+            cursor: pointer;
           }
         }
       }

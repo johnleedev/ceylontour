@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import './EuropeCityPage.scss';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AdminURL } from '../../../../MainURL';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { recoilCityCart, CityCartItem } from '../../../../RecoilStore';
 import axios from 'axios';
+import { AiOutlineHeart, AiFillHeart } from 'react-icons/ai';
 
 export default function EuropeCityPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
+  const cityCart = useRecoilValue(recoilCityCart);
   const setCityCart = useSetRecoilState(recoilCityCart);
   
   const cityData = stateProps?.cityData || null;
@@ -68,8 +70,10 @@ export default function EuropeCityPage() {
           ...city
         };
         return [...prevCart, newItem];
+      } else {
+        // 이미 있으면 제거
+        return prevCart.filter((item) => item.id !== city.id);
       }
-      return prevCart;
     });
   };
 
@@ -137,185 +141,177 @@ export default function EuropeCityPage() {
 
   return (
     <div className="div-wrapper-screen">
-      <div className="hotel-header">
-        <div className="hotel-header-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', justifyContent: 'space-between' }}>
-            <h1 className="hotel-header-title">{cityData && cityData.length > 0 ? cityData[0].nation : '유럽 도시 선택'}</h1>
-            {nations.length > 0 && (
-              <select
-                value={selectedNation}
-                onChange={async (e) => {
-                  const selectedNationName = e.target.value;
-                  setSelectedNation(selectedNationName);
-                  
-                  // 선택된 국가의 도시 데이터 가져오기
-                  try {
-                    const selectedNationData = nations.find((n: any) => n.name === selectedNationName);
-                    if (selectedNationData && selectedNationData.rawData && selectedNationData.rawData.cities) {
-                      // 해당 국가의 도시 데이터로 페이지 전환
-                      navigate(`/counsel/europe/city`, {
-                        state: {
-                          cityData: selectedNationData.rawData.cities,
-                          nationData: selectedNationData.rawData,
-                          nationName: selectedNationName
-                        },
-                        replace: true
-                      });
-                      window.scrollTo(0, 0);
-                    }
-                  } catch (error) {
-                    console.error('도시 데이터를 가져오는 중 오류 발생:', error);
-                  }
-                }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  border: '1px solid #ddd',
-                  fontSize: '14px',
-                  backgroundColor: '#fff',
-                  color: '#333',
-                  cursor: 'pointer',
-                  minWidth: '150px',
-                  outline: 'none'
-                }}
-              >
-                <option value="">국가 선택</option>
-                {nations.map((nation: any) => (
-                  <option key={nation.id} value={nation.name}>
-                    {nation.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <p className="hotel-header-subtitle">
-            방문하고 싶은 도시를 선택해주세요
-          </p>
-        </div>
-
-        <div className="hotel-header-search">
-          <form 
-            className="hotel-search-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <input
-              className="hotel-search-input"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="도시명으로 검색"
-            />
-            <button type="submit" className="hotel-search-button">
-              <span className="hotel-search-icon">🔍</span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <div className="hotel-card-grid">
-        {loading ? (
-          <div className="loading-message">로딩 중...</div>
-        ) : cities.length === 0 ? (
-          <div className="empty-message">도시 데이터가 없습니다.</div>
-        ) : (
-          cities.map((city: any) => {
-            // 도시의 inputImage 파싱
-            let mainImage: string | null = null;
-            try {
-              const images = JSON.parse(city.inputImage || '[]');
-              if (Array.isArray(images) && images.length > 0 && images[0]) {
-                mainImage = `${AdminURL}/images/cityimages/${images[0]}`;
-              }
-            } catch (e) {
-              // 파싱 실패 시 기본 이미지
-            }
-            // trafficCode에서 공항 정보 추출
-            let airportInfo = '';
-            try {
-              const trafficCode = JSON.parse(city.trafficCode || '{}');
-              if (trafficCode.airplane && Array.isArray(trafficCode.airplane) && trafficCode.airplane.length > 0) {
-                airportInfo = trafficCode.airplane.map((airport: any) => 
-                  `${airport.airport} (${airport.code})`
-                ).join(', ');
-              }
-            } catch (e) {
-              // 파싱 실패 시 무시
-            }
-
-            return (
-              <div
-                key={city.id}
-                className="div-wrapper"
-              >
-                <div className="card-image-wrap">
-                  <img
-                    className="card-image"
-                    alt={city.cityKo}
-                    src={mainImage || `${AdminURL}/images/cityimages/${city.inputImage}`}
-                  />
-                  <div className="card-hover-buttons">
-                    <button
-                      type="button"
-                      className="hover-button hover-button-add"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(city);
-                        console.log(city)
-                      }}
-                    >
-                      담기
-                    </button>
-                    <button
-                      type="button"
-                      className="hover-button hover-button-detail"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/counsel/europe/citydetail?id=${city.id}&nation=${city.nation}&fromDetail=true`);
+      <div className="hotel-citypage-container">
+        <div className="hotel-header">
+          <div className="hotel-header-left">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', justifyContent: 'space-between' }}>
+              <h1 className="hotel-header-title">{cityData && cityData.length > 0 ? cityData[0].nation : '유럽 도시 선택'}</h1>
+              {nations.length > 0 && (
+                <select
+                  value={selectedNation}
+                  onChange={async (e) => {
+                    const selectedNationName = e.target.value;
+                    setSelectedNation(selectedNationName);
+                    
+                    // 선택된 국가의 도시 데이터 가져오기
+                    try {
+                      const selectedNationData = nations.find((n: any) => n.name === selectedNationName);
+                      if (selectedNationData && selectedNationData.rawData && selectedNationData.rawData.cities) {
+                        // 해당 국가의 도시 데이터로 페이지 전환
+                        navigate(`/counsel/europe/city`, {
+                          state: {
+                            cityData: selectedNationData.rawData.cities,
+                            nationData: selectedNationData.rawData,
+                            nationName: selectedNationName
+                          },
+                          replace: true
+                        });
                         window.scrollTo(0, 0);
-                      }}
-                    >
-                      상세보기
-                    </button>
-                  </div>
-                </div>
-                <div 
-                  className="card-body"
+                      }
+                    } catch (error) {
+                      console.error('도시 데이터를 가져오는 중 오류 발생:', error);
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px',
+                    backgroundColor: '#fff',
+                    color: '#333',
+                    cursor: 'pointer',
+                    minWidth: '150px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">국가 선택</option>
+                  {nations.map((nation: any) => (
+                    <option key={nation.id} value={nation.name}>
+                      {nation.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <p className="hotel-header-subtitle">
+              방문하고 싶은 도시를 선택해주세요
+            </p>
+          </div>
+
+          <div className="hotel-header-search">
+            <form 
+              className="hotel-search-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
+              <input
+                className="hotel-search-input"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="도시명으로 검색"
+              />
+              <button type="submit" className="hotel-search-button">
+                <span className="hotel-search-icon">🔍</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="hotel-card-grid">
+          {loading ? (
+            <div className="loading-message">로딩 중...</div>
+          ) : cities.length === 0 ? (
+            <div className="empty-message">도시 데이터가 없습니다.</div>
+          ) : (
+            cities.map((city: any) => {
+              // 도시의 inputImage 파싱
+              let mainImage: string | null = null;
+              try {
+                const images = JSON.parse(city.inputImage || '[]');
+                if (Array.isArray(images) && images.length > 0 && images[0]) {
+                  mainImage = `${AdminURL}/images/cityimages/${images[0]}`;
+                }
+              } catch (e) {
+                // 파싱 실패 시 기본 이미지
+              }
+              // trafficCode에서 공항 정보 추출
+              let airportInfo = '';
+              try {
+                const trafficCode = JSON.parse(city.trafficCode || '{}');
+                if (trafficCode.airplane && Array.isArray(trafficCode.airplane) && trafficCode.airplane.length > 0) {
+                  airportInfo = trafficCode.airplane.map((airport: any) => 
+                    `${airport.airport} (${airport.code})`
+                  ).join(', ');
+                }
+              } catch (e) {
+                // 파싱 실패 시 무시
+              }
+
+              // 장바구니에 있는지 확인하여 하트 상태 결정
+              const isFavorite = cityCart.some(item => item.id === city.id);
+
+              return (
+                <div
+                  key={city.id}
+                  className="div-wrapper"
                   onClick={() => {
                     navigate(`/counsel/europe/citydetail?id=${city.id}&nation=${city.nation}`);
                     window.scrollTo(0, 0);
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="hotel-name">{city.cityKo}</div>
-                  <div className="hotel-location-row">
-                    <span className="hotel-location">
-                      {city.cityEn || ''}
-                    </span>
+                  <div className="card-image-wrap">
+                    <img
+                      className="card-image"
+                      alt={city.cityKo}
+                      src={mainImage || `${AdminURL}/images/cityimages/${city.inputImage}`}
+                    />
+                    <button
+                      type="button"
+                      className={`card-heart-button ${isFavorite ? 'favorite' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(city);
+                      }}
+                    >
+                      {isFavorite ? (
+                        <AiFillHeart className="heart-icon filled" />
+                      ) : (
+                        <AiOutlineHeart className="heart-icon outline" />
+                      )}
+                    </button>
                   </div>
-                  {airportInfo && (
-                    <p className="promo-text" style={{ fontSize: '12px', color: '#666' }}>
-                      공항: {airportInfo}
-                    </p>
-                  )}
-                  {city.weather && (
-                    <p className="promo-text" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                      {city.weather.split('\n')[0]}
-                    </p>
-                  )}
-                  {city.tourNotice && (
-                    <p className="promo-text" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                      {city.tourNotice}
-                    </p>
-                  )}
+                  <div className="card-body">
+                    <div className="hotel-name">{city.cityKo}</div>
+                    <div className="hotel-location-row">
+                      <span className="hotel-location">
+                        {city.cityEn || ''}
+                      </span>
+                    </div>
+                    {airportInfo && (
+                      <p className="promo-text" style={{ fontSize: '12px', color: '#666' }}>
+                        공항: {airportInfo}
+                      </p>
+                    )}
+                    {city.weather && (
+                      <p className="promo-text" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        {city.weather.split('\n')[0]}
+                      </p>
+                    )}
+                    {city.tourNotice && (
+                      <p className="promo-text" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        {city.tourNotice}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
       </div>
-      
     </div>
   );
 };

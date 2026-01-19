@@ -8,22 +8,29 @@ import { ImLocation } from 'react-icons/im';
 import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { 
   recoilCustomerInfoFormData, 
   recoilSelectedHotelData, 
-  recoilSelectedScheduleData 
+  recoilSelectedScheduleData,
+  recoilUserInfo
 } from '../../../../RecoilStore';
 
 export default function RestEstimatePage() {
   const navigate = useNavigate();
-  // const location = useLocation();
-  // const stateProps = location.state;
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const estimateId = searchParams.get('estimateId');
   
   // Recoil에서 데이터 가져오기
   const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
   const selectedHotelData = useRecoilValue(recoilSelectedHotelData);
   const selectedScheduleData = useRecoilValue(recoilSelectedScheduleData);
+  const userInfo = useRecoilValue(recoilUserInfo);
+  const setCustomerInfo = useSetRecoilState(recoilCustomerInfoFormData);
+  const setSelectedHotelData = useSetRecoilState(recoilSelectedHotelData);
+  const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
+  
   console.log('customerInfo', customerInfo);
   console.log('selectedHotelData', selectedHotelData);
   console.log('selectedScheduleData', selectedScheduleData);
@@ -255,9 +262,103 @@ export default function RestEstimatePage() {
  
   
   useEffect(() => {
-    
     console.log('fetchScheduleData');
   }, []);
+
+  // estimateId가 있으면 예약 정보 가져오기
+  useEffect(() => {
+    const fetchEstimateData = async () => {
+      if (!estimateId) return;
+      
+      try {
+        const response = await axios.get(`${AdminURL}/ceylontour/getEstimate/${estimateId}`);
+        
+        if (response.data && response.data.id) {
+          const estimate = response.data;
+          
+          // customerInfo 복원
+          if (estimate.customer1Name || estimate.customer1Phone || estimate.customer2Name || estimate.customer2Phone) {
+            setCustomerInfo({
+              theme: estimate.theme ? [estimate.theme] : ['honeymoon'],
+              customer1Name: estimate.customer1Name || '',
+              customer1Phone: estimate.customer1Phone || '',
+              customer2Name: estimate.customer2Name || '',
+              customer2Phone: estimate.customer2Phone || '',
+              destination: estimate.destination || '',
+              weddingDate: estimate.weddingDate || '',
+              travelPeriodStart: estimate.travelPeriodStart || '',
+              travelPeriodEnd: estimate.travelPeriodEnd || '',
+              reserveDate: estimate.reserveDate || '',
+              travelStyle: [],
+              flightStyle: [],
+              accommodationPreference: [],
+              wantsAndNeeds: estimate.wantsAndNeeds || '',
+              selfTicketing: false,
+              beforeTicketing: false
+            });
+          }
+          
+          // selectedHotelData 복원
+          if (estimate.hotelInfo) {
+            try {
+              const hotelInfo = JSON.parse(estimate.hotelInfo);
+              setSelectedHotelData(hotelInfo);
+            } catch (e) {
+              console.error('Failed to parse hotelInfo:', e);
+            }
+          }
+          
+          // selectedScheduleData 복원
+          if (estimate.scheduleInfo) {
+            try {
+              const scheduleInfo = JSON.parse(estimate.scheduleInfo);
+              setSelectedScheduleData(scheduleInfo);
+            } catch (e) {
+              console.error('Failed to parse scheduleInfo:', e);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('예약 정보 가져오기 오류:', error);
+      }
+    };
+    
+    fetchEstimateData();
+  }, [estimateId, setCustomerInfo, setSelectedHotelData, setSelectedScheduleData]);
+
+  // 예약 정보 저장 함수
+  const handleReservation = async () => {
+    try {
+      // 저장할 데이터 구성
+      const estimateData = {
+        productType: 'rest',
+        productId: selectedHotelData.productInfo?.id || selectedScheduleData.productInfo?.id || null,
+        productName: selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || '상품명',
+        customerInfo: customerInfo,
+        selectedHotelData: selectedHotelData,
+        selectedScheduleData: selectedScheduleData,
+        formData: formSections,
+        priceInfo: {
+          pricePerPerson: selectedHotelData.priceInfo?.pricePerPerson || null,
+          totalPrice: selectedHotelData.priceInfo?.totalPrice || selectedScheduleData.totalPrice || null,
+          guestCount: selectedHotelData.priceInfo?.guestCount || selectedScheduleData.guestCount || 2
+        },
+        userName: userInfo.name || ''
+      };
+
+      const response = await axios.post(`${AdminURL}/ceylontour/saveEstimate`, estimateData);
+      
+      if (response.data && response.data.success) {
+        alert('예약 정보가 저장되었습니다.');
+        navigate('/counsel', { state: { openEstimateList: true } });
+      } else {
+        alert('예약 정보 저장에 실패했습니다.');
+      }
+    } catch (error: any) {
+      console.error('예약 정보 저장 오류:', error);
+      alert(error.response?.data?.message || '예약 정보 저장 중 오류가 발생했습니다.');
+    }
+  };
 
 
 
@@ -401,7 +502,7 @@ export default function RestEstimatePage() {
                   ? `${selectedHotelData.priceInfo.totalPrice.toLocaleString()}원`
                   : selectedScheduleData.totalPrice 
                     ? `${selectedScheduleData.totalPrice.toLocaleString()}원`
-                    : '5,200,000원'}
+                    : ''}
               </div>
             </div>
 
@@ -413,14 +514,21 @@ export default function RestEstimatePage() {
             </div>
 
             <div className="rest-summary-actions">
-              <div className="rest-action-button action-button-secondary">
+              {/* <div className="rest-action-button action-button-secondary">
                 <div className="rest-rectangle-11" />
                 <div className="rest-text-wrapper-10">보내기</div>
-              </div>
-              <div className="rest-action-button action-button-primary">
-                <div className="rest-rectangle-10" />
-                <div className="rest-text-wrapper-9" style={{ color: '#fff' }}>상품 선택하기</div>
-              </div>
+              </div> */}
+              {estimateId ? (
+                <div className="rest-action-button action-button-primary" onClick={() => navigate('/counsel', { state: { openEstimateList: true } })} style={{ cursor: 'pointer' }}>
+                  <div className="rest-rectangle-10" />
+                  <div className="rest-text-wrapper-9" style={{ color: '#fff' }}>돌아가기</div>
+                </div>
+              ) : (
+                <div className="rest-action-button action-button-primary" onClick={handleReservation} style={{ cursor: 'pointer' }}>
+                  <div className="rest-rectangle-10" />
+                  <div className="rest-text-wrapper-9" style={{ color: '#fff' }}>예약하기</div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -131,6 +131,153 @@
           font-size: 24px;
           animation: bounce 2s infinite;
           cursor: pointer;
+          transition: transform 0.3s ease;
+
+          &.open {
+            transform: rotate(180deg);
+            animation: none;
+          }
+        }
+        &:hover {
+          cursor: pointer;
+        }
+      }
+
+      .estimate-list-container {
+        width: 100%;
+        max-width: 1200px;
+        background: #fff;
+        padding: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+        .estimate-filter-buttons {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 5px;
+          flex-wrap: wrap;
+
+          .filter-btn {
+            padding: 8px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+            color: #ccc;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
+
+            &.active {
+              background: #333;
+              color: #fff;
+              border-color: white;
+            }
+          }
+        }
+
+        .estimate-list-loading,
+        .estimate-list-empty {
+          text-align: center;
+          padding: 40px;
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 16px;
+        }
+
+        .estimate-table-wrapper {
+          overflow-x: hidden;
+          max-height: 600px;
+          overflow-y: auto;
+          background: white;
+          border-radius: 4px;
+          width: 100%;
+
+          &::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+
+            &:hover {
+              background: #555;
+            }
+          }
+        }
+
+        .estimate-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+          table-layout: fixed;
+
+          thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+
+            th {
+              padding: 8px 4px;
+              text-align: center;
+              font-weight: 600;
+              color: #333;
+              border-top: 1px solid #ddd;
+              border-bottom: 1px solid #ddd;
+              font-size: 14px;
+              word-wrap: break-word;
+            }
+          }
+
+          tbody {
+            tr {
+              border-bottom: 1px solid #e0e0e0;
+              transition: background-color 0.2s ease;
+
+              &:hover {
+                background-color: #f9f9f9;
+              }
+
+              td {
+                padding: 6px 4px;
+                color: #333;
+                font-size: 14px;
+                vertical-align: middle;
+                text-align: center;
+                word-wrap: break-word;
+                overflow: hidden;
+                text-overflow: ellipsis;
+
+                .date-cell {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+                  align-items: center;
+
+                  .date-reservation {
+                    color: #4169E1;
+                    font-weight: 500;
+                  }
+
+                  .date-departure {
+                    color: #333;
+                  }
+                }
+              }
+            }
+            tr:hover {
+              cursor: pointer;
+              background-color: #f5f5f5;
+            }
+          }
         }
       }
     }

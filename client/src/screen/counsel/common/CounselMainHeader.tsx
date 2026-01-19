@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './CounselMainHeader.scss';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { recoilCounselFormData } from '../../../RecoilStore';
+import { recoilCounselFormData, recoilUserInfo } from '../../../RecoilStore';
 import logoImage from '../../images/counsel/logo.png';
 import { HiMagnifyingGlass } from 'react-icons/hi2';
-import { IoMdClose } from 'react-icons/io';
-import { IoIosArrowForward } from 'react-icons/io';
+import CounselMenuModal from './CounselMenuModal';
 
 const CounselMainHeader: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +13,7 @@ const CounselMainHeader: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const counselFormData = useRecoilValue(recoilCounselFormData);
+  const userInfo = useRecoilValue(recoilUserInfo);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,11 +50,6 @@ const CounselMainHeader: React.FC = () => {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isMenuOpen]);
 
-
-  const isActiveMenu = (path: string) => {
-    return location.pathname === path;
-  };
-
   const formatTravelInfo = () => {
     if (!counselFormData.customerName && !counselFormData.destination) {
       return '';
@@ -68,33 +63,6 @@ const CounselMainHeader: React.FC = () => {
     
     return `${customer}, ${destination} ${theme} ${date}${duration}`;
   };
-
-  // 여행지 목록 데이터
-  const travelDestinations = [
-    { id: 'bali', name: '발리' },
-    { id: 'maldives', name: '몰디브' },
-    { id: 'cancun', name: '칸쿤' },
-    { id: 'hawaii', name: '하와이' },
-    { id: 'samui', name: '사무이' },
-    { id: 'phuket', name: '푸켓' },
-    { id: 'khaolak', name: '카오락' },
-    { id: 'nhatrang', name: '나트랑' },
-    { id: 'phuquoc', name: '푸꾸옥' },
-    { id: 'cebu', name: '세부' },
-    { id: 'guam', name: '괌' },
-    { id: 'mauritius', name: '모리셔스' },
-    { id: 'dubai', name: '두바이' },
-  ];
-
-  const menuItems = [
-    { id: 'rest', name: '휴양지', path: '/counsel/rest' },
-    { id: 'tour', name: '유럽', path: '/counsel/tour' },
-    { id: 'america', name: '미주', path: '/counsel' },
-    { id: 'australia', name: '호주', path: '/counsel' },
-    { id: 'estimate', name: '견적내기', path: '/counsel' },
-    { id: 'list', name: '리스트', path: '/counsel' },
-    { id: 'account', name: '계정', path: '/counsel' },
-  ];
 
   return (
     <div className="counsel-header">
@@ -114,18 +82,25 @@ const CounselMainHeader: React.FC = () => {
           )}
         </div>
 
-        {/* 서치바 */}
-        <div className="header-search">
-          <form onSubmit={handleSearch} className="search-form">
-            <HiMagnifyingGlass className="search-icon" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-          </form>
+        {/* 사용자 이름 + 서치바 */}
+        <div className="header-search-wrapper">
+          {userInfo.name !== '' && (
+            <div className="header-user-name">
+              <span>{userInfo.name}님 환영합니다.</span>
+            </div>
+          )}
+          <div className="header-search">
+            <form onSubmit={handleSearch} className="search-form">
+              <HiMagnifyingGlass className="search-icon" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+              />
+            </form>
+          </div>
         </div>
 
         {/* 햄버거버튼 */}
@@ -141,68 +116,10 @@ const CounselMainHeader: React.FC = () => {
       </div>
 
       {/* 전체 화면 모달 */}
-      <div className={`fullscreen-modal ${isMenuOpen ? 'open' : ''}`}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <div className="modal-logo-wrapper">
-              <div className="modal-logo" onClick={() => { navigate('/counsel'); closeMenu(); }}>
-                <div className="logo-text">
-                  <span className="logo-main">CEYLON TOUR</span>
-                </div>
-                <div className="logo-tagline">honeymoon and vacation</div>
-              </div>
-            </div>
-            <button className="modal-close" onClick={closeMenu}>
-              <IoMdClose />
-            </button>
-          </div>
-
-          <div className="modal-body">
-            <div className="modal-sidebar">
-              <nav className="sidebar-nav">
-                {menuItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`sidebar-nav-item ${isActiveMenu(item.path) ? 'active' : ''}`}
-                    onClick={() => { 
-                      
-                    
-                    }}
-                  >
-                    <span className="nav-item-text">{item.name}</span>
-                    {isActiveMenu(item.path) && (
-                      <IoIosArrowForward className="nav-arrow" />
-                    )}
-                  </div>
-                ))}
-              </nav>
-            </div>
-
-            <div className="modal-main-content">
-              <div className="destinations-grid">
-                {travelDestinations.map((destination) => (
-                  <div
-                    key={destination.id}
-                    className="destination-item"
-                    onClick={() => {
-                      // 여행지 클릭 시 처리
-                      closeMenu();
-                    }}
-                  >
-                    <div className="destination-image">
-                      {/* 이미지는 나중에 추가 가능 */}
-                      <div className="destination-placeholder">
-                        {destination.name}
-                      </div>
-                    </div>
-                    <div className="destination-name">{destination.name}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CounselMenuModal
+        isOpen={isMenuOpen}
+        onClose={closeMenu}
+      />
     </div>
   );
 };

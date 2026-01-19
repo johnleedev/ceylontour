@@ -3,11 +3,14 @@
   width: 100%;
   box-sizing: border-box;
   background-color: #fff;
-  padding: 0 50px;
 
-  .hotel-header {
+  .hotel-citypage-container {
+    padding: 0 20px;
     max-width: 1920px;
     margin: 0 auto;
+  }
+
+  .hotel-header {
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
@@ -158,58 +161,46 @@
         transition: transform 0.3s ease;
       }
 
-      .card-hover-buttons {
+      .card-heart-button {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        bottom: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: none;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-        background-color: rgba(0, 0, 0, 0.5);
+        cursor: pointer;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-        border-radius: 5px;
-      }
-
-      .hover-button {
-        padding: 10px 20px;
-        border: 2px solid #fff;
-        border-radius: 5px;
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #333;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
         transition: all 0.3s ease;
-        white-space: nowrap;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+        &.favorite {
+          opacity: 1;
+          visibility: visible;
+        }
 
         &:hover {
           background-color: #fff;
-          transform: scale(1.05);
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        &.hover-button-add {
-          color: #fff;
-          border: 1px solid #4da9ff;
-          background: transparent;
+        .heart-icon {
+          font-size: 20px;
+          transition: all 0.3s ease;
 
-          &:hover {
-            background-color: #4da9ff;
+          &.outline {
+            color: #666;
           }
-        }
 
-        &.hover-button-detail {
-          background: transparent;
-          border: 1px solid #fff;
-          color: #fff;
-
-          &:hover {
-            background-color: #fff;
-            color: #333;
+          &.filled {
+            color: #ff4757;
           }
         }
       }
@@ -219,7 +210,7 @@
           transform: scale(1.05);
         }
 
-        .card-hover-buttons {
+        .card-heart-button {
           opacity: 1;
           visibility: visible;
         }
@@ -345,7 +336,7 @@
 @media (max-width: 1400px) {
   .div-wrapper-screen {
     .hotel-card-grid {
-      margin-top: 220px;
+      margin-top: 150px;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       padding: 0 24px;
     }

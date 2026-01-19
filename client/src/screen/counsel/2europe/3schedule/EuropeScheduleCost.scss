@@ -1,13 +1,18 @@
 .europe-schedule-cost-page {
   width: 100%;
   margin-top: 100px;
-  height: calc(100vh - 100px);
   background-color: #fff;
   font-family: 'Arial', sans-serif;
-  padding: 0 50px;
   position: relative;
-  overflow: hidden;
   box-sizing: border-box;
+
+  .europe-schedule-cost-page-container {
+    padding: 0 20px;
+    max-width: 1920px;
+    margin: 0 auto;
+    height: calc(100vh - 100px);
+    overflow: hidden;
+  }
 
   // 오른쪽 패널 토글 버튼
   .right-panel-toggle-btn {
@@ -41,7 +46,7 @@
   // 메인 컨텐츠
   .schedule-main {
     display: flex;
-    max-width: 1920px;
+    max-width: 2100px;
     margin: 0 auto;
     width: 100%;
     margin: 0 auto;
@@ -88,8 +93,7 @@
 
   // 좌측 패널
   .left-panel {
-    width: 60%;
-    padding: 20px;
+    width: 70%;
     box-sizing: border-box;
     border-radius: 10px;
     overflow-y: auto;
@@ -102,7 +106,7 @@
     }
 
     .panel-content {
-      max-width: 1100px;
+      max-width: 1300px;
       margin: 0 auto;
       padding: 0;
       display: flex;
@@ -115,6 +119,9 @@
         margin-top: 40px;
         margin-bottom: 20px;
         width: 100%;
+        max-width: 1100px;
+        margin-left: auto;
+        margin-right: auto;
         align-items: center;
         position: relative;
 
@@ -191,6 +198,31 @@
           &:active {
             transform: translateX(-50%) translateY(-1px);
           }
+        }
+      }
+    }
+
+    .hotel-title-left-wrapper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      margin-top: 20px;
+
+      .arrow-back {
+        font-size: 20px;
+        margin-right: 10px;
+      }
+
+      .cost-title-header {
+        display: flex;
+        align-items: center;
+
+        .cost-product-name {
+          font-size: 22px;
+          font-weight: 500;
+          color: #000;
+          background-color: #fff;
+          margin-right: 10px;
         }
       }
     }
@@ -709,11 +741,110 @@
         line-height: 1.6;
       }
     }
+
+    // 포함/불포함 섹션
+    .schedule_add_info_section_cover {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      padding: 50px;
+      background-color: #fff;
+      margin-top: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+
+      .single__header__main {
+        font-weight: 500;
+        font-size: 18px;
+        color: rgba(0, 0, 0, 1);
+        margin-bottom: 10px;
+      }
+
+      .included__items__section__wrapper {
+        .included__items__wrapper {
+          @media (min-width: 800px) {
+            display: grid;
+            grid-template-columns: 0.25fr 0.75fr;
+            border-top: 1px solid rgba(0, 0, 0, 1);
+            & > div {
+              border-bottom: 1px solid rgba(187, 187, 187, 1);
+            }
+            & > div:nth-of-type(odd) {
+              border-right: 1px solid rgba(187, 187, 187, 1);
+            }
+          }
+          .index__title__wrapper {
+            display: flex;
+            color: rgba(0, 0, 0, 1);
+            align-items: center;
+            font-size: clamp(16px, 1vw, 20px);
+            justify-content: center;
+            background-color: rgba(248, 248, 248, 1);
+            gap: 5px;
+            @media (max-width: 800px) {
+              align-items: flex-start;
+              justify-content: flex-start;
+              background-color: rgba(255, 255, 255, 1);
+              border-bottom: 1px solid rgba(0, 0, 0, 1);
+              padding: 5px 0;
+            }
+            .included__icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              color: rgba(40, 171, 225, 1);
+            }
+            .unincluded__icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              color: rgba(224, 49, 49, 1);
+            }
+          }
+          .elements__wrapper {
+            display: flex;
+            flex-direction: column;
+            color: rgba(51, 51, 51, 1);
+            font-size: clamp(13px, 0.78vw, 15px);
+            gap: 0.2vw;
+            padding: 1vw 2vw;
+            @media (max-width: 800px) {
+              padding: 10px 0 30px;
+              gap: 2px;
+            }
+          }
+        }
+      }
+    
+      // 필독사항
+      .must__read__section__wrapper {
+        .must__read__wrapper {
+          display: flex;
+          flex-direction: column;
+          color: rgba(51, 51, 51, 1);
+          font-size: clamp(13px, 0.78vw, 15px);
+          gap: 0.4vw;
+          padding: 2vw 0;
+          border-top: 1px solid rgba(0, 0, 0, 1);
+          border-bottom: 1px solid rgba(187, 187, 187, 1);
+          white-space: pre-line;
+          @media (max-width: 800px) {
+            border-bottom: none;
+            padding: 10px 0 30px;
+            gap: 2px;
+            line-height: 1.6;
+          }
+        }
+      }
+    }
   }
 
   // 우측 패널 래퍼
   .right-panel-wrapper {
-    flex: 1;
+    width: 30%;
     padding: 20px;
     box-sizing: border-box;
     position: relative;
@@ -733,7 +864,6 @@
   // 우측 패널
   .right-panel {
     width: 100%;
-    max-width: 670px;
     position: relative;
     animation: slideInRight 0.3s ease;
     display: flex;
@@ -769,9 +899,7 @@
 
     .panel-content {
       width: 100%;
-      
       padding: 30px;
-      padding-top: 50px; // 닫기 버튼과 겹치지 않도록 여백 추가
       background-color: #fff;
       border-radius: 12px;
       box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.15);
@@ -969,7 +1097,7 @@
     .city-tab-buttons {
       display: flex;
       gap: 10px;
-      margin-bottom: 20px;
+
 
       .city-tab-btn {
         flex: 1;
@@ -1432,28 +1560,26 @@
           }
 
           .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px;
             margin-top: 16px;
 
             .summary-item {
               display: flex;
-              flex-direction: column;
               gap: 8px;
               background-color: #ffffff;
               border: 1px solid #e3e3e3;
-              border-radius: 8px;
+              height: 120px;
               overflow: hidden;
+              margin-bottom: 10px;
 
               .summary-item-image {
-                width: 100%;
-                height: 140px;
+                width: 150px;
+                height: 120px;
                 object-fit: cover;
               }
 
               .summary-item-content {
-                padding: 10px 12px 12px;
+                padding: 10px;
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
@@ -1478,7 +1604,6 @@
 
                   .summary-item-price {
                     font-size: 14px;
-                    font-weight: 600;
                     color: #000;
                   }
               
@@ -1488,6 +1613,10 @@
                   }
                 }
               }
+            }
+            .summary-item:hover {
+              border: 1px solid #26a9fb;
+              cursor: pointer;
             }
           }
 
@@ -2106,9 +2235,25 @@
       
     }
   
-  
+
 
   // 애니메이션
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .city-add-loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #999;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
   @keyframes slideInRight {
     from {
       transform: translateX(100%);
@@ -2120,6 +2265,1177 @@
     }
   }
 
+  .tour-hotel-page-wrapper {
+    margin-top: 0;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #fff;
+    padding: 0;
+  
+    .tour-hotel-container {
+      display: flex;
+      width: 100%;
+      min-height: calc(100vh - 80px);
+      margin: 0 auto;
+  
+      // 왼쪽 영역: 헤더 + 나라 리스트
+      .left-section {
+        flex: 1;
+        box-sizing: border-box;
+        overflow-y: auto;
+        
+        // 메인 컴포넌트
+        .hotel-list-wrapper {
+          width: 100%;
+          max-width: 1300px;
+          margin: 0 auto;
+          position: relative;
+          // 헤더 영역
+  
+          // 검색 영역
+          .search-section {
+            margin-bottom: 20px;
+  
+            .search-input-wrapper {
+              position: relative;
+              display: flex;
+              align-items: center;
+              max-width: 520px;
+              width: 100%;
+  
+              .search-icon {
+                position: absolute;
+                left: 16px;
+                width: 16px;
+                height: 16px;
+                z-index: 1;
+              }
+  
+              .search-input {
+                width: 100%;
+                padding: 12px 16px 12px 40px;
+                border: 1px solid #dddddd;
+                border-radius: 8px;
+                font-size: 15px;
+                color: #999999;
+                
+                box-sizing: border-box;
+  
+                &::placeholder {
+                  color: #999999;
+                }
+  
+                &:focus {
+                  outline: none;
+                  border-color: #10a4d7;
+                }
+              }
+  
+              .search-divider {
+                background-color: #333333;
+                height: 1px;
+                width: 100%;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+              }
+            }
+          }
+  
+          // 지역 필터 탭
+          .region-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+  
+            .region-tab {
+              padding: 8px 20px;
+              border: 1px solid #aaaaaa;
+              border-radius: 27px;
+              font-family: "Inter", Helvetica;
+              font-size: 16px;
+              font-weight: 400;
+              color: #aaaaaa;
+              cursor: pointer;
+              transition: all 0.2s;
+              white-space: nowrap;
+  
+              &.active {
+                background-color: #ffffff;
+                border: 1.5px solid #282828;
+                color: #1e1e1e;
+                font-weight: 500;
+                font-size: 17px;
+              }
+  
+              &:hover {
+                border-color: #282828;
+                color: #1e1e1e;
+              }
+            }
+          }
+  
+          // 호텔 카드 리스트
+          .hotel-cards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+  
+          // 사진 갤러리 관련 스타일 (RestHotelDetail과 동일)
+          .room-container-wrapper {
+            display: flex;
+            justify-content: space-between;
+  
+            .room-container-left {
+              display: flex;
+              gap: 8px;
+  
+              .roomtabsort {
+                min-width: 80px;
+                padding: 5px 22px;
+                border-radius: 10px;
+                border: none;
+                background-color: #f4f4f4;
+                color: #b0b0b0;
+                font-size: 16px;
+                font-weight: 500;
+                cursor: pointer;
+                white-space: nowrap;
+              }
+  
+              .roomtabsort.active {
+                background-color: #222222;
+                color: #ffffff;
+              }
+            }
+  
+            .room-container-right {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              color: #c0c0c0;
+              font-size: 16px;
+  
+              .roomtype-text {
+                white-space: nowrap;
+              }
+  
+              .roomtype-separator {
+                width: 2px;
+                height: 15px;
+                background-color: #ccc;
+              }
+            }
+          }
+  
+          .photo-gallery {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+  
+            .photo-main {
+              width: 100%;
+              
+              overflow: hidden;
+  
+              .photo-main-image {
+                width: 100%;
+                height: 700px;
+                object-fit: cover;
+                display: block;
+              }
+  
+              video.photo-main-image {
+                width: 100%;
+                height: 700px;
+                object-fit: cover;
+                display: block;
+                background-color: #000;
+              }
+            }
+  
+            .photo-thumbnails {
+              display: flex;
+              gap: 8px;
+              overflow-x: auto;
+              padding-bottom: 4px;
+  
+              .photo-thumbnail {
+                flex: 0 0 auto;
+                width: 120px;
+                overflow: hidden;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 2px solid transparent;
+                position: relative;
+  
+                img {
+                  width: 100%;
+                  height: 80px;
+                  object-fit: cover;
+                  display: block;
+                }
+  
+                &:hover {
+                  opacity: 0.8;
+                }
+  
+                &.active {
+                  border-color: #222222;
+                }
+  
+                // 동영상 썸네일 스타일
+                &.video-thumbnail {
+                  .thumbnail-video-wrapper {
+                    position: relative;
+                    width: 100%;
+                    height: 80px;
+                    overflow: hidden;
+  
+                    .thumbnail-video {
+                      width: 100%;
+                      height: 100%;
+                      object-fit: cover;
+                      display: block;
+                    }
+  
+                    .video-play-icon {
+                      position: absolute;
+                      top: 50%;
+                      left: 50%;
+                      transform: translate(-50%, -50%);
+                      width: 32px;
+                      height: 32px;
+                      background-color: rgba(0, 0, 0, 0.6);
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      color: #fff;
+                      font-size: 14px;
+                      pointer-events: none;
+                      transition: all 0.2s ease;
+                    }
+                  }
+  
+                  &:hover .video-play-icon {
+                    background-color: rgba(0, 0, 0, 0.8);
+                    transform: translate(-50%, -50%) scale(1.1);
+                  }
+                }
+              }
+            }
+          }
+  
+          // 호텔 카드
+          .hotel-card {
+            display: flex;
+            border: 1px solid #dddddd;
+            overflow: hidden;
+            background-color: #ffffff;
+            transition: all 0.2s;
+            cursor: pointer;
+            height: 150px;
+  
+            &.selected {
+              border: 2px solid #10a4d7;
+            }
+  
+            &:hover {
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+  
+            .hotel-image {
+              width: 28%;
+              min-width: 200px;
+              object-fit: cover;
+              flex-shrink: 0;
+            }
+  
+            .hotel-card-content {
+              flex: 1;
+              padding: 20px;
+              box-sizing: border-box;
+              gap: 20px;
+            }
+  
+            .hotel-title {
+              color: #333333;
+              font-size: 16px;
+              font-weight: 500;
+              margin-bottom: 5px;
+            }
+  
+ 
+            .hotel-description {
+              color: #4d4d4d;
+              font-size: 14px;
+              margin: 0;
+              line-height: 1.5;
+            }
+  
+            .hotel-info {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              flex-wrap: wrap;
+              margin-bottom: 5px;
+
+              .hotel-rating {
+                display: flex;
+                gap: 2px;
+                align-items: center;
+    
+                .star-icon {
+                  width: 16px;
+                  height: 16px;
+                }
+              }
+    
+              .hotel-location {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+    
+                .location-text {
+                  color: #777777;
+                  font-size: 14px;
+                  font-weight: 400;
+                  white-space: nowrap;
+                }
+    
+                .location-icon {
+                  width: 12px;
+                  height: 12px;
+                }
+              }
+            }
+  
+            
+  
+          }
+        }
+      }
+  
+      // 오른쪽 영역: 상세 정보
+      .right-section {
+        flex: 0 0 670px;
+        max-width: 670px;
+        overflow-y: auto;
+        background-color: #fff;
+  
+        
+        .hotel-detail-wrapper {
+          
+          gap: 20px;
+  
+          .hotel-detail-header {
+            .hotel-detail-title {
+              font-size: 20px;
+            }
+          }
+  
+          .booking-options-section {
+            .booking-options-grid {
+              grid-template-columns: 1fr;
+              gap: 10px;
+            }
+          }
+  
+          .price-section {
+            .price-card {
+              padding: 16px;
+  
+              .price-amount {
+                font-size: 20px;
+              }
+  
+              .price-per-night {
+                font-size: 15px;
+              }
+            }
+          }
+  
+          .facilities-section,
+          .location-section,
+          .description-section,
+          .recommendations-section {
+            .section-title {
+              font-size: 18px;
+            }
+          }
+  
+          .media-section {
+            .media-buttons {
+              flex-direction: column;
+  
+              .media-button {
+                width: 100%;
+                justify-content: center;
+              }
+            }
+          }
+        }
+  
+        .hotel-detail-wrapper {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          box-sizing: border-box;
+  
+          // 호텔 헤더
+          .hotel-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+  
+            .hotel-header-left {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+  
+              .hotel-detail-title {
+                color: #000000;
+                
+                font-size: 24px;
+                font-weight: 700;
+                line-height: 1.4;
+              }
+  
+              .hotel-detail-rating {
+                display: flex;
+                gap: 4px;
+                align-items: center;
+  
+                .star {
+                  width: 16px;
+                  height: 16px;
+                }
+              }
+  
+              .hotel-detail-location {
+                span {
+                  color: #000000;
+                  
+                  font-size: 15px;
+                  font-weight: 400;
+                }
+              }
+            }
+  
+            .hotel-header-right {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              align-items: flex-end;
+  
+              .media-button-header {
+                border: 1px solid #000000;
+                border-radius: 50px;
+                background-color: transparent;
+                color: #000000;
+                
+                font-size: 12px;
+                font-weight: 400;
+                padding: 8px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s;
+                white-space: nowrap;
+  
+                &:hover {
+                  background-color: rgba(0, 0, 0, 0.05);
+                }
+  
+                .media-icon {
+                  width: 14px;
+                  height: 14px;
+                }
+  
+                .media-icon-group {
+                  display: flex;
+                  gap: 2px;
+                  align-items: center;
+  
+                  .media-icon {
+                    width: 10px;
+                    height: 10px;
+                  }
+                }
+              }
+            }
+          }
+  
+          // 미디어 섹션
+          .media-section {
+            .media-image {
+              width: 100%;
+              height: auto;
+              object-fit: cover;
+            }
+          }
+  
+          // 호텔 위치
+          .location-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+  
+            .location-button {
+              border: 1px solid #2e2e2e;
+              border-radius: 7px;
+              background-color: transparent;
+              color: #000000;
+              
+              font-size: 13px;
+              font-weight: 400;
+              padding: 8px 16px;
+              cursor: pointer;
+              align-self: flex-start;
+              transition: all 0.2s;
+  
+              &:hover {
+                background-color: rgba(0, 0, 0, 0.05);
+              }
+            }
+  
+            .location-address {
+              color: #000000;
+              
+              font-size: 15px;
+              
+              line-height: 1.5;
+              margin: 0;
+            }
+  
+            .location-distances {
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+  
+              p {
+                color: #000000;
+                
+                font-size: 15px;
+                
+                margin: 0;
+                line-height: 1.5;
+              }
+            }
+          }
+  
+          // 호텔 소개
+          .description-section {
+            .description-text {
+              color: #000000;
+              
+              font-size: 15px;
+              
+              line-height: 24px;
+              margin: 0;
+            }
+          }
+  
+          // 추천포인트
+          .recommendations-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+  
+            .recommendations-title {
+              color: #000000;
+              
+              font-size: 18px;
+              font-weight: 600;
+            }
+  
+            .recommendations-text {
+              color: #000000;
+              
+              font-size: 15px;
+              font-weight: 400;
+              line-height: 24px;
+              margin: 0;
+            }
+          }
+  
+          // 부대시설
+          .facilities-section {
+            .facilities-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 16px;
+  
+              .facility-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+  
+                .facility-icon {
+                  width: 32px;
+                  height: 32px;
+                }
+  
+                span {
+                  color: #333;
+  
+                  font-size: 13px;
+                  font-weight: 400;
+                  text-align: center;
+                }
+              }
+            }
+          }
+  
+          // 예약 카드
+          .booking-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+  
+            .booking-field {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+  
+              .booking-label {
+                color: #222222;
+                
+                font-size: 14px;
+                font-weight: 400;
+              }
+  
+              .booking-input {
+                border: 1px solid #222222;
+                border-radius: 4px;
+                padding: 10px 12px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+  
+                .booking-input-text {
+                  color: #222222;
+  
+                  font-size: 14px;
+                  font-weight: 400;
+                }
+  
+                .date-icon {
+                  width: 18px;
+                  height: 18px;
+                }
+  
+                .booking-option-icon {
+                  width: 12px;
+                  height: 12px;
+                }
+              }
+  
+              .booking-counter {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border: 1px solid #222222;
+                border-radius: 4px;
+                padding: 10px 12px;
+  
+                .counter-btn {
+                  background-color: transparent;
+                  border: none;
+                  color: #333333;
+  
+                  font-size: 17px;
+                  
+                  cursor: pointer;
+                  padding: 0;
+                  width: 24px;
+                  height: 24px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+  
+                  &:hover {
+                    background-color: rgba(0, 0, 0, 0.05);
+                    border-radius: 4px;
+                  }
+                }
+  
+                .counter-value {
+                  color: #222222;
+  
+                  font-size: 14px;
+                  font-weight: 400;
+                  flex: 1;
+                  text-align: center;
+                }
+              }
+            }
+  
+            .booking-price-info {
+              .price-per-night {
+                color: #333333;
+                
+                font-size: 16px;
+                font-weight: 600;
+              }
+            }
+  
+            .booking-total {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding-top: 12px;
+              border-top: 1px solid #e0e0e0;
+  
+              .total-label {
+                color: #464646;
+                
+                font-size: 14px;
+                font-weight: 400;
+              }
+  
+              .total-amount {
+                color: #000000;
+                
+                font-size: 23px;
+                font-weight: 700;
+              }
+            }
+            .select-button-wrapper {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 10px;
+            }
+            .select-button {
+              background-color: #010205;
+              border: none;
+              border-radius: 4px;
+              color: #ffffff;
+              
+              font-size: 16px;
+              font-weight: 500;
+              padding: 16px;
+              cursor: pointer;
+              transition: background-color 0.2s;
+              width: 100%;
+              margin-top: 8px;
+  
+              &:hover {
+                background-color: #333333;
+              }
+            }
+          }
+  
+        }
+      }
+    }
+  
+    // 반응형 스타일
+    @media (max-width: 992px) {
+      padding: 0 30px;
+  
+      .tour-hotel-container {
+        .left-section {
+          .hotel-list-wrapper {
+            .hotel-header {
+              .element {
+                font-size: 22px;
+              }
+            }
+  
+            .hotel-card {
+              .hotel-image {
+                min-width: 150px;
+              }
+  
+              .hotel-card-content {
+                padding: 16px;
+  
+                .hotel-title {
+                  font-size: 19px;
+                }
+  
+                .hotel-price {
+                  font-size: 16px;
+                }
+              }
+            }
+          }
+        }
+  
+        .right-section {
+          .hotel-detail-wrapper {
+            padding: 16px;
+  
+            .hotel-detail-header {
+              .hotel-detail-title {
+                font-size: 22px;
+              }
+            }
+  
+            .price-section {
+              .price-card {
+                .price-amount {
+                  font-size: 21px;
+                }
+              }
+            }
+  
+            .facilities-section,
+            .location-section,
+            .description-section,
+            .recommendations-section {
+              .section-title {
+                font-size: 19px;
+              }
+            }
+          }
+        }
+      }
+    }
+  
+    @media (max-width: 768px) {
+      padding: 0 20px;
+  
+      .tour-hotel-container {
+        flex-direction: column;
+  
+        .left-section {
+          .hotel-list-wrapper {
+            .hotel-header {
+              .element {
+                font-size: 20px;
+              }
+  
+              .frame {
+                gap: 10px;
+              }
+            }
+  
+            .search-section {
+              .search-input-wrapper {
+                max-width: 100%;
+              }
+            }
+  
+            .region-tabs {
+              gap: 6px;
+  
+              .region-tab {
+                padding: 6px 16px;
+                font-size: 14px;
+  
+                &.active {
+                  font-size: 15px;
+                }
+              }
+            }
+  
+            .hotel-card {
+              flex-direction: column;
+  
+              .hotel-image {
+                width: 100%;
+                min-width: 100%;
+                height: 200px;
+              }
+  
+              .hotel-card-content {
+                .hotel-card-header {
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 8px;
+                }
+  
+                .hotel-info {
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 8px;
+                }
+              }
+            }
+          }
+        }
+  
+        .right-section {
+          flex: 1;
+          max-width: 100%;
+  
+        }
+      }
+    }
+  
+    @media (max-width: 480px) {
+      padding: 0 16px;
+  
+      .tour-hotel-container {
+        .left-section {
+          padding: 16px 0;
+  
+          .hotel-list-wrapper {
+            .hotel-header {
+              .element {
+                font-size: 18px;
+                margin-bottom: 12px;
+              }
+  
+              .frame {
+                gap: 8px;
+  
+                .text-wrapper,
+                .div {
+                  font-size: 13px;
+                }
+  
+                .rectangle {
+                  height: 12px;
+                }
+              }
+            }
+  
+            .search-section {
+              margin-bottom: 16px;
+  
+              .search-input-wrapper {
+                .search-input {
+                  padding: 10px 14px 10px 36px;
+                  font-size: 14px;
+                }
+              }
+            }
+  
+            .region-tabs {
+              gap: 4px;
+              margin-bottom: 16px;
+  
+              .region-tab {
+                padding: 5px 12px;
+                font-size: 13px;
+  
+                &.active {
+                  font-size: 14px;
+                }
+              }
+            }
+  
+            .hotel-cards-list {
+              gap: 12px;
+            }
+  
+            .hotel-card {
+              .hotel-image {
+                height: 180px;
+              }
+  
+              .hotel-card-content {
+                padding: 14px;
+                gap: 10px;
+  
+                .hotel-title {
+                  font-size: 18px;
+                }
+  
+                .hotel-price {
+                  font-size: 16px;
+                }
+  
+                .hotel-description {
+                  font-size: 13px;
+                }
+  
+                .hotel-info {
+                  .hotel-rating {
+                    .star-icon {
+                      width: 14px;
+                      height: 14px;
+                    }
+                  }
+  
+                  .hotel-location {
+                    .location-text {
+                      font-size: 13px;
+                    }
+                  }
+                }
+  
+                .hotel-card-footer {
+                  .hotel-person-count {
+                    font-size: 13px;
+                  }
+                }
+              }
+            }
+          }
+        }
+  
+        .right-section {
+          .hotel-detail-wrapper {
+            padding: 12px;
+            gap: 16px;
+  
+            .hotel-detail-header {
+              gap: 10px;
+  
+              .hotel-detail-title {
+                font-size: 18px;
+              }
+  
+              .hotel-detail-rating {
+                .star {
+                  width: 14px;
+                  height: 14px;
+                }
+              }
+  
+              .hotel-detail-location {
+                span {
+                  font-size: 14px;
+                }
+              }
+            }
+  
+            .booking-options-section {
+              gap: 12px;
+  
+              .booking-options-grid {
+                gap: 8px;
+  
+                .booking-option {
+                  .booking-option-box {
+                    padding: 8px 10px;
+  
+                    .booking-option-label,
+                    .booking-option-value {
+                      font-size: 13px;
+                    }
+                  }
+                }
+              }
+  
+              .date-selection {
+                .date-label {
+                  font-size: 13px;
+                }
+  
+                .date-controls {
+                  .date-text {
+                    font-size: 13px;
+                  }
+                }
+              }
+            }
+  
+            .price-section {
+              .price-card {
+                padding: 14px;
+                gap: 10px;
+  
+                .price-label {
+                  font-size: 13px;
+                }
+  
+                .price-amount {
+                  font-size: 19px;
+                }
+  
+                .price-per-night {
+                  font-size: 14px;
+                }
+  
+                .select-button {
+                  padding: 10px;
+                  font-size: 15px;
+                }
+              }
+            }
+  
+            .facilities-section {
+              gap: 12px;
+  
+              .section-title {
+                font-size: 17px;
+              }
+  
+              .facilities-icons {
+                gap: 8px;
+  
+                .facility-icon {
+                  width: 20px;
+                  height: 20px;
+                }
+              }
+  
+              .facilities-labels {
+                gap: 12px;
+  
+                span {
+                  font-size: 12px;
+                  line-height: 24px;
+                }
+              }
+            }
+  
+            .location-section,
+            .description-section,
+            .recommendations-section {
+              gap: 10px;
+  
+              .section-title {
+                font-size: 17px;
+              }
+  
+              .location-address,
+              .description-text,
+              .recommendations-text {
+                font-size: 14px;
+              }
+            }
+  
+            .location-section {
+              .location-button {
+                padding: 6px 12px;
+                font-size: 12px;
+              }
+  
+              .location-distances {
+                p {
+                  font-size: 14px;
+                }
+              }
+            }
+  
+            .media-section {
+              gap: 10px;
+  
+              .media-buttons {
+                gap: 8px;
+  
+                .media-button {
+                  padding: 6px 12px;
+                  font-size: 12px;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
 
   // 반응형 디자인
   // @media (max-width: 1200px) {
@@ -2334,3 +3650,70 @@
   //     }
   //   }
   // }
+
+  .hotel-intro-section {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto 60px;
+    padding: 60px 40px;
+    text-align: center;
+    background-color: #fff;
+
+    .hotel-intro-rating {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .hotel-intro-tagline {
+      font-size: 36px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    .hotel-intro-logo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      img {
+        max-width: 300px;
+        max-height: 200px;
+        object-fit: cover;
+        border-radius: 10px;
+      }
+    }
+    .hotel-intro-entitle {
+      font-size: 35px;
+      font-weight: 700;
+      color: #8B8B8B;
+      margin-bottom: 40px;
+      line-height: 1.4;
+    }
+    .hotel-intro-name {
+      font-size: 35px;
+      font-weight: 700;
+      color: #8B8B8B;
+      margin-bottom: 40px;
+      line-height: 1.4;
+    }
+
+    .hotel-intro-description {
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+
+      p {
+        font-size: 16px;
+        line-height: 1;
+        color: #666;
+        margin-bottom: 20px;
+        font-weight: bold;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }

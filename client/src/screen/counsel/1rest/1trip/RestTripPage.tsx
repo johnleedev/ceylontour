@@ -55,8 +55,6 @@ export default function RestTripPage () {
       }
       
       const data = await response.json();
-      console.log('data', data);
-
 
       // API 응답 데이터를 Destination 형식으로 변환
       const formattedDestinations: Destination[] = Array.isArray(data) 

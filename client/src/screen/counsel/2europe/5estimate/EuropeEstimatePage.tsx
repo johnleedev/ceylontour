@@ -8,22 +8,29 @@ import { ImLocation } from 'react-icons/im';
 import RatingBoard from '../../../common/RatingBoard';
 import ScheduleRederBox from '../../../common/ScheduleRederBox';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { 
   recoilCustomerInfoFormData, 
   recoilSelectedHotelData, 
-  recoilSelectedScheduleData 
+  recoilSelectedScheduleData,
+  recoilUserInfo
 } from '../../../../RecoilStore';
 
 export default function EuropeEstimatePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
+  const searchParams = new URLSearchParams(location.search);
+  const estimateId = searchParams.get('estimateId');
   
   // Recoil에서 데이터 가져오기
   const customerInfo = useRecoilValue(recoilCustomerInfoFormData);
   const selectedHotelData = useRecoilValue(recoilSelectedHotelData);
   const selectedScheduleData = useRecoilValue(recoilSelectedScheduleData);
+  const userInfo = useRecoilValue(recoilUserInfo);
+  const setCustomerInfo = useSetRecoilState(recoilCustomerInfoFormData);
+  const setSelectedHotelData = useSetRecoilState(recoilSelectedHotelData);
+  const setSelectedScheduleData = useSetRecoilState(recoilSelectedScheduleData);
 
   // 여행 형태 라벨 변환
   const getThemeLabel = (theme: string[]) => {
@@ -77,8 +84,8 @@ export default function EuropeEstimatePage() {
       const location = hotelInfoForCard?.city || selectedHotelData.hotelInfo?.city || '';
       
       return {
-        name: card.title || '호텔명',
-        nights: (selectedHotelData.selectedNights?.[card.id] || card.nights || ''),
+      name: card.title || '호텔명',
+      nights: (selectedHotelData.selectedNights?.[card.id] || card.nights || ''),
         roomType: selectedHotelData.selectedRoomTypes?.[card.id] || card.badge || '',
         location: location
       };
@@ -252,9 +259,103 @@ export default function EuropeEstimatePage() {
  
   
   useEffect(() => {
-    
     console.log('fetchScheduleData');
   }, []);
+
+  // estimateId가 있으면 예약 정보 가져오기
+  useEffect(() => {
+    const fetchEstimateData = async () => {
+      if (!estimateId) return;
+      
+      try {
+        const response = await axios.get(`${AdminURL}/ceylontour/getEstimate/${estimateId}`);
+        
+        if (response.data && response.data.id) {
+          const estimate = response.data;
+          
+          // customerInfo 복원
+          if (estimate.customer1Name || estimate.customer1Phone || estimate.customer2Name || estimate.customer2Phone) {
+            setCustomerInfo({
+              theme: estimate.theme ? [estimate.theme] : ['honeymoon'],
+              customer1Name: estimate.customer1Name || '',
+              customer1Phone: estimate.customer1Phone || '',
+              customer2Name: estimate.customer2Name || '',
+              customer2Phone: estimate.customer2Phone || '',
+              destination: estimate.destination || '',
+              weddingDate: estimate.weddingDate || '',
+              travelPeriodStart: estimate.travelPeriodStart || '',
+              travelPeriodEnd: estimate.travelPeriodEnd || '',
+              reserveDate: estimate.reserveDate || '',
+              travelStyle: [],
+              flightStyle: [],
+              accommodationPreference: [],
+              wantsAndNeeds: estimate.wantsAndNeeds || '',
+              selfTicketing: false,
+              beforeTicketing: false
+            });
+          }
+          
+          // selectedHotelData 복원
+          if (estimate.hotelInfo) {
+            try {
+              const hotelInfo = JSON.parse(estimate.hotelInfo);
+              setSelectedHotelData(hotelInfo);
+            } catch (e) {
+              console.error('Failed to parse hotelInfo:', e);
+            }
+          }
+          
+          // selectedScheduleData 복원
+          if (estimate.scheduleInfo) {
+            try {
+              const scheduleInfo = JSON.parse(estimate.scheduleInfo);
+              setSelectedScheduleData(scheduleInfo);
+            } catch (e) {
+              console.error('Failed to parse scheduleInfo:', e);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('예약 정보 가져오기 오류:', error);
+      }
+    };
+    
+    fetchEstimateData();
+  }, [estimateId, setCustomerInfo, setSelectedHotelData, setSelectedScheduleData]);
+
+  // 예약 정보 저장 함수
+  const handleReservation = async () => {
+    try {
+      // 저장할 데이터 구성
+      const estimateData = {
+        productType: 'tour',
+        productId: selectedHotelData.productInfo?.id || selectedScheduleData.productInfo?.id || null,
+        productName: selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || '상품명',
+        customerInfo: customerInfo,
+        selectedHotelData: selectedHotelData,
+        selectedScheduleData: selectedScheduleData,
+        formData: formSections,
+        priceInfo: {
+          pricePerPerson: selectedHotelData.priceInfo?.pricePerPerson || null,
+          totalPrice: selectedHotelData.priceInfo?.totalPrice || selectedScheduleData.totalPrice || null,
+          guestCount: selectedHotelData.priceInfo?.guestCount || selectedScheduleData.guestCount || 2
+        },
+        userName: userInfo.name || ''
+      };
+
+      const response = await axios.post(`${AdminURL}/ceylontour/saveEstimate`, estimateData);
+      
+      if (response.data && response.data.success) {
+        alert('예약 정보가 저장되었습니다.');
+        navigate('/counsel', { state: { openEstimateList: true } });
+      } else {
+        alert('예약 정보 저장에 실패했습니다.');
+      }
+    } catch (error: any) {
+      console.error('예약 정보 저장 오류:', error);
+      alert(error.response?.data?.message || '예약 정보 저장 중 오류가 발생했습니다.');
+    }
+  };
 
 
 
@@ -269,6 +370,22 @@ export default function EuropeEstimatePage() {
               {selectedHotelData.productInfo?.productName || selectedScheduleData.productInfo?.productName || '상품명'}
             </h1>
           </div>
+
+          {/* 여행 루트 이미지 */}
+          {stateProps?.tourmapImage && (
+            <div className="route-content" style={{ marginBottom: '30px' }}>
+              <img 
+                src={`${AdminURL}/images/tourmapinfo/${stateProps.tourmapImage}`} 
+                alt="여행 루트" 
+                className="route-image"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  borderRadius: '8px'
+                }}
+              />
+            </div>
+          )}
 
           <div className="tour-hotel-list-section">
             <h1 className="tour-text-wrapper-2">호텔구성</h1>
@@ -286,7 +403,7 @@ export default function EuropeEstimatePage() {
                           ratingSize={20}
                           rating={hotel.rating}
                         />
-                      </div>
+                    </div>
                     </div>
                     <div className="tour-hotel-details">
                       <div className="tour-hotel-room-type">{hotel.roomType}</div>
@@ -398,7 +515,7 @@ export default function EuropeEstimatePage() {
                   ? `${selectedHotelData.priceInfo.totalPrice.toLocaleString()}원`
                   : selectedScheduleData.totalPrice 
                     ? `${selectedScheduleData.totalPrice.toLocaleString()}원`
-                    : '5,200,000원'}
+                    : ''}
               </div>
             </div>
 
@@ -410,14 +527,21 @@ export default function EuropeEstimatePage() {
             </div>
 
             <div className="tour-summary-actions">
-              <div className="tour-action-button action-button-secondary">
+              {/* <div className="tour-action-button action-button-secondary">
                 <div className="tour-rectangle-11" />
                 <div className="tour-text-wrapper-10">보내기</div>
-              </div>
-              <div className="tour-action-button action-button-primary">
-                <div className="tour-rectangle-10" />
-                <div className="tour-text-wrapper-9" style={{ color: '#fff' }}>상품 선택하기</div>
-              </div>
+              </div> */}
+              {estimateId ? (
+                <div className="tour-action-button action-button-primary" onClick={() => navigate('/counsel', { state: { openEstimateList: true } })} style={{ cursor: 'pointer' }}>
+                  <div className="tour-rectangle-10" />
+                  <div className="tour-text-wrapper-9" style={{ color: '#fff' }}>돌아가기</div>
+                </div>
+              ) : (
+                <div className="tour-action-button action-button-primary" onClick={handleReservation} style={{ cursor: 'pointer' }}>
+                  <div className="tour-rectangle-10" />
+                  <div className="tour-text-wrapper-9" style={{ color: '#fff' }}>예약하기</div>
+                </div>
+              )}
             </div>
           </div>
         </div>

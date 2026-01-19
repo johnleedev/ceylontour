@@ -3,14 +3,16 @@ import './RestHotelPage.scss';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { recoilHotelCart, HotelCartItem } from '../../../../RecoilStore';
+import { AiOutlineHeart, AiFillHeart } from 'react-icons/ai';
 
 export default function RestHotelPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const stateProps = location.state;
   const selectedCity = stateProps?.city || '';
+  const hotelCart = useRecoilValue(recoilHotelCart);
   const setHotelCart = useSetRecoilState(recoilHotelCart);
   
   const [loading, setLoading] = useState<boolean>(true);
@@ -31,9 +33,10 @@ export default function RestHotelPage() {
           nights: 2 // 기본값 2박
         };
         return [...prevCart, newItem];
+      } else {
+        // 이미 있으면 제거
+        return prevCart.filter((item) => item.id !== hotel.id);
       }
-      // 이미 있으면 그대로 반환
-      return prevCart;
     });
   };
 
@@ -97,116 +100,109 @@ export default function RestHotelPage() {
 
   return (
     <div className="RestHotelPage">
-      <div className="hotel-header">
-        <div className="hotel-header-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 className="hotel-header-title">{selectedCity || '휴양지'}</h1>
+      <div className="hotel-header-container">
+        <div className="hotel-header">
+          <div className="hotel-header-left">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 className="hotel-header-title">{selectedCity || '휴양지'}</h1>
+            </div>
+            <p className="hotel-header-subtitle">
+              단순한 숙박지가 아니라 머무는 것 자체가 여행입니다
+            </p>
           </div>
-          <p className="hotel-header-subtitle">
-            단순한 숙박지가 아니라 머무는 것 자체가 여행입니다
-          </p>
+
+          <div className="hotel-header-search">
+            <form 
+              className="hotel-search-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
+              <input
+                className="hotel-search-input"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="호텔명으로 검색"
+              />
+              <button type="submit" className="hotel-search-button">
+                <span className="hotel-search-icon">🔍</span>
+              </button>
+            </form>
+          </div>
         </div>
+      
 
-        <div className="hotel-header-search">
-          <form 
-            className="hotel-search-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <input
-              className="hotel-search-input"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="호텔명으로 검색"
-            />
-            <button type="submit" className="hotel-search-button">
-              <span className="hotel-search-icon">🔍</span>
-            </button>
-          </form>
-        </div>
-      </div>
-     
+        <div className="hotel-card-grid">
+          {loading ? (
+            <div className="loading-message">로딩 중...</div>
+          ) : hotels.length === 0 ? (
+            <div className="empty-message">데이터가 없습니다.</div>
+          ) : (
+            hotels.map((hotel: any, index: number) => {
+              let mainImage: string | null = null;
+              const imageCopy = JSON.parse(hotel.imageNamesAllView);
+              mainImage = `${AdminURL}/images/hotelimages/${imageCopy[0]?.imageName || ''}`;
 
-      <div className="hotel-card-grid">
-        {loading ? (
-          <div className="loading-message">로딩 중...</div>
-        ) : hotels.length === 0 ? (
-          <div className="empty-message">데이터가 없습니다.</div>
-        ) : (
-          hotels.map((hotel: any, index: number) => {
-            let mainImage: string | null = null;
-            const imageCopy = JSON.parse(hotel.imageNamesAllView);
-            mainImage = `${AdminURL}/images/hotelimages/${imageCopy[0]?.imageName || ''}`;
+              const stars =
+                hotel.hotelLevel && !isNaN(parseInt(hotel.hotelLevel, 10))
+                  ? '★'.repeat(parseInt(hotel.hotelLevel, 10))
+                  : '★★★★★';
 
-            const stars =
-              hotel.hotelLevel && !isNaN(parseInt(hotel.hotelLevel, 10))
-                ? '★'.repeat(parseInt(hotel.hotelLevel, 10))
-                : '★★★★★';
+              // 장바구니에 있는지 확인하여 하트 상태 결정
+              const isFavorite = hotelCart.some(item => item.id === hotel.id);
 
-            return (
-              <div
-                key={hotel.id}
-                className="div-wrapper"
-              >
-                <div className="card-image-wrap">
-                  <img
-                    className="card-image"
-                    alt={hotel.hotelNameKo}
-                    src={mainImage || ''}
-                  />
-                  <div className="card-hover-buttons">
-                    <button
-                      type="button"
-                      className="hover-button hover-button-add"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(hotel);
-                      }}
-                    >
-                      담기
-                    </button>
-                    <button
-                      type="button"
-                      className="hover-button hover-button-detail"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/counsel/rest/hoteldetail?id=${hotel.id}&city=${selectedCity}&fromDetail=true`);
-                        window.scrollTo(0, 0);
-                      }}
-                    >
-                      상세보기
-                    </button>
-                  </div>
-                </div>
-                <div 
-                  className="card-body"
+              return (
+                <div
+                  key={hotel.id}
+                  className="div-wrapper"
                   onClick={() => {
                     navigate(`/counsel/rest/hoteldetail?id=${hotel.id}&city=${selectedCity}`);
                     window.scrollTo(0, 0);
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="hotel-name">{hotel.hotelNameKo}</div>
-                  <div className="hotel-location-row">
-                    <span className="hotel-location">
-                      {hotel.city}/{hotel.hotelLocation}
-                    </span>
-                    <span className="hotel-stars">{stars}</span>
+                  <div className="card-image-wrap">
+                    <img
+                      className="card-image"
+                      alt={hotel.hotelNameKo}
+                      src={mainImage || ''}
+                    />
+                    <button
+                      type="button"
+                      className={`card-heart-button ${isFavorite ? 'favorite' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(hotel);
+                      }}
+                    >
+                      {isFavorite ? (
+                        <AiFillHeart className="heart-icon filled" />
+                      ) : (
+                        <AiOutlineHeart className="heart-icon outline" />
+                      )}
+                    </button>
                   </div>
-                  <p className="promo-text">
-                    {hotel.hotelBadge && hotel.hotelBadge !== '[]'
-                      ? JSON.parse(hotel.hotelBadge).join(', ')
-                      : '[프로모션 기간 2024년 12월 31일까지]'}
-                  </p>
+                  <div className="card-body">
+                    <div className="hotel-name">{hotel.hotelNameKo}</div>
+                    <div className="hotel-location-row">
+                      <span className="hotel-location">
+                        {hotel.city}/{hotel.hotelLocation}
+                      </span>
+                      <span className="hotel-stars">{stars}</span>
+                    </div>
+                    <p className="promo-text">
+                      {hotel.hotelBadge && hotel.hotelBadge !== '[]'
+                        ? JSON.parse(hotel.hotelBadge).join(', ')
+                        : '[프로모션 기간 2024년 12월 31일까지]'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
       </div>
-      
     </div>
   );
 };

@@ -1,534 +1,521 @@
-.tour-estimatePage {
-  margin-top: 100px;
-  width: 100%;
-  box-sizing: border-box;
-  background-color: #fff;
-  padding: 0 50px;
+// .tour-estimatePage {
+//   margin-top: 100px;
+//   width: 100%;
+//   box-sizing: border-box;
+//   background-color: #fff;
+//   padding: 0 50px;
 
 
-  .tour-estimate-content {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-    width: 100%;
+//   .tour-estimate-content {
+//     display: flex;
+//     flex-direction: column;
+//     gap: 32px;
+//     width: 100%;
 
-    @media (min-width: 1024px) {
-      flex-direction: row;
-      gap: 32px;
-      align-items: flex-start;
-    }
-  }
+//     @media (min-width: 1024px) {
+//       flex-direction: row;
+//       gap: 32px;
+//       align-items: flex-start;
+//     }
+//   }
 
-  .tour-left-section {
-    flex: 1;
-    min-width: 0;
+//   .tour-left-section {
+//     flex: 1;
+//     min-width: 0;
 
-    .tour-estimate-header {
-      margin-bottom: 32px;
+//     .tour-estimate-header {
+//       margin-bottom: 32px;
 
-      .tour-text-wrapper {
-        color: #000000;
+//       .tour-text-wrapper {
+//         color: #000000;
         
-        font-size: 23px;
-        font-weight: 500;
-        margin: 0;
-      }
-    }
+//         font-size: 23px;
+//         font-weight: 500;
+//         margin: 0;
+//       }
+//     }
 
-    .tour-text-wrapper-2 {
-      color: #000000;
+//     .tour-text-wrapper-2 {
+//       color: #000000;
       
-      font-size: 21px;
-      font-weight: 500;
-      margin: 0 0 24px 0;
-    }
-  }
+//       font-size: 21px;
+//       font-weight: 500;
+//       margin: 0 0 24px 0;
+//     }
+//   }
 
-  .tour-right-section {
-    width: 100%;
+//   .tour-right-section {
+//     width: 100%;
 
-    @media (min-width: 1024px) {
-      width: 37.33%;
-      min-width: 400px;
-      flex-shrink: 0;
-    }
-  }
+//     @media (min-width: 1024px) {
+//       width: 37.33%;
+//       min-width: 400px;
+//       flex-shrink: 0;
+//     }
+//   }
 
-  .tour-hotel-list-section {
-    flex: 1;
-    min-width: 0;
-    margin-bottom: 100px;
+//   .tour-hotel-list-section {
+//     flex: 1;
+//     min-width: 0;
+//     margin-bottom: 100px;
 
-    .tour-table-header {
-      display: none;
+//     .tour-table-header {
+//       display: none;
 
-      @media (min-width: 768px) {
-        display: grid;
-        grid-template-columns: 2fr 1.5fr 2fr 1fr;
-        gap: 16px;
-        padding: 16px;
-        background-color: #f5f5f5;
-        border-radius: 8px;
-        margin-bottom: 16px;
-      }
+//       @media (min-width: 768px) {
+//         display: grid;
+//         grid-template-columns: 2fr 1.5fr 2fr 1fr;
+//         gap: 16px;
+//         padding: 16px;
+//         background-color: #f5f5f5;
+//         border-radius: 8px;
+//         margin-bottom: 16px;
+//       }
 
-      .tour-div,
-      .tour-text-wrapper-3,
-      .tour-text-wrapper-4,
-      .tour-text-wrapper-5 {
-        color: #000000;
+//       .tour-div,
+//       .tour-text-wrapper-3,
+//       .tour-text-wrapper-4,
+//       .tour-text-wrapper-5 {
+//         color: #000000;
         
-        font-size: 14px;
-        font-weight: 500;
-      }
-    }
+//         font-size: 14px;
+//         font-weight: 500;
+//       }
+//     }
 
-    .tour-hotel-items {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+//     .tour-hotel-items {
+//       display: flex;
+//       flex-direction: column;
+//       gap: 24px;
+//     }
 
-    .tour-hotel-item {
-      background-color: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-      padding: 24px;
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
+//     .tour-hotel-item {
+//       background-color: #ffffff;
+//       border-radius: 12px;
+//       box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+//       padding: 24px;
+//       display: flex;
+//       gap: 20px;
+//       align-items: flex-start;
 
-      @media (max-width: 767px) {
-        flex-direction: column;
-      }
+//       @media (max-width: 767px) {
+//         flex-direction: column;
+//       }
 
-      .tour-hotel-image {
-        width: 280px;
-        height: 200px;
-        object-fit: cover;
-        border-radius: 8px;
-        flex-shrink: 0;
+//       .tour-hotel-image {
+//         width: 280px;
+//         height: 200px;
+//         object-fit: cover;
+//         border-radius: 8px;
+//         flex-shrink: 0;
 
-        @media (max-width: 767px) {
-          width: 100%;
-          height: auto;
-          aspect-ratio: 16/9;
-        }
-      }
+//         @media (max-width: 767px) {
+//           width: 100%;
+//           height: auto;
+//           aspect-ratio: 16/9;
+//         }
+//       }
 
-      .tour-hotel-info {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
+//       .tour-hotel-info {
+//         flex: 1;
+//         display: flex;
+//         justify-content: space-between;
+//         gap: 8px;
 
-        .tour-p-3,
-        .tour-p-5 {
-          margin-bottom: 0;
-          order: 1;
-        }
+//         .tour-p-3,
+//         .tour-p-5 {
+//           margin-bottom: 0;
+//           order: 1;
+//         }
 
-        .tour-text-wrapper-6,
-        .tour-text-wrapper-7 {
-          color: #fbc400;
-          font-size: 16px;
-          margin: 0;
-          order: 2;
-        }
+//         .tour-text-wrapper-6,
+//         .tour-text-wrapper-7 {
+//           color: #fbc400;
+//           font-size: 16px;
+//           margin: 0;
+//           order: 2;
+//         }
 
-        .tour-p-instance,
-        .tour-p-2 {
-          margin-bottom: 0;
-          order: 3;
-        }
+//         .tour-p-instance,
+//         .tour-p-2 {
+//           margin-bottom: 0;
+//           order: 3;
+//         }
 
-        .tour-p-10,
-        .tour-p-12 {
-          margin-bottom: 0;
-          order: 4;
-        }
+//         .tour-p-10,
+//         .tour-p-12 {
+//           margin-bottom: 0;
+//           order: 4;
+//         }
 
-        .tour-p-7,
-        .tour-p-9 {
-          margin-top: 8px;
-          margin-bottom: 0;
-          order: 5;
-        }
-      }
-    }
+//         .tour-p-7,
+//         .tour-p-9 {
+//           margin-top: 8px;
+//           margin-bottom: 0;
+//           order: 5;
+//         }
+//       }
+//     }
 
  
-  }
+//   }
 
-  .tour-schedule-section {
-    margin-bottom: 100px;
+//   .tour-schedule-section {
+//     margin-bottom: 100px;
 
-    // 일정표 탭 콘텐츠
-    .tour-schedule-tab-content-left {
-      width: 100%;
-    }
+//     // 일정표 탭 콘텐츠
+//     .tour-schedule-tab-content-left {
+//       width: 100%;
+//     }
 
     
 
   
-  }
+//   }
 
 
-  .tour-estimate-form {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    padding: 24px;
-    margin-bottom: 24px;
+//   .tour-estimate-form {
+//     background-color: #ffffff;
+//     border-radius: 12px;
+//     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+//     padding: 24px;
+//     margin-bottom: 24px;
 
-    .tour-form-section {
-      margin-bottom: 24px;
-      padding-bottom: 24px;
-      border-bottom: 1px solid #e5e5e5;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+//     .tour-form-section {
+//       margin-bottom: 24px;
+//       padding-bottom: 24px;
+//       border-bottom: 1px solid #e5e5e5;
+//       display: flex;
+//       align-items: center;
+//       gap: 5px;
 
    
-      .tour-form-label-wrapper {
+//       .tour-form-label-wrapper {
 
-        .tour-form-label {
-          width: 100px;
-          color: #040404;
+//         .tour-form-label {
+//           width: 100px;
+//           color: #040404;
           
-          font-size: 16px;
-          font-weight: 500;
-          margin-right: 20px;
-        }
-      }
+//           font-size: 16px;
+//           font-weight: 500;
+//           margin-right: 20px;
+//         }
+//       }
 
 
-      .tour-flight-info-wrapper {
-        gap: 8px;
-      }
+//       .tour-flight-info-wrapper {
+//         gap: 8px;
+//       }
 
-      .tour-flight-info {
-        color: #3b3b3b;
+//       .tour-flight-info {
+//         color: #3b3b3b;
         
-        font-size: 14px;
-        font-weight: 400;
-          line-height: 1.6;
-        margin-bottom: 8px;
-        flex-direction: column;
+//         font-size: 14px;
+//         font-weight: 400;
+//           line-height: 1.6;
+//         margin-bottom: 8px;
+//         flex-direction: column;
 
-        .tour-text-wrapper-24 {
-          color: #3b3b3b;
-        }
+//         .tour-text-wrapper-24 {
+//           color: #3b3b3b;
+//         }
 
-        .tour-text-wrapper-25 {
-          color: #045abc;
-        }
-      }
+//         .tour-text-wrapper-25 {
+//           color: #045abc;
+//         }
+//       }
 
-      .tour-hotel-nights {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
+//       .tour-hotel-nights {
+//         display: flex;
+//         gap: 8px;
+//         margin-top: 8px;
 
-        .tour-hotel-night {
-          color: #272727;
+//         .tour-hotel-night {
+//           color: #272727;
           
-          font-size: 12px;
-          font-weight: 400;
-          padding: 4px 8px;
-          border: 1px solid #c3c3c3;
-          border-radius: 3px;
-        }
-      }
-    }
-  }
+//           font-size: 12px;
+//           font-weight: 400;
+//           padding: 4px 8px;
+//           border: 1px solid #c3c3c3;
+//           border-radius: 3px;
+//         }
+//       }
+//     }
+//   }
 
-  .tour-estimate-summary {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    padding: 24px;
+//   .tour-estimate-summary {
+//     background-color: #ffffff;
+//     border-radius: 12px;
+//     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+//     padding: 24px;
 
-    .tour-summary-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 0;
-      border-bottom: 1px solid #e5e5e5;
+//     .tour-summary-item {
+//       display: flex;
+//       justify-content: space-between;
+//       align-items: center;
+//       padding: 16px 0;
+//       border-bottom: 1px solid #e5e5e5;
 
-      &:last-of-type {
-        border-bottom: none;
-      }
+//       &:last-of-type {
+//         border-bottom: none;
+//       }
 
-      &.tour-total {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 24px 0;
-        border-top: 2px solid #000;
-        border-bottom: 2px solid #000;
-        margin: 16px 0;
+//       &.tour-total {
+//         flex-direction: column;
+//         align-items: flex-start;
+//         gap: 8px;
+//         padding: 24px 0;
+//         border-top: 2px solid #000;
+//         border-bottom: 2px solid #000;
+//         margin: 16px 0;
 
-        .tour-text-wrapper-13 {
-          color: #000000;
+//         .tour-text-wrapper-13 {
+//           color: #000000;
           
-          font-size: 20px;
-          font-weight: 600;
-        }
+//           font-size: 20px;
+//           font-weight: 600;
+//         }
 
-        .tour-text-wrapper-18 {
-          color: #262626;
+//         .tour-text-wrapper-18 {
+//           color: #262626;
           
-          font-size: clamp(28px, 4vw, 35px);
-          font-weight: 500;
-        }
+//           font-size: clamp(28px, 4vw, 35px);
+//           font-weight: 500;
+//         }
 
-        .tour-text-wrapper-17 {
-          color: #333333;
+//         .tour-text-wrapper-17 {
+//           color: #333333;
           
-          font-size: 17px;
-          font-weight: 400;
-        }
-      }
+//           font-size: 17px;
+//           font-weight: 400;
+//         }
+//       }
 
-      .tour-text-wrapper-11,
-      .tour-text-wrapper-12 {
-        color: #6e6e6e;
+//       .tour-text-wrapper-11,
+//       .tour-text-wrapper-12 {
+//         color: #6e6e6e;
         
-        font-size: 15px;
-        font-weight: 500;
-      }
+//         font-size: 15px;
+//         font-weight: 500;
+//       }
 
-      .tour-price-element {
-        color: #242424;
+//       .tour-price-element {
+//         color: #242424;
         
-        font-size: 20px;
-        font-weight: 400;
-        line-height: 1.5;
+//         font-size: 20px;
+//         font-weight: 400;
+//         line-height: 1.5;
 
-        .tour-span {
-          font-weight: 600;
-        }
+//         .tour-span {
+//           font-weight: 600;
+//         }
 
-        .tour-text-wrapper-14 {
-          font-size: 19px;
-          font-weight: 600;
-        }
+//         .tour-text-wrapper-14 {
+//           font-size: 19px;
+//           font-weight: 600;
+//         }
 
-        .tour-text-wrapper-15 {
-          font-size: 15px;
-        }
-      }
-    }
+//         .tour-text-wrapper-15 {
+//           font-size: 15px;
+//         }
+//       }
+//     }
 
-    .tour-vector-5 {
-      width: 100%;
-      height: 1px;
-      margin: 16px 0;
-      opacity: 0.2;
-    }
+//     .tour-vector-5 {
+//       width: 100%;
+//       height: 1px;
+//       margin: 16px 0;
+//       opacity: 0.2;
+//     }
 
-    .tour-summary-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 0;
-      margin-top: 16px;
+//     .tour-summary-footer {
+//       display: flex;
+//       justify-content: space-between;
+//       align-items: center;
+//       padding: 16px 0;
+//       margin-top: 16px;
 
-      .tour-text-wrapper-16 {
-        color: #333333;
+//       .tour-text-wrapper-16 {
+//         color: #333333;
         
-        font-size: 13px;
-        font-weight: 400;
-      }
+//         font-size: 13px;
+//         font-weight: 400;
+//       }
 
-      .tour-text-wrapper-19 {
-        color: #222222;
+//       .tour-text-wrapper-19 {
+//         color: #222222;
         
-        font-size: 15px;
-        font-weight: 400;
-      }
-    }
+//         font-size: 15px;
+//         font-weight: 400;
+//       }
+//     }
 
-    .tour-summary-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-top: 24px;
+//     .tour-summary-actions {
+//       display: flex;
+//       flex-direction: column;
+//       gap: 16px;
+//       margin-top: 24px;
 
-      @media (min-width: 768px) {
-        flex-direction: row-reverse;
-      }
+//       @media (min-width: 768px) {
+//         flex-direction: row-reverse;
+//       }
 
-      .tour-action-button {
-        position: relative;
-        border-radius: 3px;
-        cursor: pointer;
-        transition: opacity 0.2s;
-        flex: 1;
+//       .tour-action-button {
+//         position: relative;
+//         border-radius: 3px;
+//         cursor: pointer;
+//         transition: opacity 0.2s;
+//         flex: 1;
 
-        @media (min-width: 768px) {
-          flex: 0 0 auto;
-        }
+//         @media (min-width: 768px) {
+//           flex: 0 0 auto;
+//         }
 
-        &:hover {
-          opacity: 0.9;
-        }
+//         &:hover {
+//           opacity: 0.9;
+//         }
 
-        .tour-rectangle-10 {
-          background-color: #010205;
-          border-radius: 3px;
-          height: 100%;
-          width: 100%;
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
+//         .tour-rectangle-10 {
+//           background-color: #010205;
+//           border-radius: 3px;
+//           height: 100%;
+//           width: 100%;
+//           position: absolute;
+//           top: 0;
+//           left: 0;
+//         }
 
-        .tour-rectangle-11 {
-          background-color: #ffffff;
-          border: 1px solid #000000;
-          border-radius: 3px;
-          height: 100%;
-          width: 100%;
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
+//         .tour-rectangle-11 {
+//           background-color: #ffffff;
+//           border: 1px solid #000000;
+//           border-radius: 3px;
+//           height: 100%;
+//           width: 100%;
+//           position: absolute;
+//           top: 0;
+//           left: 0;
+//         }
 
-        .tour-text-wrapper-9,
-        .tour-text-wrapper-10 {
-          position: relative;
-          z-index: 1;
-          padding: 14px 24px;
-          text-align: center;
+//         .tour-text-wrapper-9,
+//         .tour-text-wrapper-10 {
+//           position: relative;
+//           z-index: 1;
+//           padding: 14px 24px;
+//           text-align: center;
           
-          font-size: 16px;
-          font-weight: 500;
-        }
+//           font-size: 16px;
+//           font-weight: 500;
+//         }
 
-        &.tour-action-button-primary {
-          .tour-text-wrapper-9 {
-            color: #ffffff;
-          }
-        }
+//         &.tour-action-button-primary {
+//           .tour-text-wrapper-9 {
+//             color: #ffffff;
+//           }
+//         }
 
-        &.tour-action-button-secondary {
-          .tour-text-wrapper-10 {
-            color: #353535;
-          }
-        }
-      }
-    }
-  }
+//         &.tour-action-button-secondary {
+//           .tour-text-wrapper-10 {
+//             color: #353535;
+//           }
+//         }
+//       }
+//     }
+//   }
 
-  // P component styles
-  .tour-p {
-    .tour-text-wrapper {
+//   // P component styles
+//   .tour-p {
+//     .tour-text-wrapper {
       
-    }
+//     }
 
-    &.tour-p-instance,
-    &.tour-p-2 {
-      .tour-design-component-instance-node {
-        color: #222222;
-        font-size: 14px;
-        line-height: 1.64;
-      }
-    }
+//     &.tour-p-instance,
+//     &.tour-p-2 {
+//       .tour-design-component-instance-node {
+//         color: #222222;
+//         font-size: 14px;
+//         line-height: 1.64;
+//       }
+//     }
 
-    &.tour-p-3,
-    &.tour-p-5 {
-      .tour-p-4,
-      .tour-p-6 {
-        color: #0e0e0e;
-        font-size: 16px;
-        font-weight: 500;
-      }
-    }
+//     &.tour-p-3,
+//     &.tour-p-5 {
+//       .tour-p-4,
+//       .tour-p-6 {
+//         color: #0e0e0e;
+//         font-size: 16px;
+//         font-weight: 500;
+//       }
+//     }
 
-    &.tour-p-7,
-    &.tour-p-9 {
-      .tour-p-8 {
-        color: #555555;
-        line-height: 1.64;
-      }
-    }
+//     &.tour-p-7,
+//     &.tour-p-9 {
+//       .tour-p-8 {
+//         color: #555555;
+//         line-height: 1.64;
+//       }
+//     }
 
-    &.tour-p-10,
-    &.tour-p-12 {
-      .tour-p-11 {
-        color: #555555;
-        font-size: 14px;
-      }
-    }
+//     &.tour-p-10,
+//     &.tour-p-12 {
+//       .tour-p-11 {
+//         color: #555555;
+//         font-size: 14px;
+//       }
+//     }
 
-    &.tour-p-14,
-    &.tour-p-16 {
-      .tour-p-15 {
-        color: #272727;
-        font-size: 14px;
-      }
-    }
+//     &.tour-p-14,
+//     &.tour-p-16 {
+//       .tour-p-15 {
+//         color: #272727;
+//         font-size: 14px;
+//       }
+//     }
 
-    &.tour-p-17,
-    &.tour-p-23,
-    &.tour-p-24,
-    &.tour-p-25,
-    &.tour-p-27 {
-      .tour-p-18 {
-        color: #272727;
-        font-size: 14px;
-      }
-    }
+//     &.tour-p-17,
+//     &.tour-p-23,
+//     &.tour-p-24,
+//     &.tour-p-25,
+//     &.tour-p-27 {
+//       .tour-p-18 {
+//         color: #272727;
+//         font-size: 14px;
+//       }
+//     }
 
-    &.tour-p-28 {
-      .tour-p-29 {
-        color: #3b3b3b;
-        font-size: 14px;
-        line-height: 1.71;
-      }
-    }
-  }
-}
+//     &.tour-p-28 {
+//       .tour-p-29 {
+//         color: #3b3b3b;
+//         font-size: 14px;
+//         line-height: 1.71;
+//       }
+//     }
+//   }
+// }
 
-// Mobile styles
-@media (max-width: 767px) {
-  .tour-estimatePage {
-    padding: 16px;
+// // Mobile styles
+// @media (max-width: 767px) {
+//   .tour-estimatePage {
+//     padding: 16px;
 
-    .tour-left-section {
-      .tour-estimate-header {
-        margin-bottom: 24px;
-      }
-    }
+//     .tour-left-section {
+//       .tour-estimate-header {
+//         margin-bottom: 24px;
+//       }
+//     }
 
-    .tour-hotel-list-section {
-      .tour-hotel-item {
-        padding: 16px;
-      }
-    }
+//     .tour-hotel-list-section {
+//       .tour-hotel-item {
+//         padding: 16px;
+//       }
+//     }
 
-    .tour-estimate-form {
-      padding: 16px;
-    }
+//     .tour-estimate-form {
+//       padding: 16px;
+//     }
 
-    .tour-estimate-summary {
-      padding: 16px;
-    }
-  }
-}
+//     .tour-estimate-summary {
+//       padding: 16px;
+//     }
+//   }
+// }
 
-// Tablet styles
-@media (min-width: 768px) and (max-width: 1023px) {
-  .tour-estimatePage {
-    padding: 24px;
-  }
-}
-
-// Desktop styles
-@media (min-width: 1024px) {
-  .tour-estimatePage {
-    padding: 32px 48px;
-  }
-}

@@ -1,27 +1,12 @@
 import React from 'react';
 import './RestHotelDetail.scss';
-import { IoIosArrowForward } from "react-icons/io";
-import { IoIosArrowBack } from "react-icons/io";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate, useLocation } from 'react-router-dom';
 import rectangle78 from '../../../lastimages/counselrest/hotel/detail/rectangle-78.png';
 import rectangle76 from '../../../lastimages/counselrest/hotel/detail/rectangle-76.png';
-import rectangle665 from '../../../lastimages/counselrest/hotel/detail/rectangle-665.png';
-import rectangle664 from '../../../lastimages/counselrest/hotel/detail/rectangle-664.png';
-import rectangle663 from '../../../lastimages/counselrest/hotel/detail/rectangle-663.png';
 import rectangle580 from '../../../lastimages/counselrest/hotel/detail/rectangle-580.png';
-import rectangle662 from '../../../lastimages/counselrest/hotel/detail/rectangle-662.png';
-import rectangle661 from '../../../lastimages/counselrest/hotel/detail/rectangle-661.png';
 import rectangle619 from '../../../lastimages/counselrest/hotel/detail/rectangle-619.png';
-import rectangle600 from '../../../lastimages/counselrest/hotel/detail/rectangle-600.png';
-import rectangle601 from '../../../lastimages/counselrest/hotel/detail/rectangle-601.png';
-import rectangle673 from '../../../lastimages/counselrest/hotel/detail/rectangle-673.png';
-import rectangle674 from '../../../lastimages/counselrest/hotel/detail/rectangle-674.png';
-import rectangle675 from '../../../lastimages/counselrest/hotel/detail/rectangle-675.png';
-import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle-676.png';
-import rectangle677 from '../../../lastimages/counselrest/hotel/detail/rectangle-677.png';
-import vector105 from '../../../lastimages/counselrest/hotel/detail/vector-105.svg';
-import reviewimage from '../../../lastimages/counselrest/hotel/detail/review.png';
 import hotelmain from '../../../images/counsel/rest/hotel/hotelmain.png';
 import RatingBoard from '../../../common/RatingBoard';
 import { useEffect } from 'react';
@@ -30,7 +15,7 @@ import axios from 'axios';
 import GoogleMap from '../../../common/GoogleMap';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { recoilProductName, recoilHotelCart } from '../../../../RecoilStore';
-
+import roomIcon from '../../../images/counsel/rest/hotel/Rooms.png';
 
 export default function RestHotelDetail() {
   const navigate = useNavigate();
@@ -59,16 +44,22 @@ export default function RestHotelDetail() {
   const [imageAllView, setImageAllView] = React.useState<any[]>([]);
   const [imageRoomView, setImageRoomView] = React.useState<any[]>([]);
   const [imageEtcView, setImageEtcView] = React.useState<any[]>([]);
+  const [imageMainPoint, setImageMainPoint] = React.useState<any[]>([]);
+  const [imageBenefit, setImageBenefit] = React.useState<any[]>([]);
   const [roomTypes, setRoomTypes] = React.useState<any[]>([]);
+  const [selectedRoomType, setSelectedRoomType] = React.useState<string>('');
   const [products, setProducts] = React.useState<any[]>([]);
   const [logoImageError, setLogoImageError] = React.useState<boolean>(false);
   const [selectedNights, setSelectedNights] = React.useState<{ [key: number]: number }>({});
+  
+  // 각 객실 타입 섹션에 대한 ref를 Map으로 관리
+  const roomTypeRefs = React.useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   useEffect(() => {
     const fetchHotelInfo = async () => {
       if (!ID) return;
       
-      // 호텔 정보가 변경될 때 로고 이미지 에러 상태 초기화
+    // 호텔 정보가 변경될 때 로고 이미지 에러 상태 초기화
       setLogoImageError(false);
       
       try {
@@ -83,11 +74,64 @@ export default function RestHotelDetail() {
           setImageRoomView(imageNamesRoomViewCopy);
           const imageNamesEtcViewCopy = copy.imageNamesEtcView ? JSON.parse(copy.imageNamesEtcView) : [];
           setImageEtcView(imageNamesEtcViewCopy);
+          
+          // 핵심 포인트 이미지 파싱
+          if (copy.imageNamesMainPoint) {
+            try {
+              const parsedMainPoint = JSON.parse(copy.imageNamesMainPoint);
+              if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                setImageMainPoint(parsedMainPoint);
+              } else {
+                setImageMainPoint([]);
+              }
+            } catch (e) {
+              console.error('핵심 포인트 이미지 파싱 오류:', e);
+              setImageMainPoint([]);
+            }
+          } else {
+            setImageMainPoint([]);
+          }
+          
+          // 베네핏 이미지 파싱
+          if (copy.imageNamesBenefit) {
+            try {
+              const parsedBenefit = JSON.parse(copy.imageNamesBenefit);
+              if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                setImageBenefit(parsedBenefit);
+              } else {
+                setImageBenefit([]);
+              }
+            } catch (e) {
+              console.error('베네핏 이미지 파싱 오류:', e);
+              setImageBenefit([]);
+            }
+          } else {
+            setImageBenefit([]);
+          }
+          
+          // 객실 타입 파싱 및 설정
+          if (copy.hotelRoomTypes) {
+            try {
+              const parsedRoomTypes = JSON.parse(copy.hotelRoomTypes);
+              if (Array.isArray(parsedRoomTypes) && parsedRoomTypes.length > 0) {
+                setRoomTypes(parsedRoomTypes);
+                // 첫 번째 객실을 기본 선택
+                setSelectedRoomType(parsedRoomTypes[0].roomTypeName || '');
+              }
+            } catch (e) {
+              console.error('객실 타입 파싱 오류:', e);
+              setRoomTypes([]);
+            }
+          } else {
+            setRoomTypes([]);
+          }
         } else {
           setHotelInfo(null);
           setImageAllView([]);
           setImageRoomView([]);
           setImageEtcView([]);
+          setImageMainPoint([]);
+          setImageBenefit([]);
         }
         const response = await axios.post(`${AdminURL}/ceylontour/getcityschedule`, { city: CITY });
         if (response.data) {
@@ -114,6 +158,8 @@ export default function RestHotelDetail() {
         setImageAllView([]);
         setImageRoomView([]);
         setImageEtcView([]);
+        setImageMainPoint([]);
+        setImageBenefit([]);
         setProducts([]);
       }
     };
@@ -208,6 +254,28 @@ export default function RestHotelDetail() {
           setImageRoomView(imageNamesRoomViewCopy);
           const imageNamesEtcViewCopy = hotel.imageNamesEtcView ? JSON.parse(hotel.imageNamesEtcView) : [];
           setImageEtcView(imageNamesEtcViewCopy);
+          
+          // 객실 타입 파싱 및 설정
+          if (hotel.hotelRoomTypes) {
+            try {
+              const parsedRoomTypes = JSON.parse(hotel.hotelRoomTypes);
+              if (Array.isArray(parsedRoomTypes) && parsedRoomTypes.length > 0) {
+                setRoomTypes(parsedRoomTypes);
+                // 첫 번째 객실을 기본 선택
+                setSelectedRoomType(parsedRoomTypes[0].roomTypeName || '');
+              } else {
+                setRoomTypes([]);
+                setSelectedRoomType('');
+              }
+            } catch (e) {
+              console.error('객실 타입 파싱 오류:', e);
+              setRoomTypes([]);
+              setSelectedRoomType('');
+            }
+          } else {
+            setRoomTypes([]);
+            setSelectedRoomType('');
+          }
           
           // 선택된 호텔의 도시로 상품 가져오기
           if (hotel.city) {
@@ -896,6 +964,13 @@ export default function RestHotelDetail() {
     setSelectedMainImageIndex(0);
   }, [activeTab]);
 
+  // 객실 탭이 활성화될 때 첫 번째 객실을 기본 선택
+  useEffect(() => {
+    if (activeTab === 1 && roomTypes.length > 0 && !selectedRoomType) {
+      setSelectedRoomType(roomTypes[0].roomTypeName || '');
+    }
+  }, [activeTab, roomTypes, selectedRoomType]);
+
   // 데이터가 로드되지 않았다면 상세 내용을 렌더링하지 않음
   if (!hotelInfo) {
     return null;
@@ -905,8 +980,17 @@ export default function RestHotelDetail() {
   // 현재 탭에 따른 이미지 리스트 (소개 / 전경 / 객실 / 부대시설)
   const getCurrentImages = () => {
     if (activeTab === 0) return []; 
-    if (activeTab === 1) return imageRoomView; // 객실
+    if (activeTab === 1) {
+      return imageRoomView; // 객실 - 모든 이미지 반환
+    }
     return imageEtcView; // 부대시설
+  };
+  
+  // 객실별로 이미지를 그룹화하는 함수
+  const getImagesByRoomType = (roomTypeName: string) => {
+    return imageRoomView.filter((img: any) => {
+      return img.roomTypeName === roomTypeName || img.title === roomTypeName;
+    });
   };
 
   // 파일이 동영상인지 확인
@@ -917,36 +1001,19 @@ export default function RestHotelDetail() {
     return videoExtensions.some(ext => lowerFileName.endsWith(ext));
   };
 
-  const highlightItems = [
-    { image: rectangle76, title: '초럭셔리 체험' },
-    { image: rectangle78, title: '버틀러 시스템' },
-    { image: rectangle76, title: '프라이빗 비치' },
-    { image: rectangle78, title: '턴다운 서비스' },
-    { image: rectangle76, title: '허니문 인기' },
-  ];
+  // 핵심 포인트 아이템 생성 (데이터에서 가져온 이미지 사용)
+  const highlightItems = imageMainPoint.map((item: any) => ({
+    image: `${AdminURL}/images/hotelimages/${item.imageName}`,
+    title: item.title || '',
+    notice: item.notice || '',
+  }));
 
-  const benefitItems = [
-    {
-      title: '초럭셔리 체험',
-      text: '세계적 평가의 St. Regis 브랜드 & 발리 최고급 서비스',
-      image: rectangle76,
-    },
-    {
-      title: '버틀러 시스템',
-      text: '짐 언패킹, 패킹, 커피/티 서비스 예약대행',
-      image: rectangle78,
-    },
-    {
-      title: '턴다운 서비스',
-      text: '매일 밤 방을 편안하게 정리해주는 감동 포인트',
-      image: rectangle76,
-    },
-    {
-      title: '프라이빗 비치',
-      text: '게이티드 누사두아의 조용하고 품격 높은 해변',
-      image: rectangle619,
-    },
-  ];
+  // 베네핏 아이템 생성 (데이터에서 가져온 이미지 사용)
+  const benefitItems = imageBenefit.map((item: any) => ({
+    title: item.title || '',
+    text: item.notice || '',
+    image: `${AdminURL}/images/hotelimages/${item.imageName}`,
+  }));
 
 
   // 헤더에 사용할 첫 번째 이미지 가져오기
@@ -963,560 +1030,728 @@ export default function RestHotelDetail() {
 
   return (
     <div className="RestHotelDetail">
-      {/* 왼쪽 상단 뒤로가기 버튼 */}
-      {/* <button
-        type="button"
-        className="left-back-btn"
-        onClick={() => navigate(-1)}
-      >
-        <IoIosArrowBack />
-      </button> */}
-
-      {/* 오른쪽 패널 토글 버튼 */}
-      {!showRightPanel && (
-        <button
+      <div className="hotel-detail-container">
+        {/* 왼쪽 상단 뒤로가기 버튼 */}
+        {/* <button
           type="button"
-          className="right-panel-toggle-btn"
-          onClick={() => setShowRightPanel(true)}
+          className="left-back-btn"
+          onClick={() => navigate(-1)}
         >
           <IoIosArrowBack />
-        </button>
-      )}
+        </button> */}
 
-      <div className={`hotel-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
-        {/* 왼쪽 영역: 기존 내용 */}
-        <div className="left-section">
-          {/* 상단 헤더 이미지 (오른쪽 패널이 닫혀있을 때만 표시, 스크롤에 포함) */}
-          {!showRightPanel && (
-            <div className="hotel-header-image">
-              <img
-                className="header-image-media"
-                alt="호텔 메인 이미지"
-                src={getHeaderImage()}
-              />
-              {/* 어두운 overlay */}
-              <div className="header-image-overlay"></div>
-              {/* 호텔 제목 정보 (이미지 중앙에 표시) */}
-              <div className="hotel-title-overlay">
-                <div className="hotel-title-content">
-                  <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
-                  <div className="text-subtitle">
-                    {hotelInfo?.hotelNameEn || ''}
-                  </div>
-                  <div className="text-rating">
-                    <RatingBoard
-                      ratingSize={20}
-                      rating={
-                        hotelInfo && hotelInfo.hotelLevel
-                          ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
-                          : 0
-                      }
-                    />
-                  </div>
-                  <div className="text-location">
-                    <p>{hotelInfo?.nation || ''}</p>
-                    <IoIosArrowForward />
-                    <p>{hotelInfo?.city || ''}</p>
+        {/* 오른쪽 패널 토글 버튼 */}
+        {!showRightPanel && (
+          <button
+            type="button"
+            className="right-panel-toggle-btn"
+            onClick={() => setShowRightPanel(true)}
+          >
+            <IoIosArrowBack />
+          </button>
+        )}
+
+        <div className={`hotel-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
+          {/* 왼쪽 영역: 기존 내용 */}
+          <div className="left-section">
+            {/* 상단 헤더 이미지 (오른쪽 패널이 닫혀있을 때만 표시, 스크롤에 포함) */}
+            {/* {!showRightPanel && (
+              <div className="hotel-header-image">
+                <img
+                  className="header-image-media"
+                  alt="호텔 메인 이미지"
+                  src={getHeaderImage()}
+                />
+                <div className="header-image-overlay"></div>
+                <div className="hotel-title-overlay">
+                  <div className="hotel-title-content">
+                    <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
+                    <div className="text-subtitle">
+                      {hotelInfo?.hotelNameEn || ''}
+                    </div>
+                    <div className="text-rating">
+                      <RatingBoard
+                        ratingSize={20}
+                        rating={
+                          hotelInfo && hotelInfo.hotelLevel
+                            ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                            : 0
+                        }
+                      />
+                    </div>
+                    <div className="text-location">
+                      <p>{hotelInfo?.nation || ''}</p>
+                      <IoIosArrowForward />
+                      <p>{hotelInfo?.city || ''}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          {/* 호텔 탭 (GO 버튼으로 진입한 경우에만 표시) */}
-          {!fromDetail && fromGo && hotelDetails.length > 0 && (
-            <div className="hotel-tabs-container">
-              <div className="hotel-tabs-left">
-                {hotelDetails.map((hotel, index) => (
-                  <button
-                    key={hotel.id}
-                    type="button"
-                    className={`hotel-tab-button ${selectedHotelTab === index ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedHotelTab(index);
-                      setActiveTab(0); // 호텔 탭 변경 시 '소개' 탭으로 초기화
-                    }}
-                  >
-                    {hotel.hotelNameKo}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="hotel-center-wrapper">
+            )} */}
 
             {/* Breadcrumb Navigation */}
-            <div className="breadcrumb-nav">
-              <span 
-                className="breadcrumb-item"
-                onClick={() => navigate('/')}
-              >
-                Home
-              </span>
-              <span className="breadcrumb-separator"> - </span>
-              <span 
-                className="breadcrumb-item"
-                onClick={() => navigate('/counsel/rest')}
-              >
-                휴양지
-              </span>
-              {CITY && (
-                <>
-                  <span className="breadcrumb-separator"> - </span>
-                  <span 
-                    className="breadcrumb-item"
-                    onClick={() => navigate(-1)}
-                  >
-                    {CITY}
-                  </span>
-                </>
-              )}
-              {hotelInfo?.hotelNameKo && (
-                <>
-                  <span className="breadcrumb-separator"> - </span>
-                  <span className="breadcrumb-item breadcrumb-item-current">
-                    {hotelInfo.hotelNameKo}
-                  </span>
-                </>
-              )}
-            </div>
-
-            <div className="room-container-wrapper">
-              <div className="room-container-left">
-                {btnSolids.map(({ text }, index) => (
-                  <button
-                    key={text}
-                    type="button"
-                    className={`roomtabsort ${activeTab === index ? 'active' : ''}`}
-                    onClick={() => setActiveTab(index)}
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-              <div className="room-container-right">
-                {/* {roomTypes.map((room: any, index: number) => (
-                  <React.Fragment key={room.roomTypeName || index}>
-                    <span className="roomtype-text">{room.roomTypeName}</span>
-                    {index < roomTypes.length - 1 && (
-                      <span className="roomtype-separator"></span>
-                    )}
-                  </React.Fragment>
-                ))} */}
-                 <button
-                    type="button"
-                    className="video-button"
-                    onClick={() => {}}
-                  >
-                    동영상보기
-                  </button>
+            <div className="breadcrumb-nav-wrapper">
+              <div className="breadcrumb-nav">
+                <span 
+                  className="breadcrumb-item"
+                  onClick={() => navigate('/')}
+                >
+                  HOME
+                </span>
+                <IoIosArrowForward className="breadcrumb-separator"/>
+                <span 
+                  className="breadcrumb-item"
+                  onClick={() => navigate('/counsel/rest')}
+                >
+                  휴양지
+                </span>
+                {CITY && (
+                  <>
+                    <IoIosArrowForward className="breadcrumb-separator"/>
+                    <span 
+                      className="breadcrumb-item"
+                      onClick={() => navigate(-1)}
+                    >
+                      {CITY}
+                    </span>
+                  </>
+                )}
+                {/* {hotelInfo?.hotelNameKo && (
+                  <>
+                    <IoIosArrowForward className="breadcrumb-separator"/>
+                    <span className="breadcrumb-item breadcrumb-item-current">
+                      {hotelInfo.hotelNameKo}
+                    </span>
+                  </>
+                )} */}
               </div>
             </div>
-
-            {/* 소개 탭일 때는 호텔 정보 표시, 나머지 탭은 이미지 표시 */}
-            {activeTab === 0 ? (
-              <>
-                {/* 호텔 소개 섹션 */}
-                <div className="hotel-intro-section">
-                  <div className="hotel-intro-rating">
-                    <RatingBoard
-                      ratingSize={30}
-                      rating={
-                        hotelInfo && hotelInfo.hotelLevel
-                          ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
-                          : 0
-                      }
-                    />
-                  </div>
-                  <div className="hotel-intro-tagline">
-                    프라이빗 비치와 세심한 서비스가 완성하는 품격있는 휴식
-                  </div>
-                  {hotelInfo?.logoImage && !logoImageError && (
-                    <div className="hotel-intro-logo">
-                      <img 
-                        src={`${AdminURL}/images/hotellogos/${hotelInfo.logoImage}`} 
-                        alt="호텔 로고"
-                        onError={() => setLogoImageError(true)}
-                      />
-                    </div>
-                  )}
-                  <div className="hotel-intro-entitle">
-                    <p>{hotelInfo?.hotelNameEn || ''}</p>
-                  </div>
-                  <div className="hotel-intro-description">
-                    <p>정교한 설계와 세심한 서비스는 허니문 동안 럭셔리 그 자체를 선사합니다.</p>
-                    <p>2017년 새롭게 단장을 마치고 모던 럭셔리를 지향하는 호텔로 거듭났습니다.</p>
-                    <p>모든 객실에 자쿠지와 개인용 풀장이 설치되어 있는 것이 특징입니다.</p>
-                  </div>
+            {/* 호텔 탭 (GO 버튼으로 진입한 경우에만 표시) */}
+            {!fromDetail && fromGo && hotelDetails.length > 0 && (
+              <div className="hotel-tabs-container">
+                <div className="hotel-tabs-left">
+                  {hotelDetails.map((hotel, index) => (
+                    <button
+                      key={hotel.id}
+                      type="button"
+                      className={`hotel-tab-button ${selectedHotelTab === index ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedHotelTab(index);
+                        setActiveTab(0); // 호텔 탭 변경 시 '소개' 탭으로 초기화
+                      }}
+                    >
+                      {hotel.hotelNameKo}
+                    </button>
+                  ))}
                 </div>
-
-                <div className="highlight-section">
-                  <div className="section-title">핵심 포인트</div>
-                  <div className="highlight-list">
-                    {highlightItems.map(({ image, title }) => (
-                      <div className="highlight-item" key={title}>
-                        <div className="highlight-image-wrap">
-                          <img src={image} alt={title} />
-                        </div>
-                        <div className="highlight-item-title">{title}</div>
-                        <div className="highlight-item-desc">
-                          세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={`benefit-section`}>
-                  <div className="section-title">베네핏 & 포함사항</div>
-                  <div className="benefit-items">
-                    {benefitItems.map(({ title, text, image }, index) => (
-                      <div key={title} className="benefit-item">
-                        <img className="rectangle" alt="Rectangle" src={image} />
-                        <div className={`benefit-card benefit-card-${index + 1}`}>
-                          <div className="benefit-title">{title}</div>
-                          <div className="benefit-text">{text}</div>
-                        </div>
-                        <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
-                          실론투어
-                          <br />
-                          단독특전2
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 후기 및 평점 섹션 */}
-                {/* <div className='component'>
-                 
-                  <div className="review-section">
-                    <h2 className="section-title">후기 및 평점</h2>
-                    
-                    <div className="review-list">
-                      {reviewItems.map((review) => (
-                        <div key={review.id} className="review-item">
-                          <img className="review-image" alt="후기 이미지" src={review.image} />
-                          <div className="review-content">
-                            <div className="review-header">
-                              <h3 className="review-title">{review.title}</h3>
-                              <div className="review-rating">
-                                <RatingBoard rating={review.rating} ratingSize={20} />
-                              </div>
-                            </div>
-                            
-                            <p className="review-text">
-                              {review.text.split('\n').map((line, index, arr) => (
-                                <React.Fragment key={index}>
-                                  {line}
-                                  {index < arr.length - 1 && <br />}
-                                </React.Fragment>
-                              ))}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div> */}
-
-                <div className="location-info-section">
-                  <div className="section-title">호텔위치</div>
-                  <div className="location-content-wrapper">
-                    <div className="location-text-panel">
-                      <div className="location-address">
-                        {hotelInfo?.hotelAddress || ''}
-                      </div>
-                      <div className="location-nearby-list">
-                        <div className="location-nearby-item">
-                          <div className="location-nearby-item-icon-name">
-                            <span className="location-icon">◎</span>
-                            <span className="location-name">발리 국립 골프 클럽</span>
-                          </div>
-                          <span className="location-time">도보 5분</span>
-                        </div>
-                        <div className="location-nearby-item">
-                          <div className="location-nearby-item-icon-name">
-                            <span className="location-icon">◎</span>
-                            <span className="location-name">게러그비치</span>
-                          </div>
-                          <span className="location-time">도보 12분</span>
-                        </div>
-                        <div className="location-nearby-item">
-                          <div className="location-nearby-item-icon-name">  
-                            <span className="location-icon">◎</span>
-                            <span className="location-name">발리 컬렉션 쇼핑센터</span>
-                          </div>
-                          <span className="location-time">도보 17분</span>
-                        </div>
-                        <div className="location-nearby-item">
-                          <div className="location-nearby-item-icon-name">  
-                            <span className="location-icon">◎</span>
-                            <span className="location-name">웅우라라이 국제공항</span>
-                          </div>
-                          <span className="location-time">차로 20분</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="location-map-panel">
-                      <div className="location-map-placeholder">
-                        <GoogleMap />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* imageAllView 이미지 전부 표시 */}
-                <div className="tab-preview-images">
-                  {imageAllView && imageAllView.length > 0 ? (
-                    imageAllView.map((img: any, index: number) => {
-                      const imageName = typeof img === 'string' ? img : img.imageName;
-                      const title = typeof img === 'object' && img.title ? img.title : '';
-                      const isVideo = isVideoFile(imageName);
-                      return (
-                        <div key={`all-view-${index}`} className="preview-image-item">
-                          <div className="preview-image-wrapper">
-                            {isVideo ? (
-                              <video
-                                className="preview-image"
-                                controls
-                                src={`${AdminURL}/images/hotelimages/${imageName}`}
-                              >
-                                브라우저가 비디오 태그를 지원하지 않습니다.
-                              </video>
-                            ) : (
-                              <img
-                                className="preview-image"
-                                alt={title || `전경 이미지 ${index + 1}`}
-                                src={`${AdminURL}/images/hotelimages/${imageName}`}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      minHeight: '400px',
-                      color: '#999',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      width: '100%'
-                    }}>
-                      이미지가 없습니다.
-                    </div>
-                  )}
-                </div>
-
-              </>
-            ) : (
-              <div className="photo-gallery">
-                {(() => {
-                  const images = getCurrentImages();
-                  if (images && images.length > 0) {
-                    return images.map((img: any, index: number) => {
-                      const isVideo = isVideoFile(img.imageName);
-                      
-                      if (isVideo) {
-                        return (
-                          <div key={index} className="photo-main">
-                            <video
-                              className="photo-main-image"
-                              controls
-                              src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                            >
-                              브라우저가 비디오 태그를 지원하지 않습니다.
-                            </video>
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <div key={index} className="photo-main">
-                          <img
-                            className="photo-main-image"
-                            alt={img.title || `이미지 ${index + 1}`}
-                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
-                          />
-                        </div>
-                      );
-                    });
-                  }
-                  return (
-                    <div className="photo-main">
-                      <img
-                        className="photo-main-image"
-                        alt="메인 이미지"
-                        src={rectangle580}
-                      />
-                    </div>
-                  );
-                })()}
               </div>
             )}
-          </div>
-        </div>
+            <div className="hotel-center-wrapper">
 
-        {/* 오른쪽 영역: 실론투어 베네핏 및 하루 일정 */}
-        {showRightPanel && (
-          <div className="right-section">
-            {/* 탭 컨텐츠 */}
-            <div className="right-tab-content">
-              {/* 닫기 버튼 */}
-              <button
-                type="button"
-                className="right-panel-close-btn"
-                onClick={() => setShowRightPanel(false)}
-              >
-                <IoMdClose />
-              </button>
-
-              {/* 탭 컨테이너 */}
-              <div className="right-tab-container">
-                <div className="right-tab-left">
+              <div className="room-container-wrapper">
+                <div className="room-container-left">
+                  {btnSolids.map(({ text }, index) => (
+                    <button
+                      key={text}
+                      type="button"
+                      className={`roomtabsort ${activeTab === index ? 'active' : ''}`}
+                      onClick={() => setActiveTab(index)}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+                <div className="room-container-right">
+                  {/* {roomTypes.map((room: any, index: number) => (
+                    <React.Fragment key={room.roomTypeName || index}>
+                      <span className="roomtype-text">{room.roomTypeName}</span>
+                      {index < roomTypes.length - 1 && (
+                        <span className="roomtype-separator"></span>
+                      )}
+                    </React.Fragment>
+                  ))} */}
                   <button
-                    type="button"
-                    className={`right-tab-button right-tab-schedule ${activeRightTab === 'schedule' ? 'active' : ''}`}
-                    onClick={() => setActiveRightTab('schedule')}
-                  >
-                    상품보기
-                  </button>
-                  <button
-                    type="button"
-                    className={`right-tab-button right-tab-benefit ${activeRightTab === 'custom' ? 'active' : ''}`}
-                    onClick={() => setActiveRightTab('custom')}
-                  >
-                    일정만들기
-                  </button>
+                      type="button"
+                      className="video-button"
+                      onClick={() => {}}
+                    >
+                      동영상보기
+                    </button>
                 </div>
               </div>
-            
 
-              {activeRightTab === 'schedule' && (
-                <div className="product-section">
-                  
-                  <div className="product-list">
-                    {products.length === 0 ? (
-                      <div className="empty-message">연관된 여행상품이 없습니다.</div>
-                    ) : (
-                      products.map((product: any) => {
-                        // 헤더 텍스트
-                        const headerText =
-                          product.headerText ||
-                          `${product.nation || ''} 추천상품`;
-                        
-                        // 상품명 (productScheduleData 기반으로 생성)
-                        const productName = getProductNameFromSchedule(product);
+              {/* 소개 탭일 때는 호텔 정보 표시, 나머지 탭은 이미지 표시 */}
+              {activeTab === 0 ? (
+                <>
+                  {/* 호텔 소개 섹션 */}
+                  <div className="hotel-intro-section">
+                    <div className="hotel-intro-rating">
+                      <RatingBoard
+                        ratingSize={30}
+                        rating={
+                          hotelInfo && hotelInfo.hotelLevel
+                            ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                            : 0
+                        }
+                      />
+                    </div>
+                    <div className="hotel-intro-tagline">
+                      프라이빗 비치와 세심한 서비스가 완성하는 품격있는 휴식
+                    </div>
+                    {hotelInfo?.logoImage && !logoImageError && (
+                      <div className="hotel-intro-logo">
+                        <img 
+                          src={`${AdminURL}/images/hotellogos/${hotelInfo.logoImage}`} 
+                          alt="호텔 로고"
+                          onError={() => setLogoImageError(true)}
+                        />
+                      </div>
+                    )}
+                    <div className="hotel-intro-entitle">
+                      <p>{hotelInfo?.hotelNameEn || ''}</p>
+                    </div>
+                    <div className="hotel-intro-description">
+                      <p>정교한 설계와 세심한 서비스는 허니문 동안 럭셔리 그 자체를 선사합니다.</p>
+                      <p>2017년 새롭게 단장을 마치고 모던 럭셔리를 지향하는 호텔로 거듭났습니다.</p>
+                      <p>모든 객실에 자쿠지와 개인용 풀장이 설치되어 있는 것이 특징입니다.</p>
+                    </div>
+                  </div>
 
-                        const badgeType = product.badgeType || 'recommend';
-                        const badgeText = product.badgeText || '추천상품';
-
-                        return (
-                          <div
-                            key={product.id}
-                            className="product-item"
-                            onClick={async () => {
-                              // productScheduleData를 기반으로 선택된 호텔 정보 생성
-                              const selectedHotels = await getSelectedHotelsFromSchedule(product);
-                              
-                              // 상품명을 RecoilStore에 저장
-                              const productNameFromSchedule = getProductNameFromSchedule(product);
-                              setProductName(productNameFromSchedule);
-
-                              // 일차별 호텔 정보 파싱
-                              const hotelInfoPerDay = getHotelInfoPerDay(selectedHotels);
-                              
-                              navigate('/counsel/rest/hotelcost', { 
-                                state: {
-                                  hotelInfo: hotelInfo,
-                                  productInfo: product,
-                                  city: CITY,
-                                  selectedHotels: selectedHotels,
-                                  hotelInfoPerDay: hotelInfoPerDay
-                                }
-                              });
-                              window.scrollTo(0, 0);
-
-                            }}
-                          >
-                            <div className="product-header">
-                              <span className="product-header-text">{headerText}</span>
+                  {highlightItems.length > 0 && (
+                    <div className="highlight-section">
+                      <div className="section-title">핵심 포인트</div>
+                      <div className="highlight-list">
+                        {highlightItems.map(({ image, title, notice }, index) => (
+                          <div className="highlight-item" key={`${title}-${index}`}>
+                            <div className="highlight-image-wrap">
+                              <img src={image} alt={title} />
                             </div>
-                            <div className="product-content">
-                              <p className="product-name">
-                                {productName}
-                              </p>
-                              <div className="product-badge-wrapper">
-                                <div className={`product-badge badge-${badgeType}`}>
-                                  <span>{badgeText}</span>
+                            <div className="highlight-item-title">{title}</div>
+                            <div className="highlight-item-desc">
+                              {notice || '세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {benefitItems.length > 0 && (
+                    <div className={`benefit-section`}>
+                      <div className="section-title">베네핏 & 포함사항</div>
+                      <div className="benefit-items">
+                        {benefitItems.map(({ title, text, image }, index) => (
+                          <div key={title} className="benefit-item">
+                            <img className="rectangle" alt="Rectangle" src={image} />
+                            <div className={`benefit-card benefit-card-${index + 1}`}>
+                              <div className="benefit-title">{title}</div>
+                              <div className="benefit-text">{text}</div>
+                            </div>
+                            <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
+                              실론투어
+                              <br />
+                              단독특전2
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 후기 및 평점 섹션 */}
+                  {/* <div className='component'>
+                  
+                    <div className="review-section">
+                      <h2 className="section-title">후기 및 평점</h2>
+                      
+                      <div className="review-list">
+                        {reviewItems.map((review) => (
+                          <div key={review.id} className="review-item">
+                            <img className="review-image" alt="후기 이미지" src={review.image} />
+                            <div className="review-content">
+                              <div className="review-header">
+                                <h3 className="review-title">{review.title}</h3>
+                                <div className="review-rating">
+                                  <RatingBoard rating={review.rating} ratingSize={20} />
                                 </div>
-                                <p className="product-land-company">{product.landCompany}</p>
                               </div>
                               
+                              <p className="review-text">
+                                {review.text.split('\n').map((line, index, arr) => (
+                                  <React.Fragment key={index}>
+                                    {line}
+                                    {index < arr.length - 1 && <br />}
+                                  </React.Fragment>
+                                ))}
+                              </p>
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div> */}
+
+                  {/* <div className="location-info-section">
+                    <div className="section-title">호텔위치</div>
+                    <div className="location-content-wrapper">
+                      <div className="location-text-panel">
+                        <div className="location-address">
+                          {hotelInfo?.hotelAddress || ''}
+                        </div>
+                        <div className="location-nearby-list">
+                          <div className="location-nearby-item">
+                            <div className="location-nearby-item-icon-name">
+                              <span className="location-icon">◎</span>
+                              <span className="location-name">발리 국립 골프 클럽</span>
+                            </div>
+                            <span className="location-time">도보 5분</span>
+                          </div>
+                          <div className="location-nearby-item">
+                            <div className="location-nearby-item-icon-name">
+                              <span className="location-icon">◎</span>
+                              <span className="location-name">게러그비치</span>
+                            </div>
+                            <span className="location-time">도보 12분</span>
+                          </div>
+                          <div className="location-nearby-item">
+                            <div className="location-nearby-item-icon-name">  
+                              <span className="location-icon">◎</span>
+                              <span className="location-name">발리 컬렉션 쇼핑센터</span>
+                            </div>
+                            <span className="location-time">도보 17분</span>
+                          </div>
+                          <div className="location-nearby-item">
+                            <div className="location-nearby-item-icon-name">  
+                              <span className="location-icon">◎</span>
+                              <span className="location-name">웅우라라이 국제공항</span>
+                            </div>
+                            <span className="location-time">차로 20분</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="location-map-panel">
+                        <div className="location-map-placeholder">
+                          <GoogleMap />
+                        </div>
+                      </div>
+                    </div>
+                  </div> */}
+
+                  {/* imageAllView 이미지 전부 표시 */}
+                  <div className="tab-preview-images">
+                    {imageAllView && imageAllView.length > 0 ? (
+                      imageAllView.map((img: any, index: number) => {
+                        console.log(img);
+                        const imageName = typeof img === 'string' ? img : img.imageName;
+                        const title = typeof img === 'object' && img.title ? img.title : '';
+                        const isVideo = isVideoFile(imageName);
+                        return (
+                          <div key={`all-view-${index}`} className="preview-image-item">
+                            <div className="preview-image-wrapper">
+                              {isVideo ? (
+                                <video
+                                  className="preview-image"
+                                  controls
+                                  src={`${AdminURL}/images/hotelimages/${imageName}`}
+                                >
+                                  브라우저가 비디오 태그를 지원하지 않습니다.
+                                </video>
+                              ) : (
+                                <img
+                                  className="preview-image"
+                                  alt={title || `전경 이미지 ${index + 1}`}
+                                  src={`${AdminURL}/images/hotelimages/${imageName}`}
+                                />
+                              )}
+                            </div>
+                            <div className="preview-image-title">{title}</div>
+                            <div className="preview-image-notice">{img.notice}</div>
                           </div>
                         );
                       })
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        minHeight: '400px',
+                        color: '#999',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        width: '100%'
+                      }}>
+                        이미지가 없습니다.
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
 
-              {activeRightTab === 'custom' && (
-                <div className="benefit-card-section">
-                  <div className="hotel-cards-section">
-                    <div className="hotel-cards">
-                      {hotelDetails.map((hotel, index) => {
-                        const nights = selectedNights[hotel.id] || hotel.nights || 1;
-                        const hotelSort = hotel.hotelType || hotel.hotelSort || '리조트';
-                        
+                </>
+              ) : (
+                <div className="photo-gallery">
+                  {activeTab === 1 && roomTypes.length > 0 ? (
+                    <>
+                      {/* Rooms 타이틀 */}
+                      <div className="rooms-title" style={{ 
+                        fontSize: '32px', 
+                        fontWeight: 'bold', 
+                        marginBottom: '20px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginTop: '30px'
+                      }}>
+                        <img src={roomIcon} alt="Rooms" style={{ width: '200px' }} />
+                      </div>
+                      
+                      {/* 객실 타입 텍스트 표시 (클릭 가능) */}
+                      <div className="room-type-tabs" style={{
+                        display: 'flex',
+                        marginBottom: '32px',
+                        flexWrap: 'wrap',
+                        paddingBottom: '16px',
+                        justifyContent: 'center'
+                      }}>
+                        {roomTypes.map((room: any, index: number) => (
+                          <span
+                            key={room.roomTypeName}
+                            onClick={() => {
+                              const roomTypeName = room.roomTypeName;
+                              const ref = roomTypeRefs.current.get(roomTypeName);
+                              if (ref) {
+                                ref.scrollIntoView({ 
+                                  behavior: 'smooth', 
+                                  block: 'start' 
+                                });
+                              }
+                            }}
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: '400',
+                              color: '#666',
+                              borderBottom: index < roomTypes.length - 1 ? 'none' : 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'color 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#333';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#666';
+                            }}
+                          >
+                            <span style={{ fontSize: '16px', fontWeight: '400', color: 'inherit', marginRight: '0' }}>{room.roomTypeName}</span>
+                            {index < roomTypes.length - 1 && (
+                              <span style={{ color: '#ccc', margin:'0 15px' }}>|</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      {/* 모든 객실의 이미지들을 리스트로 표시 */}
+                      <div className="room-images-grid" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '48px',
+                        width: '100%'
+                      }}>
+                        {roomTypes.map((room: any) => {
+                          const roomImages = getImagesByRoomType(room.roomTypeName);
+                          
+                          if (roomImages.length === 0) {
+                            return null;
+                          }
+                          
+                          return (
+                            <div 
+                              key={room.roomTypeName} 
+                              ref={(el) => {
+                                if (el) {
+                                  roomTypeRefs.current.set(room.roomTypeName, el);
+                                } else {
+                                  roomTypeRefs.current.delete(room.roomTypeName);
+                                }
+                              }}
+                              style={{ width: '100%' }}
+                            >
+                              {/* 객실 이름 */}
+                              <div style={{
+                                fontSize: '24px',
+                                fontWeight: '600',
+                                marginBottom: '24px',
+                                textAlign: 'center'
+                              }}>
+                                {room.roomTypeName}
+                              </div>
+                              
+                              {/* 해당 객실의 이미지들 */}
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '24px'
+                              }}>
+                                {roomImages.map((img: any, imgIndex: number) => {
+                                  const isVideo = isVideoFile(img.imageName);
+                                  
+                                  if (isVideo) {
+                                    return (
+                                      <div key={imgIndex} className="photo-main" style={{ width: '100%' }}>
+                                        <video
+                                          className="photo-main-image"
+                                          controls
+                                          src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                          style={{ width: '100%' }}
+                                        >
+                                          브라우저가 비디오 태그를 지원하지 않습니다.
+                                        </video>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  return (
+                                    <div key={imgIndex} className="photo-main" style={{ width: '100%' }}>
+                                      <img
+                                        className="photo-main-image"
+                                        alt={img.title || `${room.roomTypeName} 이미지 ${imgIndex + 1}`}
+                                        src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                        style={{ width: '100%' }}
+                                      />
+                                      {img.notice && <div className="photo-main-notice">{img.notice}</div>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {(() => {
+                        const images = getCurrentImages();
+                        if (images && images.length > 0) {
+                          return images.map((img: any, index: number) => {
+                            const isVideo = isVideoFile(img.imageName);
+                            
+                            if (isVideo) {
+                              return (
+                                <div key={index} className="photo-main">
+                                  <video
+                                    className="photo-main-image"
+                                    controls
+                                    src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                  >
+                                    브라우저가 비디오 태그를 지원하지 않습니다.
+                                  </video>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <div key={index} className="photo-main">
+                                <img
+                                  className="photo-main-image"
+                                  alt={img.title || `이미지 ${index + 1}`}
+                                  src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                />
+                                <div className="photo-main-title">{img.title}</div>
+                                <div className="photo-main-notice">{img.notice}</div>
+                              </div>
+                            );
+                          });
+                        }
                         return (
-                          <div key={hotel.id} className="hotel-card">
-                            <div className="hotel-card-day">{index + 1}일차</div>
-                            <div className="hotel-card-header">
-                              <div className="hotel-card-badge">
-                                {hotelSort}
-                              </div>
-                              <div className="hotel-card-title">{hotel.hotelNameKo}</div>
-                            </div>
-                            <div className="hotel-card-content">
-                              <div className="hotel-card-nights-control">
-                                <button
-                                  className="nights-btn"
-                                  onClick={() => handleNightsChange(hotel.id, -1)}
-                                  disabled={nights <= 1}
-                                >
-                                  -
-                                </button>
-                                <span className="nights-value">{nights}박</span>
-                                <button
-                                  className="nights-btn"
-                                  onClick={() => handleNightsChange(hotel.id, 1)}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
+                          <div className="photo-main">
+                            <img
+                              className="photo-main-image"
+                              alt="메인 이미지"
+                              src={rectangle580}
+                            />
                           </div>
                         );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 저장 버튼 */}
-                  <div className="save-button-section">
-                    <button className="save-button" onClick={handleSave}>
-                      만들기
-                    </button>
-                  </div>
+                      })()}
+                    </>
+                  )}
                 </div>
               )}
             </div>
+
+            <div className="related-products-btn-wrapper">
+              <button 
+                className="related-products-btn"
+                onClick={() => {
+                  setShowRightPanel(true);
+                  setActiveRightTab('schedule');
+                }}
+              >
+                관련 상품 보기
+              </button>
+            </div>
           </div>
-        )}
-        
+
+          {/* 오른쪽 영역: 실론투어 베네핏 및 하루 일정 */}
+          {showRightPanel && (
+            <div className="right-section">
+              {/* 탭 컨텐츠 */}
+              <div className="right-tab-content">
+                {/* 닫기 버튼 */}
+                <button
+                  type="button"
+                  className="right-panel-close-btn"
+                  onClick={() => setShowRightPanel(false)}
+                >
+                  <IoMdClose />
+                </button>
+
+                {/* 탭 컨테이너 */}
+                <div className="right-tab-container">
+                  <div className="right-tab-left">
+                    <button
+                      type="button"
+                      className={`right-tab-button right-tab-schedule ${activeRightTab === 'schedule' ? 'active' : ''}`}
+                      onClick={() => setActiveRightTab('schedule')}
+                    >
+                      상품보기
+                    </button>
+                    <button
+                      type="button"
+                      className={`right-tab-button right-tab-benefit ${activeRightTab === 'custom' ? 'active' : ''}`}
+                      onClick={() => setActiveRightTab('custom')}
+                    >
+                      일정만들기
+                    </button>
+                  </div>
+                </div>
+              
+
+                {activeRightTab === 'schedule' && (
+                  <div className="product-section">
+                    
+                    <div className="product-list">
+                      {products.length === 0 ? (
+                        <div className="empty-message">연관된 여행상품이 없습니다.</div>
+                      ) : (
+                        products.map((product: any) => {
+                          // 헤더 텍스트
+                          const headerText =
+                            product.headerText ||
+                            `${product.nation || ''} 추천상품`;
+                          
+                          // 상품명 (productScheduleData 기반으로 생성)
+                          const productName = getProductNameFromSchedule(product);
+
+                          const badgeType = product.badgeType || 'recommend';
+                          const badgeText = product.badgeText || '추천상품';
+
+                          return (
+                            <div
+                              key={product.id}
+                              className="product-item"
+                              onClick={async () => {
+                                // productScheduleData를 기반으로 선택된 호텔 정보 생성
+                                const selectedHotels = await getSelectedHotelsFromSchedule(product);
+                                
+                                // 상품명을 RecoilStore에 저장
+                                const productNameFromSchedule = getProductNameFromSchedule(product);
+                                setProductName(productNameFromSchedule);
+
+                                // 일차별 호텔 정보 파싱
+                                const hotelInfoPerDay = getHotelInfoPerDay(selectedHotels);
+                                
+                                navigate('/counsel/rest/hotelcost', { 
+                                  state: {
+                                    hotelInfo: hotelInfo,
+                                    productInfo: product,
+                                    city: CITY,
+                                    selectedHotels: selectedHotels,
+                                    hotelInfoPerDay: hotelInfoPerDay
+                                  }
+                                });
+                                window.scrollTo(0, 0);
+
+                              }}
+                            >
+                              <div className="product-header">
+                                <span className="product-header-text">{headerText}</span>
+                              </div>
+                              <div className="product-content">
+                                <p className="product-name">
+                                  {productName}
+                                </p>
+                                <div className="product-badge-wrapper">
+                                  <div className={`product-badge badge-${badgeType}`}>
+                                    <span>{badgeText}</span>
+                                  </div>
+                                  <p className="product-land-company">{product.landCompany}</p>
+                                </div>
+                                
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeRightTab === 'custom' && (
+                  <div className="benefit-card-section">
+                    <div className="hotel-cards-section">
+                      <div className="hotel-cards">
+                        {hotelDetails.map((hotel, index) => {
+                          const nights = selectedNights[hotel.id] || hotel.nights || 1;
+                          const hotelSort = hotel.hotelType || hotel.hotelSort || '리조트';
+                          
+                          return (
+                            <div key={hotel.id} className="hotel-card">
+                              <div className="hotel-card-day">{index + 1}일차</div>
+                              <div className="hotel-card-header">
+                                <div className="hotel-card-badge">
+                                  {hotelSort}
+                                </div>
+                                <div className="hotel-card-title">{hotel.hotelNameKo}</div>
+                              </div>
+                              <div className="hotel-card-content">
+                                <div className="hotel-card-nights-control">
+                                  <button
+                                    className="nights-btn"
+                                    onClick={() => handleNightsChange(hotel.id, -1)}
+                                    disabled={nights <= 1}
+                                  >
+                                    -
+                                  </button>
+                                  <span className="nights-value">{nights}박</span>
+                                  <button
+                                    className="nights-btn"
+                                    onClick={() => handleNightsChange(hotel.id, 1)}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 저장 버튼 */}
+                    <div className="save-button-section">
+                      <button className="save-button" onClick={handleSave}>
+                        만들기
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+        </div>
       </div>
     </div>
   );

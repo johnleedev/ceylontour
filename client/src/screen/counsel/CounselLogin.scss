@@ -1,0 +1,96 @@
+@mixin middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+};
+
+.MainAdmin {
+  background-color: #fff;
+
+  > .inner {
+    @include middle();
+
+    .loginBox {
+      width: 500px;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 150px;
+
+      .logintitle {
+        font-size: 30px;
+        background-color: #fff;
+        font-weight: bold;
+        color: #2b9be0;
+        margin-bottom: 50px;
+        text-align: center;
+      }
+      
+      .inputbox {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        justify-content: space-between;
+
+        .icon { 
+          width: 40px;
+          height: 40px;
+          background-color: #2b9be0;
+          @include middle();
+          color: #fff;
+          font-size: 20px;
+        }
+        .addInput {
+          width: calc(100% - 30px);
+          height: 40px;
+          text-align: left;
+          padding-left: 7px;
+        }
+
+        .name {
+          width: 15%;
+          
+        }
+        .addInput2 {
+          width: 85%;
+          height: 40px;
+          text-align: left;
+          padding-left: 7px;
+        }
+      }
+
+      .btn-row {
+        width: 100%;
+        height: 53px;
+        padding: 5px 10px;
+        border-radius: 3px;
+        background-color: #2b9be0;
+        text-align: center;
+        margin-top: 15px;
+        @include middle();
+  
+        p {
+          color:#fff;
+          font-weight: bold;
+        }
+      }
+      .btn-row:hover {
+        cursor: pointer;
+        background-color: #85c4e2;
+      }
+
+      .btn-logister-row {
+        width: 100%;
+        text-align: end;
+        margin-top: 20px;
+        p {
+
+        }
+        p:hover {
+          cursor: pointer;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+}

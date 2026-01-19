@@ -12,9 +12,15 @@ var cors = require('cors');
 var HomeRouter = require('./routes/Home');
 var ProductRestRouter = require('./ProductRest');
 var ProductTourRouter = require('./ProductTour');
+var ProductEstimateRouter = require('./ProductEstimate');
 app.use('/home', HomeRouter);
+app.use('/ceylontour/productrest', ProductRestRouter);
+app.use('/ceylontour/producttour', ProductTourRouter);
+app.use('/ceylontour/productestimate', ProductEstimateRouter);
+app.use('/ceylontour', ProductEstimateRouter); // /ceylontour/getEstimateList, /ceylontour/getEstimate/:id 지원
 app.use('/productrest', ProductRestRouter);
 app.use('/producttour', ProductTourRouter);
+app.use('/productestimate', ProductEstimateRouter);
 
 
 // 관리 라우터

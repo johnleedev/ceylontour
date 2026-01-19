@@ -132,7 +132,7 @@ const Header: React.FC = () => {
                       // onClick={()=>{navigate('/logister');}}
                     >회원가입</div>
                     <div className="header-button" 
-                      onClick={()=>{navigate('/counsel');}}
+                      onClick={()=>{navigate('/counsel/login');}}
                     >상담페이지</div>
                   </div>
                 }

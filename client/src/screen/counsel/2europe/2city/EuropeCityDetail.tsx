@@ -4,24 +4,7 @@ import { IoIosArrowForward } from "react-icons/io";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import { useNavigate, useLocation } from 'react-router-dom';
-import rectangle78 from '../../../lastimages/counselrest/hotel/detail/rectangle-78.png';
-import rectangle76 from '../../../lastimages/counselrest/hotel/detail/rectangle-76.png';
-import rectangle665 from '../../../lastimages/counselrest/hotel/detail/rectangle-665.png';
-import rectangle664 from '../../../lastimages/counselrest/hotel/detail/rectangle-664.png';
-import rectangle663 from '../../../lastimages/counselrest/hotel/detail/rectangle-663.png';
 import rectangle580 from '../../../lastimages/counselrest/hotel/detail/rectangle-580.png';
-import rectangle662 from '../../../lastimages/counselrest/hotel/detail/rectangle-662.png';
-import rectangle661 from '../../../lastimages/counselrest/hotel/detail/rectangle-661.png';
-import rectangle619 from '../../../lastimages/counselrest/hotel/detail/rectangle-619.png';
-import rectangle600 from '../../../lastimages/counselrest/hotel/detail/rectangle-600.png';
-import rectangle601 from '../../../lastimages/counselrest/hotel/detail/rectangle-601.png';
-import rectangle673 from '../../../lastimages/counselrest/hotel/detail/rectangle-673.png';
-import rectangle674 from '../../../lastimages/counselrest/hotel/detail/rectangle-674.png';
-import rectangle675 from '../../../lastimages/counselrest/hotel/detail/rectangle-675.png';
-import rectangle676 from '../../../lastimages/counselrest/hotel/detail/rectangle-676.png';
-import rectangle677 from '../../../lastimages/counselrest/hotel/detail/rectangle-677.png';
-import reviewimage from '../../../lastimages/counselrest/hotel/detail/review.png';
-import RatingBoard from '../../../common/RatingBoard';
 import { useEffect } from 'react';
 import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
@@ -60,6 +43,8 @@ export default function EuropeCityDetail() {
   const [imageEnt, setImageEnt] = React.useState<any[]>([]); // 입장/체험
   const [imageEvent, setImageEvent] = React.useState<any[]>([]); // 경기/공연
   const [imageCafe, setImageCafe] = React.useState<any[]>([]); // 레스토랑/카페
+  const [imageMainPoint, setImageMainPoint] = React.useState<any[]>([]);
+  const [imageBenefit, setImageBenefit] = React.useState<any[]>([]);
   const [products, setProducts] = React.useState<any[]>([]);
 
 
@@ -77,8 +62,44 @@ export default function EuropeCityDetail() {
           const copy = [...res.data][0];
           console.log(copy);
           setCityInfo(copy);
+          
+          // 핵심 포인트 이미지 파싱
+          if (copy.imageNamesMainPoint) {
+            try {
+              const parsedMainPoint = JSON.parse(copy.imageNamesMainPoint);
+              if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                setImageMainPoint(parsedMainPoint);
+              } else {
+                setImageMainPoint([]);
+              }
+            } catch (e) {
+              console.error('핵심 포인트 이미지 파싱 오류:', e);
+              setImageMainPoint([]);
+            }
+          } else {
+            setImageMainPoint([]);
+          }
+          
+          // 베네핏 이미지 파싱
+          if (copy.imageNamesBenefit) {
+            try {
+              const parsedBenefit = JSON.parse(copy.imageNamesBenefit);
+              if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                setImageBenefit(parsedBenefit);
+              } else {
+                setImageBenefit([]);
+              }
+            } catch (e) {
+              console.error('베네핏 이미지 파싱 오류:', e);
+              setImageBenefit([]);
+            }
+          } else {
+            setImageBenefit([]);
+          }
         } else {
           setCityInfo(null);
+          setImageMainPoint([]);
+          setImageBenefit([]);
         }
         const response = await axios.get(`${AdminURL}/ceylontour/getschedulenation/${NATION}`);
         if (response.data) {
@@ -90,6 +111,8 @@ export default function EuropeCityDetail() {
       } catch (error) {
         console.error('나라별 여행상품을 가져오는 중 오류 발생:', error);
         setCityInfo(null);
+        setImageMainPoint([]);
+        setImageBenefit([]);
         setProducts([]);
       }
     };
@@ -759,6 +782,13 @@ export default function EuropeCityDetail() {
     setSelectedMainImageIndex(0);
   }, [activeTab]);
 
+  // 도시 탭 변경 시 이미지 탭을 '소개'로 리셋
+  useEffect(() => {
+    if (selectedCityTab !== null) {
+      setActiveTab(0);
+    }
+  }, [selectedCityTab]);
+
   // 데이터가 로드되지 않았다면 상세 내용을 렌더링하지 않음
   if (!cityInfo) {
     return null;
@@ -796,40 +826,24 @@ export default function EuropeCityDetail() {
 
 
  
-  const highlightItems = [
-    { image: rectangle76, title: '주요 명소' },
-    { image: rectangle78, title: '문화 유산' },
-    { image: rectangle76, title: '맛집 추천' },
-    { image: rectangle78, title: '쇼핑 명소' },
-    { image: rectangle76, title: '야경 명소' },
-  ];
+  // 핵심 포인트 아이템 생성 (데이터에서 가져온 이미지 사용)
+  const highlightItems = imageMainPoint.map((item: any) => ({
+    image: `${AdminURL}/images/cityimages/${item.imageName}`,
+    title: item.title || '',
+    notice: item.notice || '',
+  }));
 
-  const benefitItems = [
-    {
-      title: '주요 명소',
-      text: '도시의 대표적인 관광 명소와 역사적 장소',
-      image: rectangle76,
-    },
-    {
-      title: '문화 유산',
-      text: '유네스코 세계문화유산과 박물관',
-      image: rectangle78,
-    },
-    {
-      title: '맛집 추천',
-      text: '현지 맛집과 미슐랭 레스토랑',
-      image: rectangle76,
-    },
-    {
-      title: '쇼핑 명소',
-      text: '명품 쇼핑몰과 현지 시장',
-      image: rectangle619,
-    },
-  ];
+  // 베네핏 아이템 생성 (데이터에서 가져온 이미지 사용)
+  const benefitItems = imageBenefit.map((item: any) => ({
+    title: item.title || '',
+    text: item.notice || '',
+    image: `${AdminURL}/images/cityimages/${item.imageName}`,
+  }));
 
 
   return (
     <div className="EuropeCityDetail">
+      <div className="city-detail-container">
       {/* 왼쪽 상단 뒤로가기 버튼 */}
       {/* <button
         type="button"
@@ -853,8 +867,8 @@ export default function EuropeCityDetail() {
       <div className={`city-container ${showRightPanel ? 'with-right-panel' : 'without-right-panel'}`}>
         {/* 왼쪽 영역: 기존 내용 */}
         <div className="left-section">
-          {/* 상단 헤더 이미지 (오른쪽 패널이 닫혀있을 때만 표시, 스크롤에 포함) */}
-          {!showRightPanel && (
+        
+          {/* {!showRightPanel && (
             <div className="city-header-image">
               <img
                 className="header-image-media"
@@ -876,10 +890,48 @@ export default function EuropeCityDetail() {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
+
+          {/* Breadcrumb Navigation */}
+          <div className="breadcrumb-nav-wrapper">
+            <div className="breadcrumb-nav">
+              <span 
+                className="breadcrumb-item"
+                onClick={() => navigate('/counsel')}
+              >
+                HOME
+              </span>
+              <IoIosArrowForward className="breadcrumb-separator"/>
+              <span 
+                className="breadcrumb-item"
+                onClick={() => navigate('/counsel/europe')}
+              >
+                유럽
+              </span>
+              {NATION && (
+                <>
+                  <IoIosArrowForward className="breadcrumb-separator"/>
+                  <span 
+                    className="breadcrumb-item"
+                    onClick={() => navigate(-1)}
+                  >
+                    {NATION}
+                  </span>
+                </>
+              )}
+              {/* {cityInfo?.cityKo && (
+                <>
+                  <IoIosArrowForward className="breadcrumb-separator"/>
+                  <span className="breadcrumb-item breadcrumb-item-current">
+                    {cityInfo.cityKo}
+                  </span>
+                </>
+              )} */}
+            </div>
+          </div>
           {/* 도시 탭 (GO 버튼으로 진입한 경우에만 표시) */}
           {!fromDetail && fromGo && cityDetails.length > 0 && (
-            <div className="city-tabs-container" style={{marginTop: showRightPanel ? '50px' : '0px'}}> 
+            <div className="city-tabs-container"> 
               <div className="city-tabs-left">
                 {cityDetails.map((city, index) => (
                   <button
@@ -895,42 +947,6 @@ export default function EuropeCityDetail() {
             </div>
           )}
           <div className="city-center-wrapper">
-
-            {/* Breadcrumb Navigation */}
-            <div className="breadcrumb-nav">
-              <span 
-                className="breadcrumb-item"
-                onClick={() => navigate('/counsel')}
-              >
-                Home
-              </span>
-              <span className="breadcrumb-separator"> - </span>
-              <span 
-                className="breadcrumb-item"
-                onClick={() => navigate('/counsel/europe')}
-              >
-                유럽
-              </span>
-              {NATION && (
-                <>
-                  <span className="breadcrumb-separator"> - </span>
-                  <span 
-                    className="breadcrumb-item"
-                    onClick={() => navigate(-1)}
-                  >
-                    {NATION}
-                  </span>
-                </>
-              )}
-              {cityInfo?.cityKo && (
-                <>
-                  <span className="breadcrumb-separator"> - </span>
-                  <span className="breadcrumb-item breadcrumb-item-current">
-                    {cityInfo.cityKo}
-                  </span>
-                </>
-              )}
-            </div>
 
             <div className="room-container-wrapper">
               <div className="room-container-left">
@@ -970,51 +986,55 @@ export default function EuropeCityDetail() {
                   </div>
                 </div>
 
-                <div className="highlight-section">
-                  <div className="section-title">핵심 포인트</div>
-                  <div className="highlight-list">
-                    {highlightItems.map(({ image, title }) => (
-                      <div className="highlight-item" key={title}>
-                        <div className="highlight-image-wrap">
-                          <img src={image} alt={title} />
+                {highlightItems.length > 0 && (
+                  <div className="highlight-section">
+                    <div className="section-title">핵심 포인트</div>
+                    <div className="highlight-list">
+                      {highlightItems.map(({ image, title, notice }, index) => (
+                        <div className="highlight-item" key={`${title}-${index}`}>
+                          <div className="highlight-image-wrap">
+                            <img src={image} alt={title} />
+                          </div>
+                          <div className="highlight-item-title">{title}</div>
+                          <div className="highlight-item-desc">
+                            {notice || '도시의 주요 관광 명소와 문화적 가치'}
+                          </div>
                         </div>
-                        <div className="highlight-item-title">{title}</div>
-                        <div className="highlight-item-desc">
-                          도시의 주요 관광 명소와 문화적 가치
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className={`benefit-section`}>
-                  <div className="section-title">베네핏 & 포함사항</div>
-                  <div className="benefit-items">
-                    {benefitItems.map(({ title, text, image }, index) => (
-                      <div key={title} className="benefit-item">
-                        <img className="rectangle" alt="Rectangle" src={image} />
-                        <div className={`benefit-card benefit-card-${index + 1}`}>
-                          <div className="benefit-title">{title}</div>
-                          <div className="benefit-text">{text}</div>
+                {benefitItems.length > 0 && (
+                  <div className={`benefit-section`}>
+                    <div className="section-title">베네핏 & 포함사항</div>
+                    <div className="benefit-items">
+                      {benefitItems.map(({ title, text, image }, index) => (
+                        <div key={`${title}-${index}`} className="benefit-item">
+                          <img className="rectangle" alt="Rectangle" src={image} />
+                          <div className={`benefit-card benefit-card-${index + 1}`}>
+                            <div className="benefit-title">{title}</div>
+                            <div className="benefit-text">{text}</div>
+                          </div>
+                          <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
+                            실론투어
+                            <br />
+                            단독특전2
+                          </div>
                         </div>
-                        <div className={`benefit-ribbon benefit-ribbon-${index + 1}`}>
-                          실론투어
-                          <br />
-                          단독특전2
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="location-info-section">
+                {/* <div className="location-info-section">
                   <div className="section-title">위치</div>
                   <div className="location-content-wrapper">
                      <div className="location-map-placeholder">
                         <GoogleMap />
                       </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="city-basic-images">
                   <img src={`${AdminURL}/images/citymapinfo/${cityInfo.courseImage}`} alt={cityInfo.cityKo} />
@@ -1024,6 +1044,7 @@ export default function EuropeCityDetail() {
                 <div className="tab-preview-images">
                   {imageNotice && imageNotice.length > 0 ? (
                     imageNotice.map((img: any, index: number) => {
+                      console.log(img);
                       const imageName = typeof img === 'string' ? img : img.imageName;
                       const title = typeof img === 'object' && img.title ? img.title : '';
                       const isVideo = isVideoFile(imageName);
@@ -1046,6 +1067,8 @@ export default function EuropeCityDetail() {
                               />
                             )}
                           </div>
+                          <div className="preview-image-title">{title}</div>
+                          <div className="preview-image-notice">{img.notice}</div>
                         </div>
                       );
                     })
@@ -1098,6 +1121,8 @@ export default function EuropeCityDetail() {
                             alt={title || `도시 이미지 ${index + 1}`}
                             src={`${AdminURL}/images/cityimages/${imageName}`}
                           />
+                          <div className="photo-main-title">{title}</div>
+                          <div className="photo-main-notice">{img.notice}</div>
                         </div>
                       );
                     });
@@ -1119,6 +1144,17 @@ export default function EuropeCityDetail() {
                 })()}
               </div>
             )}
+          </div>
+          <div className="related-products-btn-wrapper">
+            <button 
+              className="related-products-btn"
+              onClick={() => {
+                setShowRightPanel(true);
+                setActiveRightTab('product');
+              }}
+            >
+              관련 상품 보기
+            </button>
           </div>
         </div>
 
@@ -1660,8 +1696,79 @@ export default function EuropeCityDetail() {
                               ? `${schedule.tourPeriodData.periodNight} ${schedule.tourPeriodData.periodDay}`
                               : '';
                             
-                            // 상세 정보는 productName에서 추출하거나 nation 배열을 기반으로 생성
+                            // 장바구니 도시 목록 가져오기 (cityCart에서 직접 가져오기)
+                            const cartCityNames = cityCart.length > 0 
+                              ? cityCart.map(item => item.cityKo).filter(Boolean)
+                              : [];
+
+                            // 스케줄의 도시 정보 추출 (productScheduleData 또는 productName에서)
+                            let scheduleCities: string[] = [];
+                            try {
+                              if (schedule.productScheduleData && schedule.productScheduleData !== '[]' && schedule.productScheduleData.trim() !== '') {
+                                const parsed = JSON.parse(schedule.productScheduleData);
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                  scheduleCities = parsed.map((item: any) => {
+                                    if (typeof item === 'string') {
+                                      return item;
+                                    } else if (item && typeof item === 'object') {
+                                      return item.city || item.cityKo || '';
+                                    }
+                                    return '';
+                                  }).filter(Boolean);
+                                }
+                              }
+                            } catch (e) {
+                              // 파싱 실패 시 무시
+                            }
+                            
+                            // productScheduleData에서 도시를 추출하지 못했으면 productName에서 추출
+                            if (scheduleCities.length === 0 && schedule.productName) {
+                              const nameParts = schedule.productName.split('+').map((part: string) => {
+                                return part.trim().replace(/\s*\d+\s*(박|일)\s*/g, '').trim();
+                              });
+                              scheduleCities = nameParts.filter(Boolean);
+                            }
+
+                            // 장바구니에 담긴 도시인지 확인하는 함수
+                            const isCityInCart = (cityName: string) => {
+                              if (cartCityNames.length === 0) return false;
+                              const cityTrimmed = cityName.trim();
+                              return cartCityNames.some(cartCity => {
+                                const cartCityTrimmed = cartCity.trim();
+                                return cityTrimmed === cartCityTrimmed || 
+                                       cityTrimmed.includes(cartCityTrimmed) || 
+                                       cartCityTrimmed.includes(cityTrimmed);
+                              });
+                            };
+
+                            // 도시명을 개별적으로 렌더링하여 장바구니 도시와 매칭되는 경우 색상 표시
+                            const renderCityDetail = () => {
+                              // 도시 정보가 있고 장바구니에 도시가 있을 때만 색상 표시
+                              if (scheduleCities.length > 0 && cartCityNames.length > 0) {
+                                return scheduleCities.map((city: string, cityIndex: number) => {
+                                  const isHighlighted = isCityInCart(city);
+                                  
+                                  return (
+                                    <span key={cityIndex}>
+                                      {cityIndex > 0 && <span> + </span>}
+                                      <span style={{
+                                        color: isHighlighted ? '#5fb7ef' : '#666',
+                                        fontWeight: isHighlighted ? '600' : '400',
+                                        backgroundColor: isHighlighted ? 'rgba(95, 183, 239, 0.1)' : 'transparent',
+                                        padding: isHighlighted ? '2px 4px' : '0',
+                                        borderRadius: isHighlighted ? '4px' : '0'
+                                      }}>
+                                        {city}
+                                      </span>
+                                    </span>
+                                  );
+                                });
+                              } else {
+                                // 도시명이 없거나 장바구니가 비어있으면 기본 표시
                             const detailText = schedule.productName || schedule.nation.join(' + ');
+                                return detailText;
+                              }
+                            };
 
                             return (
                               <div 
@@ -1670,15 +1777,21 @@ export default function EuropeCityDetail() {
                                 onClick={async () => {
                                   if (schedule.id) {
                                     try {
+                                      // 원본 products 배열에서 해당 스케줄의 전체 데이터 찾기
+                                      const originalProduct = products.find((p: any) => p.id === schedule.id);
+                                      
+                                      // 원본 데이터가 있으면 그것을 사용, 없으면 schedule 객체 사용
+                                      const productDataToSend = originalProduct || schedule;
+                                      
                                       // 상품명을 RecoilStore에 저장
-                                      const productNameToSave = schedule.productName || schedule.nation.join(' + ') + (schedule.tourPeriodData.periodNight && schedule.tourPeriodData.periodDay ? ` ${schedule.tourPeriodData.periodNight} ${schedule.tourPeriodData.periodDay}` : '');
+                                      const productNameToSave = productDataToSend.productName || schedule.productName || schedule.nation.join(' + ') + (schedule.tourPeriodData.periodNight && schedule.tourPeriodData.periodDay ? ` ${schedule.tourPeriodData.periodNight} ${schedule.tourPeriodData.periodDay}` : '');
                                       setProductName(productNameToSave);
                                       
-                                      // 전체 일정 정보를 RecoilStore에 저장
-                                      setSelectedScheduleProduct(schedule);
+                                      // 전체 일정 정보를 RecoilStore에 저장 (원본 데이터 사용)
+                                      setSelectedScheduleProduct(productDataToSend);
                                     
-                                      // 페이지 전환
-                                      navigate(`/counsel/europe/schedulerecommend`, { state: schedule });
+                                      // 페이지 전환 (원본 데이터 전달)
+                                      navigate(`/counsel/europe/schedulerecommend`, { state: productDataToSend });
                                       window.scrollTo(0, 0);
                                     } catch (error) {
                                       console.error('일정 선택 중 오류 발생:', error);
@@ -1692,7 +1805,7 @@ export default function EuropeCityDetail() {
                                   <h4 className="schedule-item-title">
                                    {schedule.nation.join(' + ')} {periodText}
                                   </h4>
-                                  <p className="schedule-item-detail">{detailText}</p>
+                                  <p className="schedule-item-detail">{renderCityDetail()}</p>
                                 </div>
                                 {index === 0 && groupKey === (cityInfo?.nation || '') && (
                                   <button className="schedule-item-badge recommend">추천상품</button>
@@ -1763,6 +1876,8 @@ export default function EuropeCityDetail() {
           </div>
         )}
         
+      </div>
+
       </div>
     </div>
   );

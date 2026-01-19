@@ -18,6 +18,23 @@ export const recoilExchangeAuthKey = atom({
 });
 
 
+// 로그인 사용자 정보 저장
+export interface UserInfo {
+  name: string;
+  userId: string;
+  auth: string;
+}
+
+export const recoilUserInfo = atom<UserInfo>({
+  key: "userInfo",
+  default: {
+    name: '',
+    userId: '',
+    auth: ''
+  }
+});
+
+
 export const recoilCounselFormData = atom({
   key: "counselFormData",
   default: {

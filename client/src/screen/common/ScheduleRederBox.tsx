@@ -632,8 +632,11 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
                           let hotelNameForDay: string | undefined = undefined;
                           let hotelLevelForDay: string | undefined = undefined;
                           
-                          // hotelInfoPerDay만 있을 때 (휴양지 경로)
-                          if (props.hotelInfoPerDay && !props.cityInfoPerDay) {
+                          // 마지막 day인지 확인
+                          const isLastDay = dayIndex === schedule.scheduleDetailData.length - 1;
+                          
+                          // hotelInfoPerDay만 있을 때 (휴양지 경로) - 마지막 day가 아닐 때만 실행
+                          if (!isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay) {
                             const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
                               info.dayIndex === dayIndex
                             );
@@ -659,8 +662,8 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
                             }
                           }
                           
-                          // 유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때
-                          if (props.hotelInfoPerDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
+                          // 유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때 - 마지막 day가 아닐 때만 실행
+                          if (!isLastDay && props.hotelInfoPerDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
                             // scheduleDetail 배열에서 location 값을 찾기
                             for (const detail of dayItem.scheduleDetail) {
                               if (detail.location && typeof detail.location === 'string') {
@@ -1147,7 +1150,10 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
             let hotelNameForDay: string | undefined = undefined;
             let hotelLevelForDay: string | undefined = undefined;
             
-            if (props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
+            // 마지막 day인지 확인
+            const isLastDay = dayIndex === scheduleData.length - 1;
+            
+            if (!isLastDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
               const cityInfoPerDay = props.cityInfoPerDay; // 변수에 할당하여 TypeScript 오류 방지
               // scheduleDetail 배열에서 location 값을 찾기 (모든 location을 순회)
               for (const detail of dayItem.scheduleDetail) {
@@ -1252,8 +1258,8 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
               }
             }
             
-            // hotelInfoPerDay만 있을 때 (휴양지 경로)
-            if (props.hotelInfoPerDay && !props.cityInfoPerDay) {
+            // hotelInfoPerDay만 있을 때 (휴양지 경로) - 마지막 day가 아닐 때만 실행
+            if (!isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay) {
               const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
                 info.dayIndex === dayIndex
               );
@@ -1315,13 +1321,34 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
             const allCityNamesSet = new Set<string>();
             cityNamesForDay.forEach(city => allCityNamesSet.add(city));
             matchedCityNamesFromLocations.forEach(city => allCityNamesSet.add(city));
-            const allCityNames = Array.from(allCityNamesSet);
+            
+            // cityInfoPerDay의 dayIndex 순서대로 정렬
+            let allCityNames: string[] = [];
+            if (props.cityInfoPerDay && allCityNamesSet.size > 0) {
+              const cityInfoPerDay = props.cityInfoPerDay;
+              // dayIndex 순서대로 도시명 정렬
+              const sortedCities: string[] = [];
+              cityInfoPerDay.forEach((cityInfo: { dayIndex: number; cityName: string }) => {
+                if (allCityNamesSet.has(cityInfo.cityName) && !sortedCities.includes(cityInfo.cityName)) {
+                  sortedCities.push(cityInfo.cityName);
+                }
+              });
+              // cityInfoPerDay에 없는 도시는 뒤에 추가
+              allCityNamesSet.forEach(city => {
+                if (!sortedCities.includes(city)) {
+                  sortedCities.push(city);
+                }
+              });
+              allCityNames = sortedCities;
+            } else {
+              allCityNames = Array.from(allCityNamesSet);
+            }
             
             // cityNamesForDay 배열을 하이픈으로 연결
-            const cityNameForDay = allCityNames.length > 0 ? allCityNames.join('-') : undefined;
+            const cityNameForDay = allCityNames.length > 0 ? allCityNames.join(' - ') : undefined;
             
-            // 호텔 정보 매칭 (같은 도시가 여러 박인 경우, 각 박마다 호텔 정보 매칭)
-            if (props.hotelInfoPerDay && props.cityInfoPerDay && cityNameForDay && !hotelNameForDay) {
+            // 호텔 정보 매칭 (같은 도시가 여러 박인 경우, 각 박마다 호텔 정보 매칭) - 마지막 day가 아닐 때만 실행
+            if (!isLastDay && props.hotelInfoPerDay && props.cityInfoPerDay && cityNameForDay && !hotelNameForDay) {
               const cityInfoPerDay = props.cityInfoPerDay; // 변수에 할당하여 TypeScript 오류 방지
               // cityNameForDay에서 첫 번째 도시명 추출 (하이픈으로 연결된 경우)
               const firstCityName = cityNameForDay.split('-')[0];
@@ -1401,9 +1428,11 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
 
                       <div className="schedule-floating-box-hotel">
                         <span className="schedule-floating-box-hotel-name">
-                          {props.cityInfoPerDay
-                            ? (cityNameForDay || '')
-                            : (dayItem.hotel || '-')}
+                          {isLastDay 
+                            ? '' 
+                            : (props.cityInfoPerDay
+                                ? (cityNameForDay || '')
+                                : (dayItem.hotel || '-'))}
                         </span>
                       </div>
 
@@ -1440,7 +1469,7 @@ export default function ScheduleRederBox (props : ScheduleRederBoxProps) {
                           </div>
                         ))}
                         
-                        {displayHotelName && (
+                        {!isLastDay && displayHotelName && (
                           <div className="schedule-floating-box-hotel-info">
                             <div className="schedule-floating-box-hotel-info-label">호텔</div>
                             <div className="schedule-floating-box-hotel-info-name">{displayHotelName}</div>
