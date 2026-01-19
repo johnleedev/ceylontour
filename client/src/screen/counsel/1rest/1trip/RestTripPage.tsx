@@ -137,7 +137,10 @@ export default function RestTripPage () {
         return acc;
       }, []);
       
-      setDestinations(uniqueDestinations);
+      // 가나다순 정렬
+      const sortedDestinations = uniqueDestinations.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      
+      setDestinations(sortedDestinations);
     } catch (error) {
       console.error('도시 리스트를 가져오는 중 오류 발생:', error);
       // 에러 발생 시 빈 배열 설정
@@ -207,12 +210,12 @@ export default function RestTripPage () {
                         <span className="text-wrapper-airtime-label">비행시간 약 </span>
                         <span className="text-wrapper-airtime-value">{city.airTime}</span>
                       </p>
-                      <div className='nation-departure'>
+                      {/* <div className='nation-departure'>
                         {city.departure.length > 0 
                           ? city.departure.map((dep, idx) => `${dep}출발`).join('ㅣ')
                           : '인천출발ㅣ부산출발'
                         }
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 ))

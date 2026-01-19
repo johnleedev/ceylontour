@@ -122,7 +122,7 @@ export default function EuropeScheduleCost() {
   // 플로팅 박스용 상태
   const [expandedLocationDays, setExpandedLocationDays] = React.useState<Set<number>>(new Set());
   
-  const [cityCards, setCityCards] = React.useState<Array<{ id: number; city: string; travelPeriod: string; nights: number }>>([]);
+  const [cityCards, setCityCards] = React.useState<Array<{ id: number; city: string; travelPeriod: string; nights: number; isPending?: boolean }>>([]);
   const [selectedNights, setSelectedNights] = React.useState<{ [key: number]: number }>({});
   // 드래그 앤 드롭 관련 state
   const [draggedCardId, setDraggedCardId] = React.useState<number | null>(null);
@@ -230,11 +230,31 @@ export default function EuropeScheduleCost() {
     return scheduleDetailList.filter((item: any) => item.sort === summarySubTab);
   }, [scheduleDetailList, summarySubTab]);
   
-  // productScheduleData에서 도시 목록 추출 (스케줄 선택 시 productScheduleData 우선 사용)
+  // 상품명에서 도시 목록 추출 함수 (인라인으로 정의)
+  const extractCitiesFromProductNameInline = React.useCallback((productName: string): string[] => {
+    if (!productName) return [];
+    
+    // "파리 2박 + 아를 2박" 형식에서 도시명만 추출
+    const parts = productName.split('+').map(part => part.trim());
+    const cities: string[] = [];
+    
+    parts.forEach(part => {
+      // "도시명 숫자박" 형식에서 도시명 추출
+      const match = part.match(/^([^0-9]+?)\s*\d+박/);
+      if (match && match[1]) {
+        cities.push(match[1].trim());
+      }
+    });
+    
+    return cities;
+  }, []);
+
+  // productScheduleData에서 도시 목록 추출 (상품명에 있는 도시만 표시)
   const cities = React.useMemo(() => {
-    // cityCards가 있으면 우선 사용 (편집 중인 경우)
+    // cityCards가 있으면 우선 사용 (편집 중인 경우) - pending 카드 제외, 정식 카드만
     if (cityCards.length > 0) {
       const cityList = cityCards
+        .filter((card) => !card.isPending) // pending 카드 제외
         .map((card) => card.city)
         .filter((city: string) => city && city.trim() !== '' && city !== '도시 선택 필요');
       if (cityList.length > 0) {
@@ -260,38 +280,14 @@ export default function EuropeScheduleCost() {
       }
     }
     
-    // Recoil의 cityCart에서 도시 목록 추출 (장바구니에서 온 경우)
-    if (cityCart && cityCart.length > 0) {
-      const cityList = cityCart
-        .map((item) => item.cityKo)
-        .filter((city: string) => city && city.trim() !== '');
-      if (cityList.length > 0) {
-        return Array.from(new Set(cityList));
-      }
-    }
-    
-    // productScheduleData가 없으면 selectedCities에서 추출 (우선순위 3)
-    if (stateProps?.selectedCities && Array.isArray(stateProps.selectedCities)) {
-      const cityList = stateProps.selectedCities
-        .map((city: any) => city?.cityKo || city?.city || '')
-        .filter((city: string) => city && city.trim() !== '');
-      if (cityList.length > 0) {
-        return Array.from(new Set(cityList));
-      }
-    }
-    
-    // stateProps의 cityCart에서 추출 (우선순위 4)
-    if (stateProps?.cityCart && Array.isArray(stateProps.cityCart)) {
-      const cityList = stateProps.cityCart
-        .map((item: any) => item?.cityKo || item?.city || '')
-        .filter((city: string) => city && city.trim() !== '');
-      if (cityList.length > 0) {
-        return Array.from(new Set(cityList));
-      }
+    // 상품명에서 도시 추출 (장바구니 제외, 상품명에 있는 도시만)
+    const productNameCities = extractCitiesFromProductNameInline(savedProductName || stateProps?.productName || '');
+    if (productNameCities.length > 0) {
+      return Array.from(new Set(productNameCities));
     }
     
     return [];
-  }, [cityCards, cityCart, stateProps?.productScheduleData, stateProps?.selectedCities, stateProps?.cityCart]);
+  }, [cityCards, stateProps?.productScheduleData, savedProductName, stateProps?.productName, extractCitiesFromProductNameInline]);
 
   // productScheduleData에서 일차별 도시 정보 추출
   const cityInfoPerDay = React.useMemo(() => {
@@ -433,7 +429,8 @@ export default function EuropeScheduleCost() {
           return `${year}-${month}-${day}`;
         };
         
-        const travelPeriod = `${formatDate(arrivalDate)} ~ ${formatDate(departureDate)}`;
+        // const travelPeriod = `${formatDate(arrivalDate)} ~ ${formatDate(departureDate)}`;
+        const travelPeriod = `${formatDate(arrivalDate)}`;
         
         currentDate = new Date(departureDate);
         
@@ -450,15 +447,79 @@ export default function EuropeScheduleCost() {
     }
   }, [cityCards, selectedNights, stateProps?.productScheduleData, customerInfo.travelPeriodStart]);
 
+  // 상품명에서 도시 목록 추출 함수
+  const extractCitiesFromProductName = React.useCallback((productName: string): string[] => {
+    if (!productName) return [];
+    
+    // "파리 2박 + 아를 2박" 형식에서 도시명만 추출
+    const parts = productName.split('+').map(part => part.trim());
+    const cities: string[] = [];
+    
+    parts.forEach(part => {
+      // "도시명 숫자박" 형식에서 도시명 추출
+      const match = part.match(/^([^0-9]+?)\s*\d+박/);
+      if (match && match[1]) {
+        cities.push(match[1].trim());
+      }
+    });
+    
+    return cities;
+  }, []);
+
   // cityCards 초기화 (citiesWithInfo가 변경될 때)
   useEffect(() => {
     if (citiesWithInfo.length > 0 && cityCards.length === 0) {
-      setCityCards(citiesWithInfo.map((item, index) => ({
+      const initialCards = citiesWithInfo.map((item, index) => ({
         id: item.id || index + 1,
         city: item.city,
         travelPeriod: item.travelPeriod,
         nights: item.nights
-      })));
+      }));
+      
+      // 상품명에서 도시 목록 추출
+      const productNameCities = extractCitiesFromProductName(savedProductName || stateProps?.productName || '');
+      
+      // 장바구니에는 있지만 상품명에 없는 도시 찾기
+      const pendingCities: Array<{ id: number; city: string; travelPeriod: string; nights: number; isPending: boolean }> = [];
+      
+      if (cityCart && cityCart.length > 0) {
+        const cartCityNames = cityCart.map(item => item.cityKo).filter(Boolean);
+        
+        cartCityNames.forEach((cartCity) => {
+          const cartCityTrimmed = cartCity.trim();
+          
+          // 상품명에 포함되어 있는지 확인
+          const isInProductName = productNameCities.some(productCity => {
+            const productCityTrimmed = productCity.trim();
+            return productCityTrimmed === cartCityTrimmed || 
+                   productCityTrimmed.includes(cartCityTrimmed) || 
+                   cartCityTrimmed.includes(productCityTrimmed);
+          });
+          
+          // cityCards에도 없는지 확인
+          const isInCityCards = initialCards.some(card => {
+            const cardCityTrimmed = card.city.trim();
+            return cardCityTrimmed === cartCityTrimmed || 
+                   cardCityTrimmed.includes(cartCityTrimmed) || 
+                   cartCityTrimmed.includes(cardCityTrimmed);
+          });
+          
+          // 상품명에도 없고 cityCards에도 없으면 pending으로 추가
+          if (!isInProductName && !isInCityCards) {
+            const maxId = Math.max(...initialCards.map(c => c.id), 0);
+            pendingCities.push({
+              id: maxId + pendingCities.length + 1,
+              city: cartCityTrimmed,
+              travelPeriod: '',
+              nights: 1,
+              isPending: true
+            });
+          }
+        });
+      }
+      
+      // 초기 카드와 pending 카드 합치기
+      setCityCards([...initialCards, ...pendingCities]);
       
       // selectedNights 초기화
       const initialNights: { [key: number]: number } = {};
@@ -468,7 +529,7 @@ export default function EuropeScheduleCost() {
       });
       setSelectedNights(initialNights);
     }
-  }, [citiesWithInfo]);
+  }, [citiesWithInfo, savedProductName, stateProps?.productName, cityCart, extractCitiesFromProductName]);
 
   // 박수 추출 헬퍼 함수
   const extractNightsNumber = (nightsStr: string | number): number => {
@@ -480,9 +541,11 @@ export default function EuropeScheduleCost() {
 
   // 상품명 업데이트 함수
   const updateProductNameFromCards = React.useCallback((cards: any[], nights: { [key: number]: number }) => {
-    if (cards.length === 0) return;
+    // pending 카드는 제외하고 상품명 업데이트
+    const regularCards = cards.filter(card => !card.isPending);
+    if (regularCards.length === 0) return;
     
-    const nameParts = cards.map((card) => {
+    const nameParts = regularCards.map((card) => {
       const nightsValue = nights[card.id] || card.nights || 1;
       return `${card.city} ${nightsValue}박`;
     });
@@ -515,10 +578,16 @@ export default function EuropeScheduleCost() {
 
   // 드래그 앤 드롭 핸들러
   const handleDragStart = React.useCallback((e: React.DragEvent, cardId: number) => {
+    // pending 카드는 드래그 불가
+    const card = cityCards.find(c => c.id === cardId);
+    if (card && card.isPending) {
+      e.preventDefault();
+      return;
+    }
     setDraggedCardId(cardId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', '');
-  }, []);
+  }, [cityCards]);
 
   const handleDragOver = React.useCallback((e: React.DragEvent, cardId: number) => {
     if (draggedCardId === null || draggedCardId === cardId) return;
@@ -539,6 +608,16 @@ export default function EuropeScheduleCost() {
       return;
     }
 
+    const draggedCard = cityCards.find(c => c.id === draggedCardId);
+    const targetCard = cityCards.find(c => c.id === targetCardId);
+    
+    // pending 카드는 드래그 앤 드롭 불가
+    if (draggedCard?.isPending || targetCard?.isPending) {
+      setDraggedCardId(null);
+      setDragOverCardId(null);
+      return;
+    }
+
     const draggedIndex = cityCards.findIndex(c => c.id === draggedCardId);
     const targetIndex = cityCards.findIndex(c => c.id === targetCardId);
 
@@ -549,11 +628,12 @@ export default function EuropeScheduleCost() {
     }
 
     const updatedCards = [...cityCards];
-    const [draggedCard] = updatedCards.splice(draggedIndex, 1);
-    updatedCards.splice(targetIndex, 0, draggedCard);
+    const [draggedCardItem] = updatedCards.splice(draggedIndex, 1);
+    updatedCards.splice(targetIndex, 0, draggedCardItem);
 
     setCityCards(updatedCards);
-    updateProductNameFromCards(updatedCards, selectedNights);
+    const regularCards = updatedCards.filter(c => !c.isPending);
+    updateProductNameFromCards(regularCards, selectedNights);
     setDraggedCardId(null);
     setDragOverCardId(null);
   }, [draggedCardId, cityCards, selectedNights, updateProductNameFromCards]);
@@ -565,7 +645,8 @@ export default function EuropeScheduleCost() {
 
   // 도시 카드 삭제 함수
   const handleDeleteCard = React.useCallback((cardId: number) => {
-    if (cityCards.length <= 1) {
+    const regularCards = cityCards.filter(c => !c.isPending);
+    if (regularCards.length <= 1) {
       alert('최소 1개의 도시는 유지해야 합니다.');
       return;
     }
@@ -583,7 +664,8 @@ export default function EuropeScheduleCost() {
       return newNights;
     });
     
-    updateProductNameFromCards(updatedCards, selectedNights);
+    const regularCardsAfterDelete = updatedCards.filter(c => !c.isPending);
+    updateProductNameFromCards(regularCardsAfterDelete, selectedNights);
   }, [cityCards, selectedNights, updateProductNameFromCards]);
 
   // 도시 추가 함수
@@ -631,8 +713,9 @@ export default function EuropeScheduleCost() {
         return `${year}-${month}-${day}`;
       };
 
-      // 현재 상품에 포함된 도시 목록
-      const currentProductCities = cityCards.map(card => card.city).filter(city => city && city !== '도시 선택 필요');
+      // 현재 상품에 포함된 도시 목록 (pending 제외)
+      const regularCards = cityCards.filter(card => !card.isPending);
+      const currentProductCities = regularCards.map(card => card.city).filter(city => city && city !== '도시 선택 필요');
       
       // 장바구니에서 현재 상품에 없는 도시 찾기
       let cityToAdd: string | null = null;
@@ -654,11 +737,12 @@ export default function EuropeScheduleCost() {
         }
       }
 
-      const newCard = {
+      const newCard: { id: number; city: string; travelPeriod: string; nights: number; isPending?: boolean } = {
         id: Math.max(...cityCards.map(c => c.id), 0) + 1,
         city: cityToAdd || '도시 선택 필요',
         travelPeriod: `${formatDate(arrivalDate)} ~ ${formatDate(departureDate)}`,
-        nights: 1
+        nights: 1,
+        isPending: false
       };
 
       const updatedCards = [...cityCards, newCard];
@@ -707,11 +791,117 @@ export default function EuropeScheduleCost() {
         setScheduleInfo(newScheduleInfo);
       }
       
-      updateProductNameFromCards(updatedCards, { ...selectedNights, [newCard.id]: 1 });
+      const regularCardsAfterAdd = updatedCards.filter(c => !c.isPending);
+      updateProductNameFromCards(regularCardsAfterAdd, { ...selectedNights, [newCard.id]: 1 });
     } finally {
       setIsAddingCity(false);
     }
-  }, [cityCards, selectedNights, customerInfo.travelPeriodStart, updateProductNameFromCards, cityCart, scheduleInfo, setScheduleInfo, isAddingCity]);
+  }, [cityCards, selectedNights, customerInfo.travelPeriodStart, updateProductNameFromCards, cityCart, scheduleInfo, setScheduleInfo, isAddingCity, extractCitiesFromProductName]);
+
+  // pending 도시를 정식 카드로 변환하는 함수
+  const handleAddPendingCity = React.useCallback((cardId: number) => {
+    const cardIndex = cityCards.findIndex(c => c.id === cardId);
+    if (cardIndex < 0) return;
+    
+    const pendingCard = cityCards[cardIndex];
+    if (!pendingCard.isPending) return;
+    
+    setIsAddingCity(true);
+    
+    try {
+      // 마지막 정식 카드의 날짜 계산
+      const regularCards = cityCards.filter(c => !c.isPending);
+      let startDate: Date | null = null;
+      if (customerInfo.travelPeriodStart) {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(customerInfo.travelPeriodStart.trim())) {
+          startDate = new Date(customerInfo.travelPeriodStart.trim());
+        }
+      }
+      
+      if (!startDate) {
+        startDate = new Date();
+      }
+      
+      // 마지막 정식 카드의 출발일 계산
+      let currentDate = new Date(startDate);
+      regularCards.forEach((card) => {
+        const nights = selectedNights[card.id] || card.nights || 1;
+        currentDate.setDate(currentDate.getDate() + nights);
+      });
+      
+      const arrivalDate = new Date(currentDate);
+      const departureDate = new Date(currentDate);
+      departureDate.setDate(departureDate.getDate() + 1);
+      
+      const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      // pending 카드를 정식 카드로 변환
+      const updatedCards = [...cityCards];
+      updatedCards[cardIndex] = {
+        ...pendingCard,
+        isPending: false,
+        travelPeriod: `${formatDate(arrivalDate)} ~ ${formatDate(departureDate)}`,
+        nights: 1
+      };
+      
+      setCityCards(updatedCards);
+      
+      // selectedNights에 새 카드 추가
+      setSelectedNights(prev => ({
+        ...prev,
+        [cardId]: 1
+      }));
+      
+      // scheduleInfo.scheduleDetailData에 마지막 day의 내용을 복사해서 새로운 day에 추가하고, 마지막 day를 빈 일정으로 초기화
+      if (scheduleInfo && scheduleInfo.scheduleDetailData && Array.isArray(scheduleInfo.scheduleDetailData)) {
+        const newScheduleInfo = { 
+          ...scheduleInfo,
+          airlineData: scheduleInfo.airlineData || { sort: '', airlineCode: [] }
+        };
+        const newScheduleDetailData = [...newScheduleInfo.scheduleDetailData];
+        
+        // 마지막 day가 있는 경우
+        if (newScheduleDetailData.length > 0) {
+          const lastDayIndex = newScheduleDetailData.length - 1;
+          const lastDay = newScheduleDetailData[lastDayIndex];
+          
+          // 마지막 day의 내용을 깊은 복사하여 새로운 day로 추가
+          const copiedDay = JSON.parse(JSON.stringify(lastDay));
+          newScheduleDetailData.push(copiedDay);
+          
+          // 마지막 day를 빈 일정으로 초기화
+          newScheduleDetailData[lastDayIndex] = createEmptyDay();
+        } else {
+          // 일정이 없으면 빈 day 1개 추가
+          newScheduleDetailData.push(createEmptyDay());
+        }
+        
+        newScheduleInfo.scheduleDetailData = newScheduleDetailData;
+        setScheduleInfo(newScheduleInfo);
+      } else {
+        // scheduleInfo가 없으면 기본 구조를 만들고 빈 day 1개 추가
+        const newScheduleInfo = {
+          airlineData: scheduleInfo?.airlineData || { sort: '', airlineCode: [] },
+          scheduleDetailData: scheduleInfo?.scheduleDetailData && Array.isArray(scheduleInfo.scheduleDetailData) && scheduleInfo.scheduleDetailData.length > 0
+            ? [...scheduleInfo.scheduleDetailData, createEmptyDay()]
+            : [createEmptyDay()]
+        };
+        setScheduleInfo(newScheduleInfo);
+      }
+      
+      // 정식 카드만으로 상품명 업데이트
+      const regularCardsAfterUpdate = updatedCards.filter(c => !c.isPending);
+      updateProductNameFromCards(regularCardsAfterUpdate, { ...selectedNights, [cardId]: 1 });
+    } finally {
+      setIsAddingCity(false);
+    }
+  }, [cityCards, selectedNights, customerInfo.travelPeriodStart, updateProductNameFromCards, scheduleInfo, setScheduleInfo, isAddingCity]);
 
   // 도시 선택 모달 열기
   const handleCityNameClick = React.useCallback(async (cardId: number) => {
@@ -2799,7 +2989,71 @@ export default function EuropeScheduleCost() {
                           const currentNights = cityCards.length > 0 
                             ? (selectedNights[cardId] || cityInfo.nights || 1)
                             : cityInfo.nights;
+                          const isPending = cityCards.length > 0 && (cityInfo as any).isPending === true;
                           
+                          // pending 도시인 경우 간단한 UI 표시
+                          if (isPending) {
+                            return (
+                              <div 
+                                key={cardId} 
+                                className="selected-city-card" 
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '20px',
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#f5f5f5',
+                                  opacity: 0.7,
+                                  position: 'relative'
+                                }}
+                              >
+                                <span 
+                                  className="city-name" 
+                                  style={{ 
+                                    fontSize: '14px', 
+                                    fontWeight: 500, 
+                                    color: '#666',
+                                    flex: 1
+                                  }}
+                                >
+                                  {cityInfo.city}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddPendingCity(cardId)}
+                                  disabled={isAddingCity}
+                                  style={{
+                                    padding: '6px 16px',
+                                    border: '1px solid #333',
+                                    backgroundColor: isAddingCity ? '#f5f5f5' : '#fff',
+                                    color: isAddingCity ? '#999' : '#333',
+                                    fontSize: '14px',
+                                    fontWeight: '500',
+                                    cursor: isAddingCity ? 'not-allowed' : 'pointer',
+                                    borderRadius: '6px',
+                                    transition: 'all 0.2s',
+                                    opacity: isAddingCity ? 0.6 : 1
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isAddingCity) {
+                                      e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isAddingCity) {
+                                      e.currentTarget.style.backgroundColor = '#fff';
+                                    }
+                                  }}
+                                >
+                                  {isAddingCity ? '추가 중...' : '추가'}
+                                </button>
+                              </div>
+                            );
+                          }
+                          
+                          // 정식 도시 카드
                           return (
                             <div 
                               key={cardId} 
@@ -2819,12 +3073,12 @@ export default function EuropeScheduleCost() {
                                 borderTop: dragOverCardId === cardId && draggedCardId !== cardId ? '3px solid #5fb7ef' : 'none',
                                 cursor: 'move'
                               }}
-                              draggable={true}
-                              onDragStart={(e) => handleDragStart(e, cardId)}
-                              onDragOver={(e) => handleDragOver(e, cardId)}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, cardId)}
-                              onDragEnd={handleDragEnd}
+                              draggable={!isPending}
+                              onDragStart={(e) => !isPending && handleDragStart(e, cardId)}
+                              onDragOver={(e) => !isPending && handleDragOver(e, cardId)}
+                              onDragLeave={!isPending ? handleDragLeave : undefined}
+                              onDrop={(e) => !isPending && handleDrop(e, cardId)}
+                              onDragEnd={!isPending ? handleDragEnd : undefined}
                             >
                               <div style={{width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <span 
@@ -2846,8 +3100,8 @@ export default function EuropeScheduleCost() {
                                   {cityInfo.city}
                                 </span>
                                 <span className="travel-period" style={{ 
-                                  width: '30%', fontSize: '14px', color: '#666', flex: 1, textAlign: 'center' }}>{cityInfo.travelPeriod}</span>
-                                <div style={{ width: '25%', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  width: '25%', fontSize: '14px', color: '#666', flex: 1, textAlign: 'center' }}>{cityInfo.travelPeriod}</span>
+                                <div style={{ width: '35%', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <button 
                                     type="button"
                                     onClick={() => {
@@ -2855,7 +3109,8 @@ export default function EuropeScheduleCost() {
                                         const newNights = currentNights - 1;
                                         setSelectedNights(prev => {
                                           const newNightsState = { ...prev, [cardId]: newNights };
-                                          updateProductNameFromCards(cityCards, newNightsState);
+                                          const regularCards = cityCards.filter(c => !c.isPending);
+                                          updateProductNameFromCards(regularCards, newNightsState);
                                           return newNightsState;
                                         });
                                       }
@@ -2883,7 +3138,8 @@ export default function EuropeScheduleCost() {
                                       const newNights = currentNights + 1;
                                       setSelectedNights(prev => {
                                         const newNightsState = { ...prev, [cardId]: newNights };
-                                        updateProductNameFromCards(cityCards, newNightsState);
+                                        const regularCards = cityCards.filter(c => !c.isPending);
+                                        updateProductNameFromCards(regularCards, newNightsState);
                                         return newNightsState;
                                       });
                                     }}
@@ -2910,14 +3166,14 @@ export default function EuropeScheduleCost() {
                                       handleDeleteCard(cardId);
                                     }
                                   }}
-                                  disabled={(cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1}
+                                  disabled={(cityCards.length > 0 ? cityCards.filter(c => !c.isPending) : citiesWithInfo).length <= 1}
                                   style={{
                                     padding: '4px 8px',
                                     border: '1px solid #ddd',
-                                    backgroundColor: (cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1 ? '#f5f5f5' : '#fff',
-                                    color: (cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1 ? '#ccc' : '#e74c3c',
+                                    backgroundColor: (cityCards.length > 0 ? cityCards.filter(c => !c.isPending) : citiesWithInfo).length <= 1 ? '#f5f5f5' : '#fff',
+                                    color: (cityCards.length > 0 ? cityCards.filter(c => !c.isPending) : citiesWithInfo).length <= 1 ? '#ccc' : '#e74c3c',
                                     fontSize: '12px',
-                                    cursor: (cityCards.length > 0 ? cityCards : citiesWithInfo).length <= 1 ? 'not-allowed' : 'pointer',
+                                    cursor: (cityCards.length > 0 ? cityCards.filter(c => !c.isPending) : citiesWithInfo).length <= 1 ? 'not-allowed' : 'pointer',
                                     borderRadius: '4px',
                                     transition: 'all 0.2s',
                                     display: 'flex',
@@ -2927,13 +3183,13 @@ export default function EuropeScheduleCost() {
                                     height: '24px'
                                   }}
                                   onMouseEnter={(e) => {
-                                    if ((cityCards.length > 0 ? cityCards : citiesWithInfo).length > 1) {
+                                    if ((cityCards.length > 0 ? cityCards.filter(c => !c.isPending) : citiesWithInfo).length > 1) {
                                       e.currentTarget.style.backgroundColor = '#fee';
                                       e.currentTarget.style.borderColor = '#e74c3c';
                                     }
                                   }}
                                   onMouseLeave={(e) => {
-                                    if ((cityCards.length > 0 ? cityCards : citiesWithInfo).length > 1) {
+                                    if ((cityCards.length > 0 ? cityCards.filter(c => !c.isPending) : citiesWithInfo).length > 1) {
                                       e.currentTarget.style.backgroundColor = '#fff';
                                       e.currentTarget.style.borderColor = '#ddd';
                                     }

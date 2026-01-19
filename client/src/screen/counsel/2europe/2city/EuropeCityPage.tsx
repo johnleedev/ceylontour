@@ -300,11 +300,11 @@ export default function EuropeCityPage() {
                         {city.weather.split('\n')[0]}
                       </p>
                     )}
-                    {city.tourNotice && (
+                    {/* {city.tourNotice && (
                       <p className="promo-text" style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                         {city.tourNotice}
                       </p>
-                    )}
+                    )} */}
                   </div>
                 </div>
               );

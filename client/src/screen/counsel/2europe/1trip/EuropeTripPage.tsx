@@ -148,7 +148,10 @@ export default function EuropeTripPage () {
             })
         : [];
       
-      setDestinations(nationDestinations);
+      // 가나다순 정렬
+      const sortedDestinations = nationDestinations.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      
+      setDestinations(sortedDestinations);
     } catch (error) {
       console.error('나라 리스트를 가져오는 중 오류 발생:', error);
       // 에러 발생 시 빈 배열 설정
