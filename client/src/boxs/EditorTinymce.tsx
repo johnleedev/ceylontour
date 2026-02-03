@@ -35,7 +35,7 @@ export const EditorTinymce: React.FC<EditorTinymceProps> = ({ widthProps, height
 
       {/* 에디터 */}
       <Editor
-        apiKey="ai7ra3v96gya5aj13rvposaswowdh8jcuxq4l99467mq3ee0"
+        apiKey="b26hxjndqbppqzvk25qdsb1zu9x0c8gwzf2ka6cd8qwbmbi0"
         onInit={(evt, editor) => (editorRef.current = editor)}
         value={value}
         onEditorChange={onChange}
