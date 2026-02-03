@@ -154,6 +154,22 @@ export default function RestTripPage () {
     fetchDestinations();
   }, []);
 
+  // 선택된 도시가 변경될 때 해당 카드로 스크롤
+  useEffect(() => {
+    if (selectedCity) {
+      // 약간의 지연을 두어 DOM이 업데이트된 후 스크롤
+      setTimeout(() => {
+        const cardElement = document.querySelector(`[data-city-name="${selectedCity}"]`);
+        if (cardElement) {
+          cardElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+    }
+  }, [selectedCity]);
 
   return (
     <div className="rest-trip-page-wrapper">
@@ -188,6 +204,7 @@ export default function RestTripPage () {
                 destinations.map((city) => (
                   <div 
                     key={city.id} 
+                    data-city-name={city.name}
                     className={`nation-card ${selectedCity === city.name ? 'selected' : ''}`}
                     onClick={() => {
                       console.log(city.rawData);

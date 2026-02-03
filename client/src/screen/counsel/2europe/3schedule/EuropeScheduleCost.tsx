@@ -5,7 +5,7 @@ import '../2city/EuropeCityDetail.scss';
 import { AdminURL } from '../../../../MainURL';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImLocation } from 'react-icons/im';
-import { IoIosArrowBack, IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
+import { IoIosArrowBack, IoIosArrowForward, IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
 import { IoMdClose } from "react-icons/io";
 import { FaRegCircle } from 'react-icons/fa6';
 import RatingBoard from '../../../common/RatingBoard';
@@ -1775,6 +1775,53 @@ export default function EuropeScheduleCost() {
         {/* 좌측 패널 - 도시 정보 */}
         <div className="left-panel">
           <div className="panel-content">
+            {/* Breadcrumb Navigation */}
+            {/* <div className="breadcrumb-nav-wrapper">
+              <div className="breadcrumb-nav">
+                <span 
+                  className="breadcrumb-item"
+                  onClick={() => navigate('/counsel')}
+                >
+                  HOME
+                </span>
+                <IoIosArrowForward className="breadcrumb-separator"/>
+                <span 
+                  className="breadcrumb-item"
+                  onClick={() => navigate('/counsel/europe')}
+                >
+                  유럽
+                </span>
+                {stateProps?.nation && (
+                  <>
+                    <IoIosArrowForward className="breadcrumb-separator"/>
+                    <span 
+                      className="breadcrumb-item"
+                      onClick={() => navigate(-1)}
+                    >
+                      {stateProps.nation}
+                    </span>
+                  </>
+                )}
+                {(() => {
+                  // 첫 번째 도시 가져오기
+                  const firstCity = cityCards.length > 0 
+                    ? cityCards[0]?.city 
+                    : (cityInfoPerDay.length > 0 
+                      ? cityInfoPerDay[0]?.cityName 
+                      : null);
+                  
+                  return firstCity && firstCity !== '도시 선택 필요' ? (
+                    <>
+                      <IoIosArrowForward className="breadcrumb-separator"/>
+                      <span className="breadcrumb-item breadcrumb-item-current">
+                        {firstCity}
+                      </span>
+                    </>
+                  ) : null;
+                })()}
+              </div>
+            </div> */}
+            
             {/* 패널 헤더 */}
             <div className="hotel-title-left-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -2207,6 +2254,7 @@ export default function EuropeScheduleCost() {
                 <div className="tour-hotel-container detail-open">
                   {/* 왼쪽 영역: 헤더 + 호텔 리스트만 */}
                   <div className="left-section">
+                    
                     <div className="hotel-list-wrapper">
                       {/* 호텔 사진 갤러리 및 상세 정보 */}
                       {selectedHotel ? (
@@ -2720,38 +2768,21 @@ export default function EuropeScheduleCost() {
                 <button
                   type="button"
                   onClick={() => {
-                    setRightPanelTopTab('예약하기');
-                    setRightPanelSubTab('예약정보');
-                  }}
-                  style={{
-                    width: '100px',
-                    padding: '6px 14px',
-                    borderRadius: '999px',
-                    border: '1px solid #333',
-                    backgroundColor: rightPanelTopTab === '예약하기' ? '#333' : '#fff',
-                    color: rightPanelTopTab === '예약하기' ? '#fff' : '#333',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  견적
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRightPanelTopTab('수정하기');
-                    setRightPanelSubTab('여행도시');
+                    if (rightPanelTopTab === '수정하기') {
+                      setRightPanelTopTab('예약하기');
+                      setRightPanelSubTab('예약정보');
+                    } else {
+                      setRightPanelTopTab('수정하기');
+                      setRightPanelSubTab('여행도시');
+                    }
                   }}
                   style={{
                     width: '100px',
                     padding: '6px 14px',
                     borderRadius: '999px',
                     border: '1px solid #ddd',
-                    backgroundColor: rightPanelTopTab === '수정하기' ? '#333' : '#fff',
-                    color: rightPanelTopTab === '수정하기' ? '#fff' : '#333',
+                    backgroundColor: '#fff',
+                    color: '#333',
                     fontSize: '13px',
                     fontWeight: 500,
                     cursor: 'pointer',
@@ -2759,7 +2790,7 @@ export default function EuropeScheduleCost() {
                     transition: 'all 0.2s'
                   }}
                 >
-                  수정
+                  {rightPanelTopTab === '수정하기' ? '견적' : '수정'}
                 </button>
               </div>
 
@@ -2891,79 +2922,55 @@ export default function EuropeScheduleCost() {
                     </div>
 
                     {/* 총요금 */}
-                    <div className="cost-hotel-card">
+                    {/* <div className="cost-hotel-card">
                       <label>총요금</label>
                       <div className="reservation-info-value">
                         {selectedHotel?.lowestPrice 
                           ? `${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}원`
                           : '-'}
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
-                  {/* 프로모션 및 할인 섹션 */}
-                  <div style={{ marginTop: '30px', paddingTop: '30px', borderTop: '1px solid #e0e0e0' }}>
-                    {/* 프로모션 적용사항 */}
-                    <div style={{ marginBottom: '30px' }}>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
-                        프로모션 적용사항
+                  {/* 요금 섹션 */}
+                  <div 
+                    className="cost-price-section"
+                    style={{ marginTop: '30px', paddingTop: '30px', borderTop: '1px solid #e0e0e0' }}
+                  >
+                    {/* <div className="cost-price-row">
+                      <div className="cost-price-label">여행기간</div>
+                      <div className="cost-price-input-wrapper">
+                        <input
+                          type="text"
+                          className="cost-price-input"
+                          value={customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                            ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                            : ''}
+                          readOnly
+                        />
+                        <span className="cost-price-calendar-icon">📅</span>
                       </div>
-                      <div style={{ 
-                        padding: '12px',
-                        backgroundColor: '#f9f9f9',
-                        borderRadius: '4px',
-                        minHeight: '100px',
-                        color: '#666',
-                        fontSize: '14px',
-                        lineHeight: '1.6',
-                        whiteSpace: 'pre-line'
-                      }}>
-                        내용을 적는 곳입니다.
-                        {'\n'}내용을 적는 곳입니다.
-                        {'\n'}내용을 적는 곳입니다.
-                        {'\n'}내용을 적는 곳입니다.
+                    </div> */}
+                    {/* <div className="cost-price-row">
+                      <div className="cost-price-label">
+                        {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 ? (
+                          `${Number(selectedHotel.lowestPrice).toLocaleString()}원`
+                        ) : (
+                          <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
+                        )}
                       </div>
-                    </div>
-
-                    {/* 박람회 특가 */}
-                    <div style={{ marginBottom: '30px' }}>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
-                        박람회 특가
-                      </div>
-                      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
-                          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          <span>당일계약</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
-                          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          <span>할인요금</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* 할인 이벤트 */}
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
-                        할인 이벤트
-                      </div>
-                      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
-                          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          <span>계약리뷰</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
-                          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          <span>후기리뷰</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
-                          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          <span>여행 후 평점 참여</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
-                          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                          <span>블로그 작성</span>
-                        </label>
+                      {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 && (
+                        <div className="cost-price-unit">/1인</div>
+                      )}
+                    </div> */}
+                    <div className="cost-price-row">
+                      <div className="cost-price-label">총요금</div>
+                      <div className="cost-price-total">
+                        {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 ? (
+                          `₩${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}`
+                        ) : (
+                          <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2972,6 +2979,34 @@ export default function EuropeScheduleCost() {
 
               {rightPanelTopTab === '수정하기' && rightPanelSubTab === '여행도시' && (
                 <div>
+                  {/* 여행기간 박스 */}
+                  <div style={{
+                    marginBottom: '20px',
+                    padding: '16px',
+                    backgroundColor: '#f9f9f9',
+                    border: '1px solid #e0e0e0',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      color: '#333',
+                      marginRight: '10px'
+                    }}>
+                      여행기간
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#8B8B8B'
+                    }}>
+                      {customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
+                        ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
+                        : '여행기간이 설정되지 않았습니다'}
+                    </div>
+                  </div>
+
                   <div className="selected-cities-section" style={{ marginBottom: '15px' }}>
                     <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 700 }}>여행 도시</h3>
                     {(cityCards.length > 0 ? cityCards : citiesWithInfo).length === 0 ? (
@@ -3519,6 +3554,36 @@ export default function EuropeScheduleCost() {
                   <div className="tour-hotel-container detail-open">
                     {/* 왼쪽 영역: 헤더 + 호텔 리스트만 */}
                     <div className="left-section">
+                      {/* Breadcrumb Navigation */}
+                      <div className="breadcrumb-nav-wrapper">
+                        <div className="breadcrumb-nav">
+                          <span 
+                            className="breadcrumb-item"
+                            onClick={() => navigate('/counsel')}
+                          >
+                            HOME
+                          </span>
+                          <IoIosArrowForward className="breadcrumb-separator"/>
+                          <span 
+                            className="breadcrumb-item"
+                            onClick={() => navigate('/counsel/europe')}
+                          >
+                            유럽
+                          </span>
+                          {stateProps?.nation && (
+                            <>
+                              <IoIosArrowForward className="breadcrumb-separator"/>
+                              <span 
+                                className="breadcrumb-item"
+                                onClick={() => navigate(-1)}
+                              >
+                                {stateProps.nation}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
                       <div className="hotel-list-wrapper">
 
                         {!showPhotoGallery ? (
@@ -3884,55 +3949,87 @@ export default function EuropeScheduleCost() {
                 </div>
               </div>
             </div> */}
-            <div 
-              className="cost-price-section"
-            >
-              <div className="cost-price-row">
-                <div className="cost-price-label">여행기간</div>
-                <div className="cost-price-input-wrapper">
-                  <input
-                    type="text"
-                    className="cost-price-input"
-                    value={customerInfo.travelPeriodStart && customerInfo.travelPeriodEnd
-                      ? `${customerInfo.travelPeriodStart} ~ ${customerInfo.travelPeriodEnd}`
-                      : ''}
-                    readOnly
-                  />
-                  <span className="cost-price-calendar-icon">📅</span>
+            {/* 프로모션 및 할인 섹션 */}
+            <div style={{ 
+              width: '100%',
+              backgroundColor: '#fff',
+              boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.1)',
+              borderRadius: '12px',
+              padding: '30px',
+             }}>
+              {/* 프로모션 적용사항 */}
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
+                  프로모션 적용사항
+                </div>
+                <div style={{ 
+                  padding: '12px',
+                  backgroundColor: '#f9f9f9',
+                  borderRadius: '4px',
+                  minHeight: '100px',
+                  color: '#666',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-line'
+                }}>
+                  내용을 적는 곳입니다.
+                  {'\n'}내용을 적는 곳입니다.
+                  {'\n'}내용을 적는 곳입니다.
+                  {'\n'}내용을 적는 곳입니다.
                 </div>
               </div>
-              <div className="cost-price-row">
-                <div className="cost-price-label">
-                  {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 ? (
-                    `${Number(selectedHotel.lowestPrice).toLocaleString()}원`
-                  ) : (
-                    <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
-                  )}
+
+              {/* 박람회 특가 */}
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
+                  박람회 특가
                 </div>
-                {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 && (
-                  <div className="cost-price-unit">/1인</div>
-                )}
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                    <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                    <span>당일계약</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                    <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                    <span>할인요금</span>
+                  </label>
+                </div>
               </div>
-              <div className="cost-price-row">
-                <div className="cost-price-label">총요금</div>
-                <div className="cost-price-total">
-                  {selectedHotel?.lowestPrice && Number(selectedHotel.lowestPrice) > 0 ? (
-                    `₩${(Number(selectedHotel.lowestPrice) * 2).toLocaleString()}`
-                  ) : (
-                    <span style={{ color: '#999', fontStyle: 'italic' }}>요금이 없습니다</span>
-                  )}
+
+              {/* 할인 이벤트 */}
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#333', marginBottom: '12px' }}>
+                  할인 이벤트
+                </div>
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                    <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                    <span>계약리뷰</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                    <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                    <span>후기리뷰</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                    <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                    <span>여행 후 평점 참여</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#333' }}>
+                    <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                    <span>블로그 작성</span>
+                  </label>
                 </div>
               </div>
             </div>
             
             {/* 하단 버튼 */}
             <div className="cost-schedule-btn-wrapper">
-              <button className="cost-schedule-btn cost-schedule-btn-prev"
+              {/* <button className="cost-schedule-btn cost-schedule-btn-prev"
                 onClick={() => {
                   navigate(-1);
                   window.scrollTo(0, 0);
                 }}
-              >이전</button>
+              >이전</button> */}
               {rightPanelTopTab === '수정하기' && (() => {
                 const tabs = ['여행도시', '여행루트', '호텔', '일정'];
                 const currentIndex = tabs.indexOf(rightPanelSubTab);

@@ -54,6 +54,8 @@ interface FetchScheduleDetailParams {
   hotelInfoPerDay?: Array<{ dayIndex: number; hotelName: string; hotelLevel: string }>;
   // 일차별 도시 정보 (유럽 일정용)
   cityInfoPerDay?: Array<{ dayIndex: number; cityName: string }>;
+  // 선택된 호텔 정보 (실제 호텔명을 가져오기 위해 사용)
+  selectedHotels?: Array<{ index: number; hotelSort: string; dayNight?: string; hotel: any | null }>;
 }
 
 // ModalAddSchedule.tsx 의 fetchScheduleDetailData 로직을 외부에서 재사용하기 위한 함수
@@ -70,6 +72,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
     isAddOrRevise,
     hotelInfoPerDay,
     cityInfoPerDay,
+    selectedHotels,
   } = params;
 
 
@@ -334,7 +337,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
                   id: 0,
                   location: boxData.city || '',
                   locationDetail: JSON.stringify([{
-                    subLocation: boxData.sort ? `[${boxData.sort}]` : '',
+                    subLocation: boxData.subSort ? `[${boxData.subSort}]` : (boxData.sort ? `[${boxData.sort}]` : ''),
                     subLocationContent: '',
                     subLocationDetail: [boxData.id]
                   }])
@@ -536,7 +539,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
             locationIcon,
             airlineData: null,
             locationDetail: [{
-              subLocation: boxData.sort ? `[${boxData.sort}]` : '',
+              subLocation: boxData.subSort ? `[${boxData.subSort}]` : (boxData.sort ? `[${boxData.sort}]` : ''),
               subLocationContent: '',
               isUseContent: false,
               subLocationDetail: [subLocationId]
@@ -564,7 +567,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
         const isViewLocation = originalIsViewLocationMap.has(viewLocationKey)
           ? originalIsViewLocationMap.get(viewLocationKey)
           : true;
-        console.log(`🔍 [2단계] converted - [DAY ${item.dayIdx + 1}] ${item.sort} (idx: ${item.idx}): key = ${viewLocationKey}, isViewLocation = ${isViewLocation}, hasInMap = ${originalIsViewLocationMap.has(viewLocationKey)}`);
+        // console.log(`🔍 [2단계] converted - [DAY ${item.dayIdx + 1}] ${item.sort} (idx: ${item.idx}): key = ${viewLocationKey}, isViewLocation = ${isViewLocation}, hasInMap = ${originalIsViewLocationMap.has(viewLocationKey)}`);
         const useContentInfo = originalIsUseContentMap.get(viewLocationKey);
         const isUseMainContent = useContentInfo?.isUseMainContent !== undefined ? useContentInfo.isUseMainContent : false;
         const mainContent = useContentInfo?.mainContent || '';
@@ -608,7 +611,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
           ? originalIsViewLocationMap.get(viewLocationKey)
           : true;
         const locationIcon = originalLocationIconMap.get(viewLocationKey) || '';
-        console.log(`🔍 [2단계] converted - [DAY ${item.dayIdx + 1}] ${item.sort} (idx: ${item.idx}): key = ${viewLocationKey}, isViewLocation = ${isViewLocation}, hasInMap = ${originalIsViewLocationMap.has(viewLocationKey)}`);
+        // console.log(`🔍 [2단계] converted - [DAY ${item.dayIdx + 1}] ${item.sort} (idx: ${item.idx}): key = ${viewLocationKey}, isViewLocation = ${isViewLocation}, hasInMap = ${originalIsViewLocationMap.has(viewLocationKey)}`);
 
         return {
           id: item.airlineData?.id || 0,
@@ -630,7 +633,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
           ? originalIsViewLocationMap.get(viewLocationKey)
           : true;
         const locationIcon = originalLocationIconMap.get(viewLocationKey) || '';
-        console.log(`🔍 [2단계] converted - [DAY ${item.dayIdx + 1}] ${item.sort} (idx: ${item.idx}): key = ${viewLocationKey}, isViewLocation = ${isViewLocation}, hasInMap = ${originalIsViewLocationMap.has(viewLocationKey)}`);
+        // console.log(`🔍 [2단계] converted - [DAY ${item.dayIdx + 1}] ${item.sort} (idx: ${item.idx}): key = ${viewLocationKey}, isViewLocation = ${isViewLocation}, hasInMap = ${originalIsViewLocationMap.has(viewLocationKey)}`);
 
         return {
           id: trainData?.id || 0,
@@ -960,7 +963,7 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
                   idx: item.idx, // idx 저장
                   airlineData: null,
                   locationDetail: [{
-                    subLocation: boxData.sort ? `[${boxData.sort}]` : '',
+                    subLocation: boxData.subSort ? `[${boxData.subSort}]` : (boxData.sort ? `[${boxData.sort}]` : ''),
                     subLocationContent: '',
                     subLocationDetail: [{
                       id: boxData.id,
@@ -1045,13 +1048,104 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
           });
         }
 
+        // flag 값에서 호텔 타입 추출하는 함수
+        const getHotelTypeFromFlag = (flag: any): string | undefined => {
+          if (flag && flag.fn && Array.isArray(flag.fn)) {
+            if (flag.fst === 'solo' && flag.fn.length > 0) {
+              return flag.fn[0];
+            } else if (flag.fst === 'move' && flag.fn.length >= 2) {
+              return flag.fn[0]; // move일 때는 첫 번째 호텔 타입만 사용
+            }
+          }
+          return undefined;
+        };
+
+        // flag 값에서 호텔 타입 추출
+        const flagHotelType = day.flag ? getHotelTypeFromFlag(day.flag) : undefined;
+        
+        // selectedHotels에서 실제 호텔명 찾기 (flag에서 호텔 타입 추출 후)
+        const getActualHotelNameFromSelectedHotels = (hotelType: string | undefined, currentDayIndex: number): string | undefined => {
+          if (!hotelType || !selectedHotels || selectedHotels.length === 0) return undefined;
+          
+          // selectedHotels를 index 순으로 정렬
+          const sortedSelectedHotels = [...selectedHotels].sort((a: any, b: any) => a.index - b.index);
+          
+          // 같은 hotelSort를 가진 호텔들 찾기 (index 순으로 정렬)
+          const matchingHotels = sortedSelectedHotels
+            .filter((sh: any) => sh.hotelSort === hotelType);
+          if (matchingHotels.length === 0) return undefined;
+          
+          // scheduleDetailData를 순회하면서 각 호텔이 몇 번째 day부터 시작하는지 계산
+          let currentDay = 0;
+          
+          for (let i = 0; i < sortedSelectedHotels.length; i++) {
+            const hotelInfo = sortedSelectedHotels[i];
+            if (!hotelInfo) continue;
+            
+            const nights = parseInt((hotelInfo.dayNight || '1').replace(/[^0-9]/g, '')) || 1;
+            const isFirstHotel = i === 0;
+            const nextHotel = i < sortedSelectedHotels.length - 1 ? sortedSelectedHotels[i + 1] : null;
+            
+            // 현재 호텔의 day 범위 계산
+            let startDay: number;
+            let endDay: number;
+            
+            if (isFirstHotel) {
+              startDay = currentDay;
+              endDay = currentDay + nights - 1;
+              if (nextHotel) {
+                currentDay = currentDay + nights + 1; // 전환일 포함
+              } else {
+                currentDay = endDay + 1;
+              }
+            } else {
+              startDay = currentDay;
+              endDay = currentDay + nights - 1;
+              if (nextHotel) {
+                currentDay = currentDay + nights + 1; // 전환일 포함
+              } else {
+                currentDay = endDay + 1;
+              }
+            }
+            
+            // 현재 dayIndex가 이 호텔의 범위에 속하는지 확인
+            if (hotelInfo.hotelSort === hotelType && currentDayIndex >= startDay && currentDayIndex <= endDay) {
+              // 같은 타입의 호텔 중 몇 번째인지 계산 (현재 호텔 이전의 같은 타입 호텔 개수)
+              let hotelOrderIndex = 0;
+              for (let j = 0; j < i; j++) {
+                if (sortedSelectedHotels[j]?.hotelSort === hotelType) {
+                  hotelOrderIndex++;
+                }
+              }
+              
+              // 해당 순서의 호텔에서 실제 호텔명 가져오기
+              const targetHotel = matchingHotels[hotelOrderIndex];
+              if (targetHotel?.hotel?.hotelNameKo) {
+                return targetHotel.hotel.hotelNameKo;
+              }
+              return undefined;
+            }
+          }
+          
+          return undefined;
+        };
+        
+        // flag에서 호텔 타입 추출 후 selectedHotels에서 실제 호텔명 찾기
+        const actualHotelName = flagHotelType 
+          ? getActualHotelNameFromSelectedHotels(flagHotelType, dayIdx)
+          : undefined;
+        
         // hotelInfoPerDay 또는 cityInfoPerDay에서 해당 일차의 정보 가져오기
         // hotelInfoPerDay가 있으면 호텔 정보를 우선 사용, 없으면 cityInfoPerDay 사용
         const hotelInfoForDay = hotelInfoPerDay?.find(info => info.dayIndex === dayIdx);
         const cityInfoForDay = cityInfoPerDay?.find(info => info.dayIndex === dayIdx);
         
-        // 호텔 정보가 있으면 호텔명을, 없으면 도시 정보 사용
-        const displayName = hotelInfoForDay?.hotelName || cityInfoForDay?.cityName || day.hotel || '';
+        // 호텔명 우선순위: actualHotelName (selectedHotels에서 찾은 실제 호텔명) > flagHotelType (호텔 타입) > hotelInfoForDay > cityInfoForDay > day.hotel
+        const displayName = actualHotelName !== undefined
+          ? actualHotelName
+          : (flagHotelType !== undefined
+            ? flagHotelType
+            : (hotelInfoForDay?.hotelName || cityInfoForDay?.cityName || day.hotel || ''));
         const displayScore = hotelInfoForDay?.hotelLevel || (cityInfoForDay ? '' : day.score || '');
 
         const result = {
@@ -1060,7 +1154,9 @@ export const fetchScheduleDetailDataExternal = async (params: FetchScheduleDetai
           dinner: day.dinner || '',
           hotel: displayName,
           score: displayScore,
-          scheduleDetail: details
+          scheduleDetail: details,
+          // flag 값 보존
+          ...(day.flag && { flag: day.flag })
         };
         // console.log(`✅ [DAY ${dayIdx + 1}] 최종 결과:`, details.map((d: any, i: number) => ({
         //   index: i,

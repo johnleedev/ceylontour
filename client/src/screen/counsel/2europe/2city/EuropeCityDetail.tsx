@@ -10,6 +10,7 @@ import { AdminURL } from '../../../../MainURL';
 import axios from 'axios';
 import Image_morisus from '../../../lastimages/counselrest/trip/mapimage.png';
 import GoogleMap from '../../../common/GoogleMap';
+import RatingBoard from '../../../common/RatingBoard';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { recoilProductName, recoilSelectedScheduleProduct, recoilCityCart, CityCartItem } from '../../../../RecoilStore';
 
@@ -179,7 +180,42 @@ export default function EuropeCityDetail() {
           const firstCity = details[currentCityIndex];
           const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${firstCity.id}`);
           if (res.data && res.data.length > 0) {
-            setCityInfo(res.data[0]);
+            const city = res.data[0];
+            setCityInfo(city);
+            
+            // 핵심 포인트 이미지 파싱
+            if (city.imageNamesMainPoint) {
+              try {
+                const parsedMainPoint = JSON.parse(city.imageNamesMainPoint);
+                if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                  setImageMainPoint(parsedMainPoint);
+                } else {
+                  setImageMainPoint([]);
+                }
+              } catch (e) {
+                console.error('핵심 포인트 이미지 파싱 오류:', e);
+                setImageMainPoint([]);
+              }
+            } else {
+              setImageMainPoint([]);
+            }
+            
+            // 베네핏 이미지 파싱
+            if (city.imageNamesBenefit) {
+              try {
+                const parsedBenefit = JSON.parse(city.imageNamesBenefit);
+                if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                  setImageBenefit(parsedBenefit);
+                } else {
+                  setImageBenefit([]);
+                }
+              } catch (e) {
+                console.error('베네핏 이미지 파싱 오류:', e);
+                setImageBenefit([]);
+              }
+            } else {
+              setImageBenefit([]);
+            }
           }
         } else if (details.length > 0) {
           setSelectedCityTab(0);
@@ -187,7 +223,42 @@ export default function EuropeCityDetail() {
           const firstCity = details[0];
           const res = await axios.get(`${AdminURL}/ceylontour/getcityinfobyid/${firstCity.id}`);
           if (res.data && res.data.length > 0) {
-            setCityInfo(res.data[0]);
+            const city = res.data[0];
+            setCityInfo(city);
+            
+            // 핵심 포인트 이미지 파싱
+            if (city.imageNamesMainPoint) {
+              try {
+                const parsedMainPoint = JSON.parse(city.imageNamesMainPoint);
+                if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                  setImageMainPoint(parsedMainPoint);
+                } else {
+                  setImageMainPoint([]);
+                }
+              } catch (e) {
+                console.error('핵심 포인트 이미지 파싱 오류:', e);
+                setImageMainPoint([]);
+              }
+            } else {
+              setImageMainPoint([]);
+            }
+            
+            // 베네핏 이미지 파싱
+            if (city.imageNamesBenefit) {
+              try {
+                const parsedBenefit = JSON.parse(city.imageNamesBenefit);
+                if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                  setImageBenefit(parsedBenefit);
+                } else {
+                  setImageBenefit([]);
+                }
+              } catch (e) {
+                console.error('베네핏 이미지 파싱 오류:', e);
+                setImageBenefit([]);
+              }
+            } else {
+              setImageBenefit([]);
+            }
           }
         }
         
@@ -284,6 +355,40 @@ export default function EuropeCityDetail() {
             setImageCafe(Array.isArray(cafeImages) ? cafeImages : []);
           } catch (e) {
             setImageCafe([]);
+          }
+          
+          // 핵심 포인트 이미지 파싱
+          if (city.imageNamesMainPoint) {
+            try {
+              const parsedMainPoint = JSON.parse(city.imageNamesMainPoint);
+              if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                setImageMainPoint(parsedMainPoint);
+              } else {
+                setImageMainPoint([]);
+              }
+            } catch (e) {
+              console.error('핵심 포인트 이미지 파싱 오류:', e);
+              setImageMainPoint([]);
+            }
+          } else {
+            setImageMainPoint([]);
+          }
+          
+          // 베네핏 이미지 파싱
+          if (city.imageNamesBenefit) {
+            try {
+              const parsedBenefit = JSON.parse(city.imageNamesBenefit);
+              if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                setImageBenefit(parsedBenefit);
+              } else {
+                setImageBenefit([]);
+              }
+            } catch (e) {
+              console.error('베네핏 이미지 파싱 오류:', e);
+              setImageBenefit([]);
+            }
+          } else {
+            setImageBenefit([]);
           }
           
           // fromGo=true일 때는 일정을 다시 가져오지 않음 (이미 장바구니 모든 도시의 일정을 가져왔으므로)
@@ -730,6 +835,11 @@ export default function EuropeCityDetail() {
   const [scheduleFilter, setScheduleFilter] = React.useState('전체');
   const [scheduleSearch, setScheduleSearch] = React.useState('');
   const [selectedCityForSchedule, setSelectedCityForSchedule] = React.useState<number | null>(null); // fromGo=true일 때 선택된 도시 ID
+  const [showTopButton, setShowTopButton] = React.useState(false);
+  const thumbnailContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [startX, setStartX] = React.useState(0);
+  const [scrollLeft, setScrollLeft] = React.useState(0);
 
   useEffect(() => {
     if (cityInfo) {
@@ -782,6 +892,23 @@ export default function EuropeCityDetail() {
     setSelectedMainImageIndex(0);
   }, [activeTab]);
 
+  // 스크롤 위치에 따라 탑 버튼 표시/숨김
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowTopButton(true);
+      } else {
+        setShowTopButton(false);
+      }
+    };
+
+    // 초기 스크롤 위치 확인
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // 도시 탭 변경 시 이미지 탭을 '소개'로 리셋
   useEffect(() => {
     if (selectedCityTab !== null) {
@@ -796,7 +923,7 @@ export default function EuropeCityDetail() {
 
   // 현재 탭에 따른 이미지 리스트
   const getCurrentImages = () => {
-    if (activeTab === 0) return []
+    if (activeTab === 0) return imageNotice;
     if (activeTab === 1) return imageGuide; 
     if (activeTab === 2) return imageEnt; 
     if (activeTab === 3) return imageEvent;
@@ -929,6 +1056,9 @@ export default function EuropeCityDetail() {
               )} */}
             </div>
           </div>
+          
+          
+          
           {/* 도시 탭 (GO 버튼으로 진입한 경우에만 표시) */}
           {!fromDetail && fromGo && cityDetails.length > 0 && (
             <div className="city-tabs-container"> 
@@ -946,6 +1076,38 @@ export default function EuropeCityDetail() {
               </div>
             </div>
           )}
+
+          {/* 도시 정보 표시 */}
+          <div className="city-title-top-wrapper">
+            <IoIosArrowBack
+              className="arrow-back"
+              onClick={() => navigate(-1)}
+            />
+            <div className="text-title">{cityInfo?.cityKo || '도시명'}</div>
+            <div className="text-subtitle">
+              {cityInfo?.cityEn || ''}
+            </div>
+            
+            <div className="text-location">
+              <p>{cityInfo?.nation || ''}</p>
+              <IoIosArrowForward />
+              <p>{cityInfo?.cityKo || ''}</p>
+            </div>
+          </div>
+
+          {/* 태그 섹션 */}
+          <div className="city-tags-wrapper">
+            <div className="city-tags">
+              <span className="city-tag">#역사</span>
+              <span className="city-tag">#문화</span>
+              <span className="city-tag">#예술</span>
+              <span className="city-tag">#음식</span>
+              <span className="city-tag">#쇼핑</span>
+              <span className="city-tag">#야경</span>
+            </div>
+          </div>
+
+          
           <div className="city-center-wrapper">
 
             <div className="room-container-wrapper">
@@ -971,6 +1133,151 @@ export default function EuropeCityDetail() {
             {/* 소개 탭일 때는 도시 정보 표시, 나머지 탭은 이미지 표시 */}
             {activeTab === 0 ? (
               <>
+                <div className="photo-gallery">
+                  <div className="photo-main">
+                    {(() => {
+                      const images = getCurrentImages();
+                      const hasImages = images && images.length > 0;
+                      const totalImages = images ? images.length : 0;
+                      
+                      return (
+                        <>
+                          {hasImages && totalImages > 1 && (
+                            <button
+                              className="photo-nav-button photo-nav-prev"
+                              onClick={() => {
+                                setSelectedMainImageIndex((prev) => 
+                                  prev === 0 ? totalImages - 1 : prev - 1
+                                );
+                              }}
+                              aria-label="이전 이미지"
+                            >
+                              <IoIosArrowBack />
+                            </button>
+                          )}
+                          
+                          {hasImages ? (
+                            (() => {
+                              const main = images[selectedMainImageIndex];
+                              const imageName = typeof main === 'string' ? main : main.imageName;
+                              const isVideo = isVideoFile(imageName);
+                              
+                              if (isVideo) {
+                                return (
+                                  <video
+                                    className="photo-main-image"
+                                    controls
+                                    src={`${AdminURL}/images/cityimages/${imageName}`}
+                                  >
+                                    브라우저가 비디오 태그를 지원하지 않습니다.
+                                  </video>
+                                );
+                              }
+                              
+                              return (
+                                <img
+                                  className="photo-main-image"
+                                  alt={typeof main === 'object' && main.title ? main.title : '메인 이미지'}
+                                  src={`${AdminURL}/images/cityimages/${imageName}`}
+                                  draggable={false}
+                                  onDragStart={(e) => e.preventDefault()}
+                                />
+                              );
+                            })()
+                          ) : (
+                            <img
+                              className="photo-main-image"
+                              alt="메인 이미지"
+                              src={rectangle580}
+                              draggable={false}
+                              onDragStart={(e) => e.preventDefault()}
+                            />
+                          )}
+                          
+                          {hasImages && totalImages > 1 && (
+                            <button
+                              className="photo-nav-button photo-nav-next"
+                              onClick={() => {
+                                setSelectedMainImageIndex((prev) => 
+                                  prev === totalImages - 1 ? 0 : prev + 1
+                                );
+                              }}
+                              aria-label="다음 이미지"
+                            >
+                              <IoIosArrowForward />
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  <div 
+                    className="photo-thumbnails"
+                    ref={thumbnailContainerRef}
+                    onMouseDown={(e) => {
+                      if (!thumbnailContainerRef.current) return;
+                      setIsDragging(true);
+                      setStartX(e.pageX - thumbnailContainerRef.current.offsetLeft);
+                      setScrollLeft(thumbnailContainerRef.current.scrollLeft);
+                    }}
+                    onMouseLeave={() => {
+                      setIsDragging(false);
+                    }}
+                    onMouseUp={() => {
+                      setIsDragging(false);
+                    }}
+                    onMouseMove={(e) => {
+                      if (!isDragging || !thumbnailContainerRef.current) return;
+                      e.preventDefault();
+                      const x = e.pageX - thumbnailContainerRef.current.offsetLeft;
+                      const walk = (x - startX) * 2; // 스크롤 속도 조절
+                      thumbnailContainerRef.current.scrollLeft = scrollLeft - walk;
+                    }}
+                  >
+                    {getCurrentImages().map((img: any, index: number) => {
+                      const imageName = typeof img === 'string' ? img : img.imageName;
+                      const isVideo = isVideoFile(imageName);
+                      return (
+                        <div
+                          className={`photo-thumbnail ${selectedMainImageIndex === index ? 'active' : ''} ${isVideo ? 'video-thumbnail' : ''}`}
+                          key={index}
+                          onClick={(e) => {
+                            // 드래그 중일 때는 클릭 이벤트 방지
+                            if (isDragging) {
+                              e.preventDefault();
+                              return;
+                            }
+                            setSelectedMainImageIndex(index);
+                          }}
+                          onMouseDown={(e) => {
+                            // 썸네일 클릭 시 드래그 시작을 방지하지 않음
+                          }}
+                        >
+                          {isVideo ? (
+                            <div className="thumbnail-video-wrapper">
+                              <video
+                                className="thumbnail-video"
+                                src={`${AdminURL}/images/cityimages/${imageName}`}
+                                muted
+                                preload="metadata"
+                              />
+                              <div className="video-play-icon">▶</div>
+                            </div>
+                          ) : (
+                            <img
+                              src={`${AdminURL}/images/cityimages/${imageName}`}
+                              alt={typeof img === 'object' && img.title ? img.title : `썸네일 ${index + 1}`}
+                              draggable={false}
+                              onDragStart={(e) => e.preventDefault()}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* 도시 소개 섹션 */}
                 <div className="city-intro-section">
                   <div className="city-intro-tagline">
@@ -997,7 +1304,13 @@ export default function EuropeCityDetail() {
                           </div>
                           <div className="highlight-item-title">{title}</div>
                           <div className="highlight-item-desc">
-                            {notice || '도시의 주요 관광 명소와 문화적 가치'}
+                            {
+                              notice.length > 40 ? (
+                                notice.slice(0, 40) + '...'
+                              ) : (
+                                notice
+                              )
+                            }
                           </div>
                         </div>
                       ))}
@@ -1146,6 +1459,8 @@ export default function EuropeCityDetail() {
             )}
           </div>
           <div className="related-products-btn-wrapper">
+           
+
             <button 
               className="related-products-btn"
               onClick={() => {
@@ -1155,6 +1470,24 @@ export default function EuropeCityDetail() {
             >
               관련 상품 보기
             </button>
+
+             {/* 탑 버튼 */}
+             <div className="top-button-wrapper">
+              <button
+                className="top-button"
+                onClick={() => {
+                  const leftSection = document.querySelector('.EuropeCityDetail .left-section');
+                  if (leftSection) {
+                    leftSection.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                title="맨 위로"
+              >
+                ↑
+              </button>
+            </div>
           </div>
         </div>
 

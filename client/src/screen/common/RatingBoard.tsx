@@ -27,31 +27,33 @@ export default function RatingBoard({ rating, ratingSize }: { rating: number, ra
         display: 'flex'
       }}
     >
-      {formatRatingArray(rating).map((value, idx) => {
-        return (
-          <div 
-            key={idx}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2px'
-            }}
-          >
-            <MdOutlineStar 
+      {formatRatingArray(rating)
+        .filter(value => value > 0)
+        .map((value, idx) => {
+          return (
+            <div 
+              key={idx}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: `${ratingSize}px`,
-                height: `${ratingSize}px`,
-                position: 'relative',
-                fill: value === 100 ? 'rgba(252, 196, 0, 1)' : 'rgba(119, 119, 119, 1)',
-                color: value === 100 ? 'rgba(252, 196, 0, 1)' : 'rgba(119, 119, 119, 1)',
+                gap: '2px'
               }}
-            />
-          </div>
-        )
-      })}
+            >
+              <MdOutlineStar 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: `${ratingSize}px`,
+                  height: `${ratingSize}px`,
+                  position: 'relative',
+                  fill: value === 100 ? 'rgba(252, 196, 0, 1)' : 'rgba(119, 119, 119, 1)',
+                  color: value === 100 ? 'rgba(252, 196, 0, 1)' : 'rgba(119, 119, 119, 1)',
+                }}
+              />
+            </div>
+          )
+        })}
     </div>
   );
 }

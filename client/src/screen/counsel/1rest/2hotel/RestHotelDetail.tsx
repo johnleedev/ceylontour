@@ -16,6 +16,7 @@ import GoogleMap from '../../../common/GoogleMap';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { recoilProductName, recoilHotelCart } from '../../../../RecoilStore';
 import roomIcon from '../../../images/counsel/rest/hotel/Rooms.png';
+import facilityIcon from '../../../images/counsel/rest/hotel/Facilities.png';
 
 export default function RestHotelDetail() {
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ export default function RestHotelDetail() {
   const [products, setProducts] = React.useState<any[]>([]);
   const [logoImageError, setLogoImageError] = React.useState<boolean>(false);
   const [selectedNights, setSelectedNights] = React.useState<{ [key: number]: number }>({});
+  const [showPeriodChangeModal, setShowPeriodChangeModal] = React.useState(false);
   
   // 각 객실 타입 섹션에 대한 ref를 Map으로 관리
   const roomTypeRefs = React.useRef<Map<string, HTMLDivElement | null>>(new Map());
@@ -167,6 +169,26 @@ export default function RestHotelDetail() {
     fetchHotelInfo();
   }, [ID, CITY]);
 
+  // 선택된 나라의 관련 여행상품(일정) 조회
+  const fetchNationProducts = async () => {
+    try {
+      if (!CITY) {
+        setProducts([]);
+        return;
+      }
+      const response = await axios.post(`${AdminURL}/ceylontour/getcityschedule`, { city: CITY });
+      if (response.data) {
+        const copy = [...response.data];
+        setProducts(copy);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('나라별 여행상품을 가져오는 중 오류 발생:', error);
+      setProducts([]);
+    }
+  };
+
   // 장바구니에서 호텔 목록 가져오기 (GO 버튼으로 진입한 경우)
   useEffect(() => {
     const fetchHotelDetails = async () => {
@@ -222,8 +244,106 @@ export default function RestHotelDetail() {
         const currentHotelIndex = details.findIndex(h => h.id === Number(ID));
         if (currentHotelIndex !== -1) {
           setSelectedHotelTab(currentHotelIndex);
+          // 첫 번째 호텔 정보를 hotelInfo에 설정
+          const firstHotel = details[currentHotelIndex];
+          const res = await axios.get(`${AdminURL}/ceylontour/gethotelinfobyid/${firstHotel.id}`);
+          if (res.data && res.data.length > 0) {
+            const hotel = res.data[0];
+            setHotelInfo(hotel);
+            
+            // 이미지 파싱
+            const imageNamesAllViewCopy = hotel.imageNamesAllView ? JSON.parse(hotel.imageNamesAllView) : [];
+            setImageAllView(imageNamesAllViewCopy);
+            const imageNamesRoomViewCopy = hotel.imageNamesRoomView ? JSON.parse(hotel.imageNamesRoomView) : [];
+            setImageRoomView(imageNamesRoomViewCopy);
+            const imageNamesEtcViewCopy = hotel.imageNamesEtcView ? JSON.parse(hotel.imageNamesEtcView) : [];
+            setImageEtcView(imageNamesEtcViewCopy);
+            
+            // 핵심 포인트 이미지 파싱
+            if (hotel.imageNamesMainPoint) {
+              try {
+                const parsedMainPoint = JSON.parse(hotel.imageNamesMainPoint);
+                if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                  setImageMainPoint(parsedMainPoint);
+                } else {
+                  setImageMainPoint([]);
+                }
+              } catch (e) {
+                console.error('핵심 포인트 이미지 파싱 오류:', e);
+                setImageMainPoint([]);
+              }
+            } else {
+              setImageMainPoint([]);
+            }
+            
+            // 베네핏 이미지 파싱
+            if (hotel.imageNamesBenefit) {
+              try {
+                const parsedBenefit = JSON.parse(hotel.imageNamesBenefit);
+                if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                  setImageBenefit(parsedBenefit);
+                } else {
+                  setImageBenefit([]);
+                }
+              } catch (e) {
+                console.error('베네핏 이미지 파싱 오류:', e);
+                setImageBenefit([]);
+              }
+            } else {
+              setImageBenefit([]);
+            }
+          }
         } else if (details.length > 0) {
           setSelectedHotelTab(0);
+          // 첫 번째 호텔 정보를 hotelInfo에 설정
+          const firstHotel = details[0];
+          const res = await axios.get(`${AdminURL}/ceylontour/gethotelinfobyid/${firstHotel.id}`);
+          if (res.data && res.data.length > 0) {
+            const hotel = res.data[0];
+            setHotelInfo(hotel);
+            
+            // 이미지 파싱
+            const imageNamesAllViewCopy = hotel.imageNamesAllView ? JSON.parse(hotel.imageNamesAllView) : [];
+            setImageAllView(imageNamesAllViewCopy);
+            const imageNamesRoomViewCopy = hotel.imageNamesRoomView ? JSON.parse(hotel.imageNamesRoomView) : [];
+            setImageRoomView(imageNamesRoomViewCopy);
+            const imageNamesEtcViewCopy = hotel.imageNamesEtcView ? JSON.parse(hotel.imageNamesEtcView) : [];
+            setImageEtcView(imageNamesEtcViewCopy);
+            
+            // 핵심 포인트 이미지 파싱
+            if (hotel.imageNamesMainPoint) {
+              try {
+                const parsedMainPoint = JSON.parse(hotel.imageNamesMainPoint);
+                if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                  setImageMainPoint(parsedMainPoint);
+                } else {
+                  setImageMainPoint([]);
+                }
+              } catch (e) {
+                console.error('핵심 포인트 이미지 파싱 오류:', e);
+                setImageMainPoint([]);
+              }
+            } else {
+              setImageMainPoint([]);
+            }
+            
+            // 베네핏 이미지 파싱
+            if (hotel.imageNamesBenefit) {
+              try {
+                const parsedBenefit = JSON.parse(hotel.imageNamesBenefit);
+                if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                  setImageBenefit(parsedBenefit);
+                } else {
+                  setImageBenefit([]);
+                }
+              } catch (e) {
+                console.error('베네핏 이미지 파싱 오류:', e);
+                setImageBenefit([]);
+              }
+            } else {
+              setImageBenefit([]);
+            }
+          }
         }
       } catch (error) {
         console.error('호텔 정보 가져오기 오류:', error);
@@ -275,6 +395,40 @@ export default function RestHotelDetail() {
           } else {
             setRoomTypes([]);
             setSelectedRoomType('');
+          }
+          
+          // 핵심 포인트 이미지 파싱
+          if (hotel.imageNamesMainPoint) {
+            try {
+              const parsedMainPoint = JSON.parse(hotel.imageNamesMainPoint);
+              if (Array.isArray(parsedMainPoint) && parsedMainPoint.length > 0) {
+                setImageMainPoint(parsedMainPoint);
+              } else {
+                setImageMainPoint([]);
+              }
+            } catch (e) {
+              console.error('핵심 포인트 이미지 파싱 오류:', e);
+              setImageMainPoint([]);
+            }
+          } else {
+            setImageMainPoint([]);
+          }
+          
+          // 베네핏 이미지 파싱
+          if (hotel.imageNamesBenefit) {
+            try {
+              const parsedBenefit = JSON.parse(hotel.imageNamesBenefit);
+              if (Array.isArray(parsedBenefit) && parsedBenefit.length > 0) {
+                setImageBenefit(parsedBenefit);
+              } else {
+                setImageBenefit([]);
+              }
+            } catch (e) {
+              console.error('베네핏 이미지 파싱 오류:', e);
+              setImageBenefit([]);
+            }
+          } else {
+            setImageBenefit([]);
           }
           
           // 선택된 호텔의 도시로 상품 가져오기
@@ -949,7 +1103,8 @@ export default function RestHotelDetail() {
   const btnSolids = [
     { text: '소개' },
     { text: '객실' },
-    { text: '부대시설' }
+    { text: '부대시설' },
+    { text: '베네핏' },
   ];
 
   const [activeTab, setActiveTab] = React.useState(0);
@@ -957,12 +1112,34 @@ export default function RestHotelDetail() {
   const [showRightPanel, setShowRightPanel] = React.useState(false);
   const [selectedMainImageIndex, setSelectedMainImageIndex] = React.useState(0);
   const [allHotels, setAllHotels] = React.useState<any[]>([]);
+  const [showTopButton, setShowTopButton] = React.useState(false);
+  const thumbnailContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [startX, setStartX] = React.useState(0);
+  const [scrollLeft, setScrollLeft] = React.useState(0);
 
   
   // 탭 변경 시 선택된 메인 이미지를 첫번째로 리셋
   useEffect(() => {
     setSelectedMainImageIndex(0);
   }, [activeTab]);
+
+  // 스크롤 위치에 따라 탑 버튼 표시/숨김
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowTopButton(true);
+      } else {
+        setShowTopButton(false);
+      }
+    };
+
+    // 초기 스크롤 위치 확인
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // 객실 탭이 활성화될 때 첫 번째 객실을 기본 선택
   useEffect(() => {
@@ -979,11 +1156,17 @@ export default function RestHotelDetail() {
 
   // 현재 탭에 따른 이미지 리스트 (소개 / 전경 / 객실 / 부대시설)
   const getCurrentImages = () => {
-    if (activeTab === 0) return []; 
+    if (activeTab === 0) return imageAllView; 
     if (activeTab === 1) {
       return imageRoomView; // 객실 - 모든 이미지 반환
     }
-    return imageEtcView; // 부대시설
+    if (activeTab === 2) {
+      return imageEtcView; // 부대시설 - 모든 이미지 반환
+    }
+    if (activeTab === 3) {
+      return imageBenefit; // 베네핏 - 모든 이미지 반환
+    }
+    return [];
   };
   
   // 객실별로 이미지를 그룹화하는 함수
@@ -991,6 +1174,32 @@ export default function RestHotelDetail() {
     return imageRoomView.filter((img: any) => {
       return img.roomTypeName === roomTypeName || img.title === roomTypeName;
     });
+  };
+
+  // 부대시설 이미지를 title로 그룹화하는 함수
+  const getFacilityGroups = () => {
+    const groups: { [key: string]: any[] } = {};
+    imageEtcView.forEach((img: any) => {
+      const title = img.title || '기타';
+      if (!groups[title]) {
+        groups[title] = [];
+      }
+      groups[title].push(img);
+    });
+    return groups;
+  };
+
+  // 베네핏 이미지를 title로 그룹화하는 함수
+  const getBenefitGroups = () => {
+    const groups: { [key: string]: any[] } = {};
+    imageBenefit.forEach((img: any) => {
+      const title = img.title || '기타';
+      if (!groups[title]) {
+        groups[title] = [];
+      }
+      groups[title].push(img);
+    });
+    return groups;
   };
 
   // 파일이 동영상인지 확인
@@ -1126,6 +1335,9 @@ export default function RestHotelDetail() {
                 )} */}
               </div>
             </div>
+            
+            
+            
             {/* 호텔 탭 (GO 버튼으로 진입한 경우에만 표시) */}
             {!fromDetail && fromGo && hotelDetails.length > 0 && (
               <div className="hotel-tabs-container">
@@ -1146,6 +1358,45 @@ export default function RestHotelDetail() {
                 </div>
               </div>
             )}
+
+            {/* 호텔 정보 표시 */}
+            <div className="hotel-title-top-wrapper">
+             <IoIosArrowBack
+                className="arrow-back"
+                onClick={() => navigate(-1)}
+              />
+              <div className="text-title">{hotelInfo?.hotelNameKo || '호텔명'}</div>
+              <div className="text-subtitle">
+                {hotelInfo?.hotelNameEn || ''}
+              </div>
+              <div className="text-rating">
+              <RatingBoard
+                ratingSize={16}
+                rating={
+                  hotelInfo && hotelInfo.hotelLevel
+                    ? Math.max(0, Math.min(5, parseInt(String(hotelInfo.hotelLevel), 10) || 0))
+                    : 0
+                }
+              />
+              </div>
+              <div className="text-location">
+                <p>{hotelInfo?.nation || ''}</p>
+                <IoIosArrowForward />
+                <p>{hotelInfo?.city || ''}</p>
+              </div>
+            </div>
+            
+            {/* 태그 섹션 */}
+            <div className="hotel-tags-wrapper">
+              <div className="hotel-tags">
+                <span className="hotel-tag">#럭셔리</span>
+                <span className="hotel-tag">#최고급리조트</span>
+                <span className="hotel-tag">#프라이빗 비치</span>
+                <span className="hotel-tag">#허니문</span>
+                <span className="hotel-tag">#가족 모두 만족도 1위급</span>
+              </div>
+            </div>
+            
             <div className="hotel-center-wrapper">
 
               <div className="room-container-wrapper">
@@ -1162,14 +1413,6 @@ export default function RestHotelDetail() {
                   ))}
                 </div>
                 <div className="room-container-right">
-                  {/* {roomTypes.map((room: any, index: number) => (
-                    <React.Fragment key={room.roomTypeName || index}>
-                      <span className="roomtype-text">{room.roomTypeName}</span>
-                      {index < roomTypes.length - 1 && (
-                        <span className="roomtype-separator"></span>
-                      )}
-                    </React.Fragment>
-                  ))} */}
                   <button
                       type="button"
                       className="video-button"
@@ -1183,6 +1426,149 @@ export default function RestHotelDetail() {
               {/* 소개 탭일 때는 호텔 정보 표시, 나머지 탭은 이미지 표시 */}
               {activeTab === 0 ? (
                 <>
+                  <div className="photo-gallery">
+                    <div className="photo-main">
+                      {(() => {
+                        const images = getCurrentImages();
+                        const hasImages = images && images.length > 0;
+                        const totalImages = images ? images.length : 0;
+                        
+                        return (
+                          <>
+                            {hasImages && totalImages > 1 && (
+                              <button
+                                className="photo-nav-button photo-nav-prev"
+                                onClick={() => {
+                                  setSelectedMainImageIndex((prev) => 
+                                    prev === 0 ? totalImages - 1 : prev - 1
+                                  );
+                                }}
+                                aria-label="이전 이미지"
+                              >
+                                <IoIosArrowBack />
+                              </button>
+                            )}
+                            
+                            {hasImages ? (
+                              (() => {
+                                const main = images[selectedMainImageIndex];
+                                const isVideo = isVideoFile(main.imageName);
+                                
+                                if (isVideo) {
+                                  return (
+                                    <video
+                                      className="photo-main-image"
+                                      controls
+                                      src={`${AdminURL}/images/hotelimages/${main.imageName}`}
+                                    >
+                                      브라우저가 비디오 태그를 지원하지 않습니다.
+                                    </video>
+                                  );
+                                }
+                                
+                                return (
+                                  <img
+                                    className="photo-main-image"
+                                    alt={main.title || '메인 이미지'}
+                                    src={`${AdminURL}/images/hotelimages/${main.imageName}`}
+                                    draggable={false}
+                                    onDragStart={(e) => e.preventDefault()}
+                                  />
+                                );
+                              })()
+                            ) : (
+                              <img
+                                className="photo-main-image"
+                                alt="메인 이미지"
+                                src={rectangle580}
+                                draggable={false}
+                                onDragStart={(e) => e.preventDefault()}
+                              />
+                            )}
+                            
+                            {hasImages && totalImages > 1 && (
+                              <button
+                                className="photo-nav-button photo-nav-next"
+                                onClick={() => {
+                                  setSelectedMainImageIndex((prev) => 
+                                    prev === totalImages - 1 ? 0 : prev + 1
+                                  );
+                                }}
+                                aria-label="다음 이미지"
+                              >
+                                <IoIosArrowForward />
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    <div 
+                      className="photo-thumbnails"
+                      ref={thumbnailContainerRef}
+                      onMouseDown={(e) => {
+                        if (!thumbnailContainerRef.current) return;
+                        setIsDragging(true);
+                        setStartX(e.pageX - thumbnailContainerRef.current.offsetLeft);
+                        setScrollLeft(thumbnailContainerRef.current.scrollLeft);
+                      }}
+                      onMouseLeave={() => {
+                        setIsDragging(false);
+                      }}
+                      onMouseUp={() => {
+                        setIsDragging(false);
+                      }}
+                      onMouseMove={(e) => {
+                        if (!isDragging || !thumbnailContainerRef.current) return;
+                        e.preventDefault();
+                        const x = e.pageX - thumbnailContainerRef.current.offsetLeft;
+                        const walk = (x - startX) * 2; // 스크롤 속도 조절
+                        thumbnailContainerRef.current.scrollLeft = scrollLeft - walk;
+                      }}
+                    >
+                      {getCurrentImages().map((img: any, index: number) => {
+                        const isVideo = isVideoFile(img.imageName);
+                        return (
+                          <div
+                            className={`photo-thumbnail ${selectedMainImageIndex === index ? 'active' : ''} ${isVideo ? 'video-thumbnail' : ''}`}
+                            key={index}
+                            onClick={(e) => {
+                              // 드래그 중일 때는 클릭 이벤트 방지
+                              if (isDragging) {
+                                e.preventDefault();
+                                return;
+                              }
+                              setSelectedMainImageIndex(index);
+                            }}
+                            onMouseDown={(e) => {
+                              // 썸네일 클릭 시 드래그 시작을 방지하지 않음
+                            }}
+                          >
+                            {isVideo ? (
+                              <div className="thumbnail-video-wrapper">
+                                <video
+                                  className="thumbnail-video"
+                                  src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                  muted
+                                  preload="metadata"
+                                />
+                                <div className="video-play-icon">▶</div>
+                              </div>
+                            ) : (
+                              <img
+                                src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                alt={img.title || `썸네일 ${index + 1}`}
+                                draggable={false}
+                                onDragStart={(e) => e.preventDefault()}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* 호텔 소개 섹션 */}
                   <div className="hotel-intro-section">
                     <div className="hotel-intro-rating">
@@ -1228,7 +1614,13 @@ export default function RestHotelDetail() {
                             </div>
                             <div className="highlight-item-title">{title}</div>
                             <div className="highlight-item-desc">
-                              {notice || '세계적 평가의 St. Regis 브랜드 &amp; 발리 최고급 서비스'}
+                            {
+                              notice.length > 40 ? (
+                                notice.slice(0, 40) + '...'
+                              ) : (
+                                notice
+                              )
+                            }
                             </div>
                           </div>
                         ))}
@@ -1401,7 +1793,7 @@ export default function RestHotelDetail() {
                         justifyContent: 'center',
                         marginTop: '30px'
                       }}>
-                        <img src={roomIcon} alt="Rooms" style={{ width: '200px' }} />
+                        <img src={roomIcon} alt="Rooms" style={{ height: '50px' }} />
                       </div>
                       
                       {/* 객실 타입 텍스트 표시 (클릭 가능) */}
@@ -1529,6 +1921,304 @@ export default function RestHotelDetail() {
                         })}
                       </div>
                     </>
+                  ) : activeTab === 2 && imageEtcView.length > 0 ? (
+                    <>
+                      {/* 부대시설 타이틀 */}
+                      <div className="rooms-title" style={{ 
+                        fontSize: '32px', 
+                        fontWeight: 'bold', 
+                        marginBottom: '20px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginTop: '30px'
+                      }}>
+                        <img src={facilityIcon} alt="Facility" style={{ height: '50px' }} />
+                      </div>
+                      
+                      {/* 부대시설 그룹 텍스트 표시 (클릭 가능) */}
+                      {(() => {
+                        const facilityGroups = getFacilityGroups();
+                        const groupTitles = Object.keys(facilityGroups);
+                        
+                        if (groupTitles.length === 0) return null;
+                        
+                        return (
+                          <div className="room-type-tabs" style={{
+                            display: 'flex',
+                            marginBottom: '32px',
+                            flexWrap: 'wrap',
+                            paddingBottom: '16px',
+                            justifyContent: 'center'
+                          }}>
+                            {groupTitles.map((title: string, index: number) => (
+                              <span
+                                key={title}
+                                onClick={() => {
+                                  const ref = roomTypeRefs.current.get(title);
+                                  if (ref) {
+                                    ref.scrollIntoView({ 
+                                      behavior: 'smooth', 
+                                      block: 'start' 
+                                    });
+                                  }
+                                }}
+                                style={{
+                                  fontSize: '16px',
+                                  fontWeight: '400',
+                                  color: '#666',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'color 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = '#333';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = '#666';
+                                }}
+                              >
+                                <span style={{ fontSize: '16px', fontWeight: '400', color: 'inherit', marginRight: '0' }}>{title}</span>
+                                {index < groupTitles.length - 1 && (
+                                  <span style={{ color: '#ccc', margin:'0 15px' }}>|</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* 모든 부대시설의 이미지들을 리스트로 표시 */}
+                      <div className="room-images-grid" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '48px',
+                        width: '100%'
+                      }}>
+                        {(() => {
+                          const facilityGroups = getFacilityGroups();
+                          return Object.entries(facilityGroups).map(([title, images]) => {
+                            if (images.length === 0) {
+                              return null;
+                            }
+                            
+                            return (
+                              <div 
+                                key={title} 
+                                ref={(el) => {
+                                  if (el) {
+                                    roomTypeRefs.current.set(title, el);
+                                  } else {
+                                    roomTypeRefs.current.delete(title);
+                                  }
+                                }}
+                                style={{ width: '100%' }}
+                              >
+                                {/* 부대시설 이름 */}
+                                <div style={{
+                                  fontSize: '24px',
+                                  fontWeight: '600',
+                                  marginBottom: '24px',
+                                  textAlign: 'center'
+                                }}>
+                                  {title}
+                                </div>
+                                
+                                {/* 해당 부대시설의 이미지들 */}
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '24px'
+                                }}>
+                                  {images.map((img: any, imgIndex: number) => {
+                                    const isVideo = isVideoFile(img.imageName);
+                                    
+                                    if (isVideo) {
+                                      return (
+                                        <div key={imgIndex} className="photo-main" style={{ width: '100%' }}>
+                                          <video
+                                            className="photo-main-image"
+                                            controls
+                                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                            style={{ width: '100%' }}
+                                          >
+                                            브라우저가 비디오 태그를 지원하지 않습니다.
+                                          </video>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <div key={imgIndex} className="photo-main" style={{ width: '100%' }}>
+                                        <img
+                                          className="photo-main-image"
+                                          alt={img.title || `${title} 이미지 ${imgIndex + 1}`}
+                                          src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                          style={{ width: '100%' }}
+                                        />
+                                        {img.notice && <div className="photo-main-notice">{img.notice}</div>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </>
+                  ) : activeTab === 3 && imageBenefit.length > 0 ? (
+                    <>
+                      {/* 베네핏 타이틀 */}
+                      <div className="rooms-title" style={{ 
+                        fontSize: '32px', 
+                        fontWeight: 'bold', 
+                        marginBottom: '20px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginTop: '30px'
+                      }}>
+                        베네핏
+                      </div>
+                      
+                      {/* 베네핏 그룹 텍스트 표시 (클릭 가능) */}
+                      {(() => {
+                        const benefitGroups = getBenefitGroups();
+                        const groupTitles = Object.keys(benefitGroups);
+                        
+                        if (groupTitles.length === 0) return null;
+                        
+                        return (
+                          <div className="room-type-tabs" style={{
+                            display: 'flex',
+                            marginBottom: '32px',
+                            flexWrap: 'wrap',
+                            paddingBottom: '16px',
+                            justifyContent: 'center'
+                          }}>
+                            {groupTitles.map((title: string, index: number) => (
+                              <span
+                                key={title}
+                                onClick={() => {
+                                  const ref = roomTypeRefs.current.get(title);
+                                  if (ref) {
+                                    ref.scrollIntoView({ 
+                                      behavior: 'smooth', 
+                                      block: 'start' 
+                                    });
+                                  }
+                                }}
+                                style={{
+                                  fontSize: '16px',
+                                  fontWeight: '400',
+                                  color: '#666',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'color 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = '#333';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = '#666';
+                                }}
+                              >
+                                <span style={{ fontSize: '16px', fontWeight: '400', color: 'inherit', marginRight: '0' }}>{title}</span>
+                                {index < groupTitles.length - 1 && (
+                                  <span style={{ color: '#ccc', margin:'0 15px' }}>|</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* 모든 베네핏의 이미지들을 리스트로 표시 */}
+                      <div className="room-images-grid" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '48px',
+                        width: '100%'
+                      }}>
+                        {(() => {
+                          const benefitGroups = getBenefitGroups();
+                          return Object.entries(benefitGroups).map(([title, images]) => {
+                            if (images.length === 0) {
+                              return null;
+                            }
+                            
+                            return (
+                              <div 
+                                key={title} 
+                                ref={(el) => {
+                                  if (el) {
+                                    roomTypeRefs.current.set(title, el);
+                                  } else {
+                                    roomTypeRefs.current.delete(title);
+                                  }
+                                }}
+                                style={{ width: '100%' }}
+                              >
+                                {/* 베네핏 이름 */}
+                                <div style={{
+                                  fontSize: '24px',
+                                  fontWeight: '600',
+                                  marginBottom: '24px',
+                                  textAlign: 'center'
+                                }}>
+                                  {title}
+                                </div>
+                                
+                                {/* 해당 베네핏의 이미지들 */}
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '24px'
+                                }}>
+                                  {images.map((img: any, imgIndex: number) => {
+                                    const isVideo = isVideoFile(img.imageName);
+                                    
+                                    if (isVideo) {
+                                      return (
+                                        <div key={imgIndex} className="photo-main" style={{ width: '100%' }}>
+                                          <video
+                                            className="photo-main-image"
+                                            controls
+                                            src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                            style={{ width: '100%' }}
+                                          >
+                                            브라우저가 비디오 태그를 지원하지 않습니다.
+                                          </video>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <div key={imgIndex} className="photo-main" style={{ width: '100%' }}>
+                                        <img
+                                          className="photo-main-image"
+                                          alt={img.title || `${title} 이미지 ${imgIndex + 1}`}
+                                          src={`${AdminURL}/images/hotelimages/${img.imageName}`}
+                                          style={{ width: '100%' }}
+                                        />
+                                        {img.notice && <div className="photo-main-notice">{img.notice}</div>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </>
                   ) : (
                     <>
                       {(() => {
@@ -1565,12 +2255,17 @@ export default function RestHotelDetail() {
                           });
                         }
                         return (
-                          <div className="photo-main">
-                            <img
-                              className="photo-main-image"
-                              alt="메인 이미지"
-                              src={rectangle580}
-                            />
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            minHeight: '400px',
+                            color: '#999',
+                            fontSize: '16px',
+                            fontWeight: 400,
+                            width: '100%'
+                          }}>
+                            이미지가 없습니다.
                           </div>
                         );
                       })()}
@@ -1580,7 +2275,9 @@ export default function RestHotelDetail() {
               )}
             </div>
 
+
             <div className="related-products-btn-wrapper">
+            
               <button 
                 className="related-products-btn"
                 onClick={() => {
@@ -1590,6 +2287,25 @@ export default function RestHotelDetail() {
               >
                 관련 상품 보기
               </button>
+
+                {/* 탑 버튼 */}
+                <div className="top-button-wrapper">
+                  <button
+                    className="top-button"
+                    onClick={() => {
+                      const leftSection = document.querySelector('.RestHotelDetail .left-section');
+                      if (leftSection) {
+                        leftSection.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    title="맨 위로"
+                  >
+                    ↑
+                  </button>
+                </div>
+
             </div>
           </div>
 

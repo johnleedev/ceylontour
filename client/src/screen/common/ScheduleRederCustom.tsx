@@ -93,6 +93,7 @@ interface ModalScheduleDetailProps {
 export default function ScheduleRederCustom (props : any) {
 	
   const [loading, setLoading] = useState<boolean>(true);
+  const [floatingBoxExpanded, setFloatingBoxExpanded] = useState<boolean>(false);
 
 
   const fetchScheduleData = async () => {
@@ -144,10 +145,8 @@ export default function ScheduleRederCustom (props : any) {
   // 플로팅 버튼 관련 상태
   const [showFloatingButtons, setShowFloatingButtons] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
-  // 각 day의 location 표시 여부 (열려있는 day 인덱스 Set)
-  const [expandedLocationDays, setExpandedLocationDays] = useState<Set<number>>(new Set());
-  // floating box 펼침 상태
-  const [isFloatingBoxExpanded, setIsFloatingBoxExpanded] = useState<boolean>(false);
+  // subLocationDetail 확장 상태 (키: `${dayIndex}-${locationIndex}-${locationDetailIndex}`)
+  const [expandedSubLocationDetails, setExpandedSubLocationDetails] = useState<Set<string>>(new Set());
 
   // 스크롤 감지 함수
   const handleScroll = () => {
@@ -527,7 +526,8 @@ export default function ScheduleRederCustom (props : any) {
     dinner: '',
     hotel: '',
     score: '',
-    scheduleDetail: [createEmptyDetail()]
+    scheduleDetail: [createEmptyDetail()],
+    flag: undefined as any
   });
 
   // 일정표 -------------------------------------------------------------------------------------------------------------------
@@ -535,6 +535,57 @@ export default function ScheduleRederCustom (props : any) {
   // Recoil에서 일정 데이터 가져오기 (useRecoil prop이 true일 때)
   const [recoilScheduleInfoValue, setRecoilScheduleInfo] = useRecoilState(recoilScheduleInfo);
   const useRecoil = props.useRecoil || false;
+  
+  // 호텔 추가 시 호텔 타입을 저장하기 위한 ref
+  const pendingHotelTypeRef = useRef<string | null>(null);
+  const previousScheduleLengthRef = useRef<number>(0);
+  
+  // Recoil 상태 변경을 감지하여 호텔 타입 업데이트
+  useEffect(() => {
+    if (pendingHotelTypeRef.current && useRecoil && recoilScheduleInfoValue && recoilScheduleInfoValue.scheduleDetailData) {
+      const currentLength = recoilScheduleInfoValue.scheduleDetailData.length;
+      const previousLength = previousScheduleLengthRef.current;
+      
+      // day가 추가되었는지 확인
+      if (currentLength > previousLength) {
+        const hotelType = pendingHotelTypeRef.current;
+        const lastDayIndex = currentLength - 1;
+        const dayBeforeLastIndex = Math.max(0, lastDayIndex - 1);
+        const targetDayIndex = dayBeforeLastIndex + 1;
+        
+        if (targetDayIndex < currentLength) {
+          const targetDay = recoilScheduleInfoValue.scheduleDetailData[targetDayIndex] as any;
+          // '호텔 입력'인 경우에만 호텔 타입으로 업데이트
+          if (targetDay && targetDay.hotel === '호텔 입력') {
+            setRecoilScheduleInfo((prev) => {
+              if (!prev || !prev.scheduleDetailData) return prev;
+              const newScheduleDetailData = [...prev.scheduleDetailData];
+              
+              if (newScheduleDetailData[targetDayIndex]) {
+                newScheduleDetailData[targetDayIndex] = {
+                  ...newScheduleDetailData[targetDayIndex],
+                  hotel: hotelType,
+                  flag: {
+                    fst: 'solo',
+                    fn: [hotelType]
+                  }
+                } as any;
+              }
+              
+              return {
+                ...prev,
+                scheduleDetailData: newScheduleDetailData
+              };
+            });
+          }
+        }
+        
+        // 처리 완료 후 ref 초기화
+        pendingHotelTypeRef.current = null;
+        previousScheduleLengthRef.current = currentLength;
+      }
+    }
+  }, [recoilScheduleInfoValue, useRecoil, setRecoilScheduleInfo]);
   
   // setScheduleList를 래핑하여 Recoil도 함께 업데이트
   const setScheduleListWithRecoil = useCallback((updater: any) => {
@@ -938,8 +989,6 @@ export default function ScheduleRederCustom (props : any) {
 
   
   // 일정 정보 등록 함수 -------------------------------------------------------------------------------------------------
-  const currentdate = new Date();
-  const revisetoday = formatDate(currentdate, 'yyyy-MM-dd');
   
   // mainContent의 탭, 줄바꿈, 큰따옴표를 이스케이프 처리하는 함수
   const escapeMainContent = (content: string | undefined | null): string => {
@@ -1456,26 +1505,212 @@ export default function ScheduleRederCustom (props : any) {
   };
 
   useEffect(() => {
-    // Recoil을 사용하는 경우
+    // Recoil을 사용하는 경우 - 항상 Recoil에서 직접 가져오기 (props.scheduleInfo 무시)
     if (useRecoil) {
       if (recoilScheduleInfoValue && recoilScheduleInfoValue.scheduleDetailData) {
-        setScheduleList([recoilScheduleInfoValue]);
+        // Recoil 값과 현재 scheduleList를 비교하여 실제로 변경되었을 때만 업데이트
+        setScheduleList((prev) => {
+          // 현재 scheduleList가 비어있거나 길이가 다르면 Recoil 값으로 업데이트
+          if (!prev || prev.length === 0 || !prev[selectedScheduleIndex]) {
+            return [recoilScheduleInfoValue];
+          }
+          
+          const currentSchedule = prev[selectedScheduleIndex];
+          const recoilSchedule = recoilScheduleInfoValue;
+          
+          // scheduleDetailData 길이 비교
+          const currentLength = currentSchedule.scheduleDetailData.length;
+          const recoilLength = recoilSchedule.scheduleDetailData.length;
+          
+          if (currentLength !== recoilLength) {
+            // 길이가 다르면 flag 개수 비교
+            const currentFlagCount = currentSchedule.scheduleDetailData.filter((day: any) => (day as any).flag && (day as any).flag.fst).length;
+            const recoilFlagCount = recoilSchedule.scheduleDetailData.filter((day: any) => (day as any).flag && (day as any).flag.fst).length;
+            
+            // 현재에 flag가 더 많으면 현재 유지 (박수 변경으로 추가된 day 보존)
+            if (currentFlagCount > recoilFlagCount) {
+              return prev;
+            }
+            
+            // Recoil이 더 길면(day가 추가된 경우) Recoil 값으로 업데이트
+            // 단, 호텔 타입 업데이트가 진행 중이면 호텔 타입이 설정된 day 보존
+            if (recoilLength > currentLength) {
+              // 호텔 타입 업데이트가 진행 중이면 호텔 타입이 설정된 day 보존
+              if (pendingHotelTypeRef.current) {
+                // 호텔 타입이 설정된 day를 보존하기 위해 병합
+                const mergedSchedule = { ...recoilSchedule };
+                const mergedScheduleDetailData = [...recoilSchedule.scheduleDetailData];
+                
+                // 현재 scheduleList에서 호텔 타입이 설정된 day 찾기 (호텔 입력이 아닌 경우)
+                currentSchedule.scheduleDetailData.forEach((currentDay: any, index: number) => {
+                  if (index < mergedScheduleDetailData.length) {
+                    const currentHotel = (currentDay as any).hotel;
+                    const recoilHotel = (mergedScheduleDetailData[index] as any).hotel;
+                    
+                    // 현재 day의 hotel이 '호텔 입력'이 아니고, Recoil의 hotel이 '호텔 입력'인 경우 보존
+                    if (currentHotel && currentHotel !== '호텔 입력' && recoilHotel === '호텔 입력') {
+                      mergedScheduleDetailData[index] = {
+                        ...mergedScheduleDetailData[index],
+                        hotel: currentHotel,
+                        flag: (currentDay as any).flag
+                      } as any;
+                    }
+                  }
+                });
+                
+                mergedSchedule.scheduleDetailData = mergedScheduleDetailData;
+                return [mergedSchedule];
+              }
+              
+              // 호텔 타입 업데이트가 진행 중이 아니어도 flag가 있는 day는 보존
+              // RestHotelCost.tsx에서 호텔 추가 버튼을 누를 때 flag가 설정된 day가 추가될 수 있음
+              const mergedSchedule = { ...recoilSchedule };
+              const mergedScheduleDetailData = [...recoilSchedule.scheduleDetailData];
+              
+              // 현재 scheduleList에서 flag가 있는 day 찾기
+              currentSchedule.scheduleDetailData.forEach((currentDay: any, index: number) => {
+                if (index < mergedScheduleDetailData.length) {
+                  const currentDayWithFlag = currentDay as any;
+                  const recoilDay = mergedScheduleDetailData[index] as any;
+                  
+                  // 현재 day에 flag가 있고, Recoil의 day에 flag가 없거나 다른 경우 보존
+                  if (currentDayWithFlag.flag && currentDayWithFlag.flag.fst) {
+                    if (!recoilDay.flag || !recoilDay.flag.fst || 
+                        JSON.stringify(currentDayWithFlag.flag) !== JSON.stringify(recoilDay.flag)) {
+                      mergedScheduleDetailData[index] = {
+                        ...recoilDay,
+                        hotel: currentDayWithFlag.hotel,
+                        flag: currentDayWithFlag.flag
+                      } as any;
+                    }
+                  }
+                }
+              });
+              
+              mergedSchedule.scheduleDetailData = mergedScheduleDetailData;
+              return [mergedSchedule];
+            }
+            
+            // Recoil이 더 짧으면(day가 제거된 경우) Recoil 값으로 업데이트
+            // 박수 변경은 RestHotelCost.tsx에서 Recoil을 먼저 업데이트하므로 Recoil이 최신 상태
+            return [recoilSchedule];
+          }
+          
+          // 길이가 같으면 내용 비교하여 실제로 변경되었는지 확인
+          // flag가 있는 day는 보존 (박수 변경 등으로 추가된 day)
+          const currentFlagCount = currentSchedule.scheduleDetailData.filter((day: any) => (day as any).flag && (day as any).flag.fst).length;
+          const recoilFlagCount = recoilSchedule.scheduleDetailData.filter((day: any) => (day as any).flag && (day as any).flag.fst).length;
+          
+          // 현재 scheduleList에 flag가 더 많으면 현재 유지 (박수 변경으로 추가된 day 보존)
+          if (currentFlagCount > recoilFlagCount) {
+            return prev;
+          }
+          
+          // Recoil에 flag가 더 많거나 같으면 Recoil 값 사용 (박수 변경이 완료된 상태)
+          // 단, 호텔 타입이 설정된 day는 보존
+          if (recoilFlagCount > currentFlagCount) {
+            // 호텔 타입이 설정된 day를 보존하기 위해 병합
+            const mergedSchedule = { ...recoilSchedule };
+            const mergedScheduleDetailData = [...recoilSchedule.scheduleDetailData];
+            
+            // 현재 scheduleList에서 호텔 타입이 설정된 day 찾기 (호텔 입력이 아닌 경우)
+            currentSchedule.scheduleDetailData.forEach((currentDay: any, index: number) => {
+              if (index < mergedScheduleDetailData.length) {
+                const currentHotel = (currentDay as any).hotel;
+                const recoilHotel = (mergedScheduleDetailData[index] as any).hotel;
+                
+                // 현재 day의 hotel이 '호텔 입력'이 아니고, Recoil의 hotel이 '호텔 입력'인 경우 보존
+                if (currentHotel && currentHotel !== '호텔 입력' && recoilHotel === '호텔 입력') {
+                  mergedScheduleDetailData[index] = {
+                    ...mergedScheduleDetailData[index],
+                    hotel: currentHotel,
+                    flag: (currentDay as any).flag
+                  } as any;
+                }
+              }
+            });
+            
+            mergedSchedule.scheduleDetailData = mergedScheduleDetailData;
+            return [mergedSchedule];
+          }
+          
+          // flag 개수가 같으면 flag 내용 비교
+          if (currentFlagCount === recoilFlagCount && currentFlagCount > 0) {
+            // 각 day의 flag를 비교하여 현재가 더 최신인지 확인
+            let currentIsNewer = false;
+            for (let i = 0; i < currentSchedule.scheduleDetailData.length; i++) {
+              const currentDay = currentSchedule.scheduleDetailData[i] as any;
+              const recoilDay = recoilSchedule.scheduleDetailData[i] as any;
+              
+              if (currentDay.flag && currentDay.flag.fst && (!recoilDay || !recoilDay.flag || !recoilDay.flag.fst)) {
+                currentIsNewer = true;
+                break;
+              }
+              if (currentDay.flag && currentDay.flag.fst && recoilDay && recoilDay.flag && recoilDay.flag.fst) {
+                // flag 내용 비교
+                const currentFlagStr = JSON.stringify(currentDay.flag);
+                const recoilFlagStr = JSON.stringify(recoilDay.flag);
+                if (currentFlagStr !== recoilFlagStr) {
+                  // 현재 flag가 더 최신인 경우 (방금 설정한 경우)
+                  currentIsNewer = true;
+                  break;
+                }
+              }
+            }
+            
+            if (currentIsNewer) {
+              return prev;
+            }
+          }
+          
+          // JSON 비교는 비용이 크므로, 간단한 참조 비교나 특정 필드 비교
+          // 박수 변경 등으로 인한 변경은 Recoil이 최신이므로 Recoil 값 사용
+          const currentScheduleStr = JSON.stringify(currentSchedule.scheduleDetailData);
+          const recoilScheduleStr = JSON.stringify(recoilSchedule.scheduleDetailData);
+          
+          if (currentScheduleStr !== recoilScheduleStr) {
+            // 내용이 다르면 Recoil 값으로 업데이트 (박수 변경 등)
+            // 단, 현재에 flag가 더 많으면 현재 유지
+            if (currentFlagCount > recoilFlagCount) {
+              return prev;
+            }
+            
+            // 호텔 타입이 설정된 day를 보존하기 위해 병합
+            const mergedSchedule = { ...recoilSchedule };
+            const mergedScheduleDetailData = [...recoilSchedule.scheduleDetailData];
+            
+            // 현재 scheduleList에서 호텔 타입이 설정된 day 찾기 (호텔 입력이 아닌 경우)
+            currentSchedule.scheduleDetailData.forEach((currentDay: any, index: number) => {
+              if (index < mergedScheduleDetailData.length) {
+                const currentHotel = (currentDay as any).hotel;
+                const recoilHotel = (mergedScheduleDetailData[index] as any).hotel;
+                
+                // 현재 day의 hotel이 '호텔 입력'이 아니고, Recoil의 hotel이 '호텔 입력'인 경우 보존
+                if (currentHotel && currentHotel !== '호텔 입력' && recoilHotel === '호텔 입력') {
+                  mergedScheduleDetailData[index] = {
+                    ...mergedScheduleDetailData[index],
+                    hotel: currentHotel,
+                    flag: (currentDay as any).flag
+                  } as any;
+                }
+              }
+            });
+            
+            mergedSchedule.scheduleDetailData = mergedScheduleDetailData;
+            return [mergedSchedule];
+          }
+          
+          // 길이와 내용이 모두 같으면 현재 scheduleList 유지
+          return prev;
+        });
         setSelectedScheduleIndex(0);
         setLoading(false);
         // 선택된 일정 변경 알림
         if (props.onSelectedScheduleChange) {
           props.onSelectedScheduleChange(recoilScheduleInfoValue, 0);
         }
-      } else if (props.scheduleInfo && props.scheduleInfo.scheduleDetailData) {
-        // props.scheduleInfo가 있으면 Recoil에도 저장
-        setScheduleList([props.scheduleInfo]);
-        setRecoilScheduleInfo(props.scheduleInfo);
-        setSelectedScheduleIndex(0);
-        setLoading(false);
-        if (props.onSelectedScheduleChange) {
-          props.onSelectedScheduleChange(props.scheduleInfo, 0);
-        }
       } else {
+        // Recoil에 데이터가 없으면 서버에서 가져오기
         fetchScheduleData();
       }
     } else {
@@ -1492,7 +1727,7 @@ export default function ScheduleRederCustom (props : any) {
         fetchScheduleData();
       }
     }
-  }, [props.scheduleInfo, props.id, useRecoil, recoilScheduleInfoValue, setRecoilScheduleInfo]);
+  }, [props.id, useRecoil, recoilScheduleInfoValue, setRecoilScheduleInfo]);
 
   // scheduleList가 변경될 때마다 Recoil에 자동 저장 (useRecoil이 true일 때만)
   // 이전 scheduleList를 추적하여 무한 루프 방지
@@ -1537,7 +1772,90 @@ export default function ScheduleRederCustom (props : any) {
                         // 도시명 -> cityInfoPerDay의 cityName 매핑 (첫 등장 시)
                         const cityNameMap = new Map<string, string>();
                         
+                        // 상품명에서 호텔 타입 추출 (중복 제거)
+                        const extractHotelTypes = (productName: string | undefined): string[] => {
+                          if (!productName) return [];
+                          const parts = productName.split(' + ');
+                          const types = parts.map(part => {
+                            return part.replace(/\s*\d+박\s*$/, '').trim();
+                          }).filter(type => type.length > 0);
+                          const uniqueTypes: string[] = [];
+                          types.forEach(type => {
+                            if (!uniqueTypes.includes(type)) {
+                              uniqueTypes.push(type);
+                            }
+                          });
+                          return uniqueTypes;
+                        };
+                        const productName = props.productInfo?.productName || '';
+                        const hotelTypes = extractHotelTypes(productName);
+                        
+                        // 호텔 정보 복사를 막아야 하는지 확인하는 함수
+                        const shouldSkipHotelInfo = (hotel: string | undefined): boolean => {
+                          if (!hotel) return false;
+                          if (hotel === '호텔 입력') return true;
+                          // 호텔 타입 리스트에 포함되어 있으면 복사하지 않음
+                          return hotelTypes.includes(hotel);
+                        };
+                        
                         return schedule.scheduleDetailData.map((dayItem:any, dayIndex:any) => {
+                          // flag 값에서 호텔 타입 추출
+                          const getHotelTypeFromFlag = (flag: any): string | undefined => {
+                            if (flag && flag.fn && Array.isArray(flag.fn)) {
+                              if (flag.fst === 'solo' && flag.fn.length > 0) {
+                                return flag.fn[0];
+                              } else if (flag.fst === 'move' && flag.fn.length >= 2) {
+                                return flag.fn[0]; // move일 때는 첫 번째 호텔 타입만 사용
+                              }
+                            }
+                            return undefined;
+                          };
+                          
+                          const dayItemWithFlag = dayItem as any;
+                          const flagHotelType = dayItemWithFlag.flag ? getHotelTypeFromFlag(dayItemWithFlag.flag) : undefined;
+                          
+                          // selectedHotels에서 실제 호텔명 찾기 (flag에서 호텔 타입 추출 후)
+                          const getActualHotelNameFromSelectedHotels = (hotelType: string | undefined, currentDayIndex: number): { hotelName: string | undefined; hotelLevel: string | undefined } => {
+                            if (!hotelType || !props.selectedHotels || props.selectedHotels.length === 0) {
+                              return { hotelName: undefined, hotelLevel: undefined };
+                            }
+                            
+                            // 같은 hotelSort를 가진 호텔들 찾기 (index 순으로 정렬)
+                            const matchingHotels = props.selectedHotels
+                              .filter((sh: any) => sh.hotelSort === hotelType)
+                              .sort((a: any, b: any) => a.index - b.index);
+                            
+                            if (matchingHotels.length === 0) {
+                              return { hotelName: undefined, hotelLevel: undefined };
+                            }
+                            
+                            // 현재 dayIndex까지 같은 타입의 호텔이 몇 번째인지 계산
+                            let sameTypeCount = 0;
+                            
+                            for (let i = 0; i <= currentDayIndex && i < schedule.scheduleDetailData.length; i++) {
+                              const day = schedule.scheduleDetailData[i] as any;
+                              const dayFlag = day.flag;
+                              const dayHotelType = dayFlag ? getHotelTypeFromFlag(dayFlag) : undefined;
+                              
+                              if (dayHotelType === hotelType) {
+                                sameTypeCount++;
+                                // 현재 dayIndex에 해당하는 호텔인지 확인
+                                if (i === currentDayIndex) {
+                                  // sameTypeCount번째 같은 타입 호텔 찾기
+                                  const targetHotel = matchingHotels[sameTypeCount - 1];
+                                  if (targetHotel && targetHotel.hotel && targetHotel.hotel.hotelNameKo) {
+                                    return {
+                                      hotelName: targetHotel.hotel.hotelNameKo,
+                                      hotelLevel: targetHotel.hotel.hotelLevel || undefined
+                                    };
+                                  }
+                                }
+                              }
+                            }
+                            
+                            return { hotelName: undefined, hotelLevel: undefined };
+                          };
+                          
                           // 일정 데이터의 location 값에서 도시명 추출
                           let cityNameForDay: string | undefined = undefined;
                           // 호텔 정보 location 기반 매칭 (유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때)
@@ -1547,8 +1865,8 @@ export default function ScheduleRederCustom (props : any) {
                           // 마지막 day인지 확인
                           const isLastDay = dayIndex === schedule.scheduleDetailData.length - 1;
                           
-                          // hotelInfoPerDay만 있을 때 (휴양지 경로) - 마지막 day가 아닐 때만 실행
-                          if (!isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay) {
+                          // hotelInfoPerDay를 최우선으로 사용 (dayIndex로 직접 매칭)
+                          if (props.hotelInfoPerDay && !isLastDay) {
                             const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
                               info.dayIndex === dayIndex
                             );
@@ -1574,99 +1892,142 @@ export default function ScheduleRederCustom (props : any) {
                             }
                           }
                           
-            // 유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때 - 마지막 day가 아닐 때만 실행
-            if (!isLastDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
-              // scheduleDetail 배열에서 location 값을 찾기
-              for (const detail of dayItem.scheduleDetail) {
-                if (detail.location && typeof detail.location === 'string' && detail.location.trim()) {
-                  const location = detail.location.trim();
-                  // location에서 도시명만 추출 (예: "2일차 - 루체른" -> "루체른")
-                  const locationParts = location.split('-').map((part: string) => part.trim());
-                  const locationCityName = locationParts[locationParts.length - 1] || location;
-                  
-                  // 이미 매핑된 도시명인지 확인
-                  // 단, 해당 도시가 이미 사용되었는지 확인해야 함 (1박인 경우 다음 day부터 다른 도시 사용)
-                  let shouldUseMappedCity = false;
-                  if (cityNameMap.has(locationCityName)) {
-                    const mappedCityName = cityNameMap.get(locationCityName);
-                    if (mappedCityName) {
-                      // 매핑된 도시명이 cityInfoPerDay에서 사용되지 않은 항목인지 확인
-                      const mappedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                        cityInfo.cityName === mappedCityName && !usedCityIndices.has(idx)
-                      );
-                      // 사용되지 않은 도시만 재사용 (같은 도시가 여러 박인 경우)
-                      if (mappedCityInfo) {
-                        shouldUseMappedCity = true;
-                        cityNameForDay = mappedCityName;
-                        // 사용된 인덱스 추가
-                        const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                          cityInfo.dayIndex === mappedCityInfo.dayIndex && cityInfo.cityName === mappedCityInfo.cityName
-                        );
-                        if (matchedIndex !== -1) {
-                          usedCityIndices.add(matchedIndex);
-                        }
-                      }
-                    }
-                  }
-                  
-                  if (!shouldUseMappedCity) {
-                    // 첫 등장인 경우, cityInfoPerDay에서 순차적으로 찾기 (사용되지 않은 항목 중)
-                    // 정확한 매칭 우선 (locationCityName === cityInfo.cityName)
-                    const exactMatch = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                      !usedCityIndices.has(idx) &&
-                      locationCityName === cityInfo.cityName
-                    );
-                    
-                    if (exactMatch) {
-                      const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                        cityInfo.dayIndex === exactMatch.dayIndex && cityInfo.cityName === exactMatch.cityName
-                      );
-                      if (matchedIndex !== -1) {
-                        usedCityIndices.add(matchedIndex);
-                        cityNameMap.set(locationCityName, exactMatch.cityName);
-                        cityNameForDay = exactMatch.cityName;
-                      }
-                    } else {
-                      // 정확한 매칭이 없으면 부분 매칭 시도
-                      const matchedCity = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                        !usedCityIndices.has(idx) &&
-                        (location.includes(cityInfo.cityName) || 
-                         cityInfo.cityName.includes(locationCityName))
-                      );
-                      if (matchedCity) {
-                        const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                          cityInfo.dayIndex === matchedCity.dayIndex && cityInfo.cityName === matchedCity.cityName
-                        );
-                        if (matchedIndex !== -1) {
-                          usedCityIndices.add(matchedIndex);
-                          cityNameMap.set(locationCityName, matchedCity.cityName);
-                          cityNameForDay = matchedCity.cityName;
-                        }
-                      }
-                    }
-                  }
-                  
-                  // 호텔 정보 매칭 (유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때)
-                  if (props.hotelInfoPerDay && cityNameForDay && !hotelNameForDay) {
-                    const matchedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }) => 
-                      cityInfo.cityName === cityNameForDay
-                    );
-                    if (matchedCityInfo) {
-                      const matchedHotel = props.hotelInfoPerDay.find((hotelInfo: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
-                        hotelInfo.dayIndex === matchedCityInfo.dayIndex
-                      );
-                      if (matchedHotel) {
-                        hotelNameForDay = matchedHotel.hotelName;
-                        hotelLevelForDay = matchedHotel.hotelLevel;
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                          // hotelInfoPerDay에서 찾지 못한 경우, flag 값이 있으면 selectedHotels에서 실제 호텔명 찾기
+                          if (!hotelNameForDay && flagHotelType !== undefined) {
+                            const actualHotel = getActualHotelNameFromSelectedHotels(flagHotelType, dayIndex);
+                            if (actualHotel.hotelName) {
+                              hotelNameForDay = actualHotel.hotelName;
+                              hotelLevelForDay = actualHotel.hotelLevel;
+                            } else {
+                              // selectedHotels에서 찾지 못한 경우, flagHotelType을 그대로 사용 (fallback)
+                              hotelNameForDay = flagHotelType;
+                            }
+                          }
+                          
+                          // hotelInfoPerDay만 있을 때 (휴양지 경로) - 마지막 day가 아닐 때만 실행
+                          // flag 값이 없을 때만 hotelInfoPerDay에서 가져오기
+                          // '호텔 입력' 또는 호텔 타입인 경우에는 호텔 정보를 복사하지 않음
+                          if (!hotelNameForDay && !isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay && flagHotelType === undefined && !shouldSkipHotelInfo(dayItem.hotel)) {
+                            const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                              info.dayIndex === dayIndex
+                            );
+                            if (hotelInfo) {
+                              hotelNameForDay = hotelInfo.hotelName;
+                              hotelLevelForDay = hotelInfo.hotelLevel;
+                            } else {
+                              // hotelInfoPerDay에 해당 dayIndex가 없으면 이전 날짜의 호텔 정보 사용
+                              // 같은 호텔이 여러 박인 경우 이전 박의 호텔 정보를 그대로 사용
+                              for (let prevDay = dayIndex - 1; prevDay >= 0; prevDay--) {
+                                const prevHotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                                  info.dayIndex === prevDay
+                                );
+                                if (prevHotelInfo) {
+                                  // 하이픈이 없는 경우에만 이전 호텔 정보 사용 (체크아웃/체크인 날이 아닌 경우)
+                                  if (!prevHotelInfo.hotelName.includes(' - ')) {
+                                    hotelNameForDay = prevHotelInfo.hotelName;
+                                    hotelLevelForDay = prevHotelInfo.hotelLevel;
+                                    break;
+                                  }
+                                }
+                              }
+                            }
+                          }
+                                        
+                          // 유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때 - 마지막 day가 아닐 때만 실행
+                          // flag 값이 없을 때만 cityInfoPerDay/hotelInfoPerDay에서 가져오기
+                          // '호텔 입력' 또는 호텔 타입인 경우에는 호텔 정보를 복사하지 않음
+                          if (!isLastDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail) && flagHotelType === undefined && !shouldSkipHotelInfo(dayItem.hotel)) {
+                            // scheduleDetail 배열에서 location 값을 찾기
+                            for (const detail of dayItem.scheduleDetail) {
+                              if (detail.location && typeof detail.location === 'string' && detail.location.trim()) {
+                                const location = detail.location.trim();
+                                // location에서 도시명만 추출 (예: "2일차 - 루체른" -> "루체른")
+                                const locationParts = location.split('-').map((part: string) => part.trim());
+                                const locationCityName = locationParts[locationParts.length - 1] || location;
+                                
+                                // 이미 매핑된 도시명인지 확인
+                                // 단, 해당 도시가 이미 사용되었는지 확인해야 함 (1박인 경우 다음 day부터 다른 도시 사용)
+                                let shouldUseMappedCity = false;
+                                if (cityNameMap.has(locationCityName)) {
+                                  const mappedCityName = cityNameMap.get(locationCityName);
+                                  if (mappedCityName) {
+                                    // 매핑된 도시명이 cityInfoPerDay에서 사용되지 않은 항목인지 확인
+                                    const mappedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
+                                      cityInfo.cityName === mappedCityName && !usedCityIndices.has(idx)
+                                    );
+                                    // 사용되지 않은 도시만 재사용 (같은 도시가 여러 박인 경우)
+                                    if (mappedCityInfo) {
+                                      shouldUseMappedCity = true;
+                                      cityNameForDay = mappedCityName;
+                                      // 사용된 인덱스 추가
+                                      const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
+                                        cityInfo.dayIndex === mappedCityInfo.dayIndex && cityInfo.cityName === mappedCityInfo.cityName
+                                      );
+                                      if (matchedIndex !== -1) {
+                                        usedCityIndices.add(matchedIndex);
+                                      }
+                                    }
+                                  }
+                                }
+                                
+                                if (!shouldUseMappedCity) {
+                                  // 첫 등장인 경우, cityInfoPerDay에서 순차적으로 찾기 (사용되지 않은 항목 중)
+                                  // 정확한 매칭 우선 (locationCityName === cityInfo.cityName)
+                                  const exactMatch = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
+                                    !usedCityIndices.has(idx) &&
+                                    locationCityName === cityInfo.cityName
+                                  );
+                                  
+                                  if (exactMatch) {
+                                    const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
+                                      cityInfo.dayIndex === exactMatch.dayIndex && cityInfo.cityName === exactMatch.cityName
+                                    );
+                                    if (matchedIndex !== -1) {
+                                      usedCityIndices.add(matchedIndex);
+                                      cityNameMap.set(locationCityName, exactMatch.cityName);
+                                      cityNameForDay = exactMatch.cityName;
+                                    }
+                                  } else {
+                                    // 정확한 매칭이 없으면 부분 매칭 시도
+                                    const matchedCity = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
+                                      !usedCityIndices.has(idx) &&
+                                      (location.includes(cityInfo.cityName) || 
+                                      cityInfo.cityName.includes(locationCityName))
+                                    );
+                                    if (matchedCity) {
+                                      const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
+                                        cityInfo.dayIndex === matchedCity.dayIndex && cityInfo.cityName === matchedCity.cityName
+                                      );
+                                      if (matchedIndex !== -1) {
+                                        usedCityIndices.add(matchedIndex);
+                                        cityNameMap.set(locationCityName, matchedCity.cityName);
+                                        cityNameForDay = matchedCity.cityName;
+                                      }
+                                    }
+                                  }
+                                }
+                                
+                                // 호텔 정보 매칭 (유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때)
+                                if (props.hotelInfoPerDay && cityNameForDay && !hotelNameForDay) {
+                                  const matchedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }) => 
+                                    cityInfo.cityName === cityNameForDay
+                                  );
+                                  if (matchedCityInfo) {
+                                    const matchedHotel = props.hotelInfoPerDay.find((hotelInfo: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                                      hotelInfo.dayIndex === matchedCityInfo.dayIndex
+                                    );
+                                    if (matchedHotel) {
+                                      hotelNameForDay = matchedHotel.hotelName;
+                                      hotelLevelForDay = matchedHotel.hotelLevel;
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                           
                           return (
-                            <div className="schedule-schedule__table__wrapper" key={dayIndex}>
+                            <div className="schedule-schedule__table__wrapper" key={dayIndex} id={`schedule-day-${dayIndex}`}>
                               <div className="schedule-schedule__header" style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
                                 <div style={{display:'flex', alignItems:'center'}}>
                                   <span className="schedule-main__text">{dayIndex +1} DAY</span>
@@ -2591,47 +2952,97 @@ export default function ScheduleRederCustom (props : any) {
                                                   </div>
                                                 )}
                                                 {
-                                                  locationDetailItem.subLocationDetail.map((subDetailBoxItem:any, subDetailBoxIndex:number)=>{
-                                                    const shouldShowDivider = subDetailBoxIndex > 0;
+                                                  (() => {
+                                                    const subLocationDetailKey = `${dayIndex}-${locationIndex}-${locationDetailIndex}`;
+                                                    const isExpanded = expandedSubLocationDetails.has(subLocationDetailKey);
+                                                    const totalCount = locationDetailItem.subLocationDetail.length;
+                                                    const shouldShowMoreButton = totalCount >= 3;
+                                                    const displayCount = shouldShowMoreButton && !isExpanded ? 2 : totalCount;
+                                                    const itemsToShow = locationDetailItem.subLocationDetail.slice(0, displayCount);
+                                                    
                                                     return (
-                                                      <div key={subDetailBoxIndex}>
-                                                        {shouldShowDivider && (
-                                                          <div className="schedule-subDetail__divider"></div>
-                                                        )}
-                                                        <div className="schedule-schedule__element__main__wrapper" >
-                                                          <div className="schedule-table__wrapper">
-                                                            <div className="schedule-table__header">
-                                                              <span>{subDetailBoxItem.locationTitle}</span>
-                                                            </div>
-                                                            <div className="schedule-table__main"
-                                                              dangerouslySetInnerHTML={{__html: subDetailBoxItem.locationContent}}
-                                                            />                                                
-                                                          </div>
-                                                          <div className="schedule-image__wrapper">
-                                                            <div style={{
-                                                              display:'flex', 
-                                                              width:'100%', 
-                                                              justifyContent: (subDetailBoxItem.postImages && subDetailBoxItem.postImages.length === 2) ? 'flex-start' : 'space-between',
-                                                              gap: (subDetailBoxItem.postImages && subDetailBoxItem.postImages.length === 2) ? '2%' : '0'
-                                                            }}>
-                                                              {subDetailBoxItem.postImages && subDetailBoxItem.postImages.length > 0 ? (
-                                                                subDetailBoxItem.postImages.slice(0, 3).map((imgName: string, imgIdx: number) => (
-                                                                  <img
-                                                                    key={imgIdx}
-                                                                    style={{width:'32%', aspectRatio:'4/3', objectFit:'cover', borderRadius:'8px'}}
-                                                                    src={`${AdminURL}/images/scheduledetailboximages/${imgName}`}
-                                                                    onError={e => { e.currentTarget.src = ''; e.currentTarget.alt = '이미지가 없습니다.'; }}
-                                                                  />
-                                                                ))
-                                                              ) : (
-                                                                <span></span>
+                                                      <>
+                                                        {itemsToShow.map((subDetailBoxItem:any, subDetailBoxIndex:number)=>{
+                                                          const shouldShowDivider = subDetailBoxIndex > 0;
+                                                          return (
+                                                            <div key={subDetailBoxIndex}>
+                                                              {shouldShowDivider && (
+                                                                <div className="schedule-subDetail__divider"></div>
                                                               )}
+                                                              <div className="schedule-schedule__element__main__wrapper" >
+                                                                <div className="schedule-table__wrapper">
+                                                                  <div className="schedule-table__header">
+                                                                    <span>{subDetailBoxItem.locationTitle}</span>
+                                                                  </div>
+                                                                  <div className="schedule-table__main"
+                                                                    dangerouslySetInnerHTML={{__html: subDetailBoxItem.locationContent}}
+                                                                  />                                                
+                                                                </div>
+                                                                <div className="schedule-image__wrapper">
+                                                                  <div style={{
+                                                                    display:'flex', 
+                                                                    width:'100%', 
+                                                                    justifyContent: (subDetailBoxItem.postImages && subDetailBoxItem.postImages.length === 2) ? 'flex-start' : 'space-between',
+                                                                    gap: (subDetailBoxItem.postImages && subDetailBoxItem.postImages.length === 2) ? '2%' : '0'
+                                                                  }}>
+                                                                    {subDetailBoxItem.postImages && subDetailBoxItem.postImages.length > 0 ? (
+                                                                      subDetailBoxItem.postImages.slice(0, 3).map((imgName: string, imgIdx: number) => (
+                                                                        <img
+                                                                          key={imgIdx}
+                                                                          style={{width:'32%', aspectRatio:'4/3', objectFit:'cover', borderRadius:'8px'}}
+                                                                          src={`${AdminURL}/images/scheduledetailboximages/${imgName}`}
+                                                                          onError={e => { e.currentTarget.src = ''; e.currentTarget.alt = '이미지가 없습니다.'; }}
+                                                                        />
+                                                                      ))
+                                                                    ) : (
+                                                                      <span></span>
+                                                                    )}
+                                                                  </div>
+                                                                </div>
+                                                              </div>
                                                             </div>
+                                                          )
+                                                        })}
+                                                        {shouldShowMoreButton && (
+                                                          <div style={{ textAlign: 'center', marginTop: '16px', marginBottom: '16px' }}>
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => {
+                                                                setExpandedSubLocationDetails(prev => {
+                                                                  const newSet = new Set(prev);
+                                                                  if (isExpanded) {
+                                                                    newSet.delete(subLocationDetailKey);
+                                                                  } else {
+                                                                    newSet.add(subLocationDetailKey);
+                                                                  }
+                                                                  return newSet;
+                                                                });
+                                                              }}
+                                                              style={{
+                                                                padding: '8px 24px',
+                                                                backgroundColor: '#5fb7ef',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '14px',
+                                                                fontWeight: '500',
+                                                                transition: 'background-color 0.2s'
+                                                              }}
+                                                              onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#4aa3d4';
+                                                              }}
+                                                              onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#5fb7ef';
+                                                              }}
+                                                            >
+                                                              {isExpanded ? '접기' : `더보기 (${totalCount - 2}개)`}
+                                                            </button>
                                                           </div>
-                                                        </div>
-                                                      </div>
-                                                    )
-                                                  })
+                                                        )}
+                                                      </>
+                                                    );
+                                                  })()
                                                 }
                                               </div>
                                             )
@@ -2749,492 +3160,350 @@ export default function ScheduleRederCustom (props : any) {
         
       </div>
 
-
+      {/* 플로팅 박스 - Day 목록 */}
       {!props.hideFloatingBox && (
-      <div className="schedule-floating-box" style={{ width: isFloatingBoxExpanded ? '450px' : '100px' }}>
-        <div className="schedule-floating-box-header">
-          <div className="schedule-floating-box-header-buttons">
-            {!isFloatingBoxExpanded ? (
-              <button
-                type="button"
-                className="schedule-floating-box-header-btn"
-                onClick={() => {
-                  setIsFloatingBoxExpanded(true);
-                }}
-              >
-                펼쳐보기
-              </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="schedule-floating-box-header-btn"
-                  onClick={() => {
-                    setIsFloatingBoxExpanded(false);
-                  }}
-                >
-                  간단히보기
-                </button>
-              <button
-                type="button"
-                className="schedule-floating-box-header-btn"
-                onClick={() => {
-                  // 모든 day 인덱스를 expandedLocationDays에 추가
-                  const allDayIndices = new Set<number>();
-                  scheduleList[selectedScheduleIndex].scheduleDetailData.forEach((_: any, idx: number) => {
-                    allDayIndices.add(idx);
-                  });
-                  console.log('🔓 모두보기 - 모든 day 인덱스:', Array.from(allDayIndices));
-                  setExpandedLocationDays(allDayIndices);
-                }}
-              >
-                상세모두보기
-              </button>
-                <button
-                  type="button"
-                  className="schedule-floating-box-header-btn"
-                  onClick={() => {
-                    // 모든 day 닫기
-                    console.log('🔒 모두닫기');
-                    setExpandedLocationDays(new Set());
-                  }}
-                >
-                  상세모두닫기
-                </button>
-              </>
-            )}
+        <div 
+          className="schedule-floating-box"
+          style={{
+            width: floatingBoxExpanded ? 'auto' : 'fit-content',
+            minWidth: floatingBoxExpanded ? 'auto' : 'fit-content',
+            transition: 'width 0.3s ease, min-width 0.3s ease'
+          }}
+        >
+          <div className="schedule-floating-box-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setFloatingBoxExpanded(prev => !prev)}
+              style={{
+                padding: '4px 12px',
+                border: '1px solid #ddd',
+                backgroundColor: '#fff',
+                color: '#333',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#fff';
+              }}
+            >
+              {floatingBoxExpanded ? '접기' : '펼쳐보기'}
+            </button>
           </div>
-        </div>
-        {(() => {
-          // 사용된 cityInfoPerDay 인덱스 추적
-          const usedCityIndices = new Set<number>();
-          // 도시명 -> cityInfoPerDay의 cityName 매핑 (첫 등장 시)
-          const cityNameMap = new Map<string, string>();
-          // 이전 day의 호텔 정보 및 도시명 저장 (같은 도시가 연속으로 나올 때 사용)
-          const prevDayInfo = new Map<number, { cityName: string; hotelName: string; hotelLevel: string }>();
-          
-          const scheduleData = scheduleList[selectedScheduleIndex]?.scheduleDetailData || [];
-          
-          // 모든 day 데이터 수집
-          const allDaysData: any[] = [];
-          
-          const dayElements = scheduleData.map((dayItem: any, dayIndex: number) => {
-            // 일정 데이터의 location 값에서 도시명 추출 (여러 도시를 배열로 저장)
-            const cityNamesForDay: string[] = [];
-            // 호텔 정보 location 기반 매칭 (유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때)
-            let hotelNameForDay: string | undefined = undefined;
-            let hotelLevelForDay: string | undefined = undefined;
-            
-            // 마지막 day인지 확인
-            const isLastDay = dayIndex === scheduleData.length - 1;
-            
-            if (!isLastDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
-              // scheduleDetail 배열에서 location 값을 찾기 (모든 location을 순회)
-              for (const detail of dayItem.scheduleDetail) {
-                if (detail.location && typeof detail.location === 'string' && detail.location.trim()) {
-                  const location = detail.location.trim();
-                  // location에서 도시명만 추출 (예: "2일차 - 루체른" -> "루체른")
-                  const locationParts = location.split('-').map((part: string) => part.trim());
-                  const locationCityName = locationParts[locationParts.length - 1] || location;
-                  
-                  // 이미 매핑된 도시명인지 확인
-                  // 단, 해당 도시가 이미 사용되었는지 확인해야 함 (1박인 경우 다음 day부터 다른 도시 사용)
-                  let shouldUseMappedCity = false;
-                  let matchedCityName: string | undefined = undefined;
-                  
-                  if (cityNameMap.has(locationCityName)) {
-                    const mappedCityName = cityNameMap.get(locationCityName);
-                    if (mappedCityName) {
-                      // 매핑된 도시명이 cityInfoPerDay에서 사용되지 않은 항목인지 확인
-                      const mappedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                        cityInfo.cityName === mappedCityName && !usedCityIndices.has(idx)
-                      );
-                      // 사용되지 않은 도시만 재사용 (같은 도시가 여러 박인 경우)
-                      if (mappedCityInfo) {
-                        shouldUseMappedCity = true;
-                        matchedCityName = mappedCityName;
-                        // 사용된 인덱스 추가
-                        const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                          cityInfo.dayIndex === mappedCityInfo.dayIndex && cityInfo.cityName === mappedCityInfo.cityName
-                        );
-                        if (matchedIndex !== -1) {
-                          usedCityIndices.add(matchedIndex);
-                        }
-                      }
-                    }
+          <div className="schedule-floating-box-content">
+            {scheduleList[selectedScheduleIndex]?.scheduleDetailData?.map((dayItem: any, dayIndex: number) => {
+              // flag 값에서 호텔 타입 추출
+              const getHotelTypeFromFlag = (flag: any): string | undefined => {
+                if (flag && flag.fn && Array.isArray(flag.fn)) {
+                  if (flag.fst === 'solo' && flag.fn.length > 0) {
+                    return flag.fn[0];
+                  } else if (flag.fst === 'move' && flag.fn.length >= 2) {
+                    return flag.fn[0]; // move일 때는 첫 번째 호텔 타입만 사용
                   }
+                }
+                return undefined;
+              };
+              
+              const dayItemWithFlag = dayItem as any;
+              const flagHotelType = dayItemWithFlag.flag ? getHotelTypeFromFlag(dayItemWithFlag.flag) : undefined;
+              
+              // selectedHotels에서 실제 호텔명 찾기 (flag에서 호텔 타입 추출 후)
+              const getActualHotelNameFromSelectedHotels = (hotelType: string | undefined, currentDayIndex: number): { hotelName: string | undefined; hotelLevel: string | undefined } => {
+                if (!hotelType || !props.selectedHotels || props.selectedHotels.length === 0) {
+                  return { hotelName: undefined, hotelLevel: undefined };
+                }
+                
+                // 같은 hotelSort를 가진 호텔들 찾기 (index 순으로 정렬)
+                const matchingHotels = props.selectedHotels
+                  .filter((sh: any) => sh.hotelSort === hotelType)
+                  .sort((a: any, b: any) => a.index - b.index);
+                
+                if (matchingHotels.length === 0) {
+                  return { hotelName: undefined, hotelLevel: undefined };
+                }
+                
+                // 현재 dayIndex까지 같은 타입의 호텔이 몇 번째인지 계산
+                let sameTypeCount = 0;
+                
+                for (let i = 0; i <= currentDayIndex && i < scheduleList[selectedScheduleIndex]?.scheduleDetailData.length; i++) {
+                  const day = scheduleList[selectedScheduleIndex]?.scheduleDetailData[i] as any;
+                  const dayFlag = day.flag;
+                  const dayHotelType = dayFlag ? getHotelTypeFromFlag(dayFlag) : undefined;
                   
-                  if (!shouldUseMappedCity) {
-                    // 첫 등장인 경우, cityInfoPerDay에서 순차적으로 찾기 (사용되지 않은 항목 중)
-                    // 정확한 매칭 우선 (locationCityName === cityInfo.cityName)
-                    const exactMatch = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                      !usedCityIndices.has(idx) &&
-                      locationCityName === cityInfo.cityName
-                    );
-                    
-                    if (exactMatch) {
-                      const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                        cityInfo.dayIndex === exactMatch.dayIndex && cityInfo.cityName === exactMatch.cityName
-                      );
-                      if (matchedIndex !== -1) {
-                        usedCityIndices.add(matchedIndex);
-                        cityNameMap.set(locationCityName, exactMatch.cityName);
-                        matchedCityName = exactMatch.cityName;
-                      }
-                    } else {
-                      // 정확한 매칭이 없으면 부분 매칭 시도
-                      const matchedCity = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                        !usedCityIndices.has(idx) &&
-                        (location.includes(cityInfo.cityName) || 
-                         cityInfo.cityName.includes(locationCityName))
-                      );
-                      if (matchedCity) {
-                        const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                          cityInfo.dayIndex === matchedCity.dayIndex && cityInfo.cityName === matchedCity.cityName
-                        );
-                        if (matchedIndex !== -1) {
-                          usedCityIndices.add(matchedIndex);
-                          cityNameMap.set(locationCityName, matchedCity.cityName);
-                          matchedCityName = matchedCity.cityName;
-                        }
-                      }
-                    }
-                  }
-                  
-                  // 매칭된 도시명을 배열에 추가 (중복 제거)
-                  if (matchedCityName && !cityNamesForDay.includes(matchedCityName)) {
-                    cityNamesForDay.push(matchedCityName);
-                  }
-                  
-                  // 호텔 정보 매칭 (유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때)
-                  // 첫 번째로 매칭된 도시의 호텔 정보 사용
-                  // 같은 도시가 여러 박인 경우, 사용되지 않은 항목 중에서 찾기
-                  if (props.hotelInfoPerDay && matchedCityName && !hotelNameForDay) {
-                    // 사용되지 않은 항목 중에서 해당 도시명을 가진 항목 찾기
-                    const matchedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                      cityInfo.cityName === matchedCityName && !usedCityIndices.has(idx)
-                    );
-                    if (matchedCityInfo) {
-                      const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                        cityInfo.dayIndex === matchedCityInfo.dayIndex && cityInfo.cityName === matchedCityInfo.cityName
-                      );
-                      if (matchedIndex !== -1) {
-                        const matchedHotel = props.hotelInfoPerDay.find((hotelInfo: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
-                          hotelInfo.dayIndex === matchedCityInfo.dayIndex
-                        );
-                        if (matchedHotel) {
-                          hotelNameForDay = matchedHotel.hotelName;
-                          hotelLevelForDay = matchedHotel.hotelLevel;
-                          // 사용된 인덱스 추가
-                          usedCityIndices.add(matchedIndex);
-                        }
+                  if (dayHotelType === hotelType) {
+                    sameTypeCount++;
+                    // 현재 dayIndex에 해당하는 호텔인지 확인
+                    if (i === currentDayIndex) {
+                      // sameTypeCount번째 같은 타입 호텔 찾기
+                      const targetHotel = matchingHotels[sameTypeCount - 1];
+                      if (targetHotel && targetHotel.hotel && targetHotel.hotel.hotelNameKo) {
+                        return {
+                          hotelName: targetHotel.hotel.hotelNameKo,
+                          hotelLevel: targetHotel.hotel.hotelLevel || undefined
+                        };
                       }
                     }
                   }
                 }
-              }
-            }
-            
-            // hotelInfoPerDay만 있을 때 (휴양지 경로) - 마지막 day가 아닐 때만 실행
-            if (!isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay) {
-              const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
-                info.dayIndex === dayIndex
-              );
-              if (hotelInfo) {
-                hotelNameForDay = hotelInfo.hotelName;
-                hotelLevelForDay = hotelInfo.hotelLevel;
-              } else {
-                // hotelInfoPerDay에 해당 dayIndex가 없으면 이전 날짜의 호텔 정보 사용
-                for (let prevDay = dayIndex - 1; prevDay >= 0; prevDay--) {
-                  const prevHotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
-                    info.dayIndex === prevDay
-                  );
-                  if (prevHotelInfo) {
-                    // 하이픈이 없는 경우에만 이전 호텔 정보 사용 (체크아웃/체크인 날이 아닌 경우)
-                    if (!prevHotelInfo.hotelName.includes(' - ')) {
-                      hotelNameForDay = prevHotelInfo.hotelName;
-                      hotelLevelForDay = prevHotelInfo.hotelLevel;
-                      break;
-                    }
+                
+                return { hotelName: undefined, hotelLevel: undefined };
+              };
+              
+              // 상품명에서 호텔 타입 추출 (중복 제거)
+              const extractHotelTypes = (productName: string | undefined): string[] => {
+                if (!productName) return [];
+                const parts = productName.split(' + ');
+                const types = parts.map(part => {
+                  return part.replace(/\s*\d+박\s*$/, '').trim();
+                }).filter(type => type.length > 0);
+                const uniqueTypes: string[] = [];
+                types.forEach(type => {
+                  if (!uniqueTypes.includes(type)) {
+                    uniqueTypes.push(type);
                   }
-                }
-              }
-            }
-            
-            // 해당 day의 location 정보 추출
-            const locations: string[] = [];
-            if (dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail)) {
-              dayItem.scheduleDetail.forEach((detail: any) => {
-                if (detail.location && typeof detail.location === 'string' && detail.location.trim() && detail.isViewLocation !== false) {
-                  const location = detail.location.trim();
-                  if (location && !locations.includes(location)) {
-                    locations.push(location);
-                  }
-                }
-              });
-            }
-            
-            // locations에서 cityInfoPerDay에 있는 도시명만 추출하여 표시
-            // 상품명에 있는 도시 이름만 정확히 매칭
-            const matchedCityNamesFromLocations: string[] = [];
-            if (props.cityInfoPerDay && locations.length > 0) {
-              locations.forEach((location: string) => {
-                // location이 정확히 도시명과 일치하는지 확인
-                // "루체른", "인터라켄", "파리" 같은 단순한 도시명만 매칭
-                const foundCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }) => {
-                  // 정확히 일치하는 경우
-                  if (cityInfo.cityName === location || location === cityInfo.cityName) {
-                    return true;
-                  }
-                  // location에서 도시명만 추출 (예: "2일차 - 루체른" -> "루체른")
-                  const locationParts = location.split('-').map((part: string) => part.trim());
-                  const locationCityName = locationParts[locationParts.length - 1] || location;
-                  // 추출한 도시명이 정확히 일치하는 경우
-                  return cityInfo.cityName === locationCityName || locationCityName === cityInfo.cityName;
                 });
-                
-                // 정확히 일치하는 도시명만 추가
-                if (foundCityInfo && !matchedCityNamesFromLocations.includes(foundCityInfo.cityName)) {
-                  matchedCityNamesFromLocations.push(foundCityInfo.cityName);
-                }
-              });
-            }
-            
-            // cityNamesForDay와 matchedCityNamesFromLocations를 합쳐서 중복 제거
-            const allCityNamesSet = new Set<string>();
-            cityNamesForDay.forEach(city => allCityNamesSet.add(city));
-            matchedCityNamesFromLocations.forEach(city => allCityNamesSet.add(city));
-            
-            // cityInfoPerDay의 dayIndex 순서대로 정렬
-            let allCityNames: string[] = [];
-            if (props.cityInfoPerDay && allCityNamesSet.size > 0) {
-              const cityInfoPerDay = props.cityInfoPerDay;
-              // dayIndex 순서대로 도시명 정렬
-              const sortedCities: string[] = [];
-              cityInfoPerDay.forEach((cityInfo: { dayIndex: number; cityName: string }) => {
-                if (allCityNamesSet.has(cityInfo.cityName) && !sortedCities.includes(cityInfo.cityName)) {
-                  sortedCities.push(cityInfo.cityName);
-                }
-              });
-              // cityInfoPerDay에 없는 도시는 뒤에 추가
-              allCityNamesSet.forEach(city => {
-                if (!sortedCities.includes(city)) {
-                  sortedCities.push(city);
-                }
-              });
-              allCityNames = sortedCities;
-            } else {
-              allCityNames = Array.from(allCityNamesSet);
-            }
-            
-            // cityNamesForDay 배열을 하이픈으로 연결
-            const cityNameForDay = allCityNames.length > 0 ? allCityNames.join(' - ') : undefined;
-            
-            // 호텔 정보 매칭 (같은 도시가 여러 박인 경우, 각 박마다 호텔 정보 매칭) - 마지막 day가 아닐 때만 실행
-            // cityNameForDay가 하나이고, hotelNameForDay가 없으면 다시 매칭 시도
-            if (!isLastDay && props.hotelInfoPerDay && props.cityInfoPerDay && cityNameForDay && !hotelNameForDay) {
-              // cityNameForDay에서 첫 번째 도시명 추출 (하이픈으로 연결된 경우)
-              const firstCityName = cityNameForDay.split('-')[0];
+                return uniqueTypes;
+              };
+              const productName = props.productInfo?.productName || '';
+              const hotelTypes = extractHotelTypes(productName);
               
-              // 바로 앞의 날짜에 같은 도시가 있고 호텔 정보가 있으면 그대로 사용
-              if (dayIndex > 0 && prevDayInfo.has(dayIndex - 1)) {
-                const prevDayData = prevDayInfo.get(dayIndex - 1);
-                if (prevDayData) {
-                  const prevDayCityName = prevDayData.cityName.split('-')[0];
-                  if (prevDayCityName === firstCityName && prevDayData.hotelName) {
-                    hotelNameForDay = prevDayData.hotelName;
-                    hotelLevelForDay = prevDayData.hotelLevel;
-                  }
-                }
-              }
+              // 호텔 정보 복사를 막아야 하는지 확인하는 함수
+              const shouldSkipHotelInfo = (hotel: string | undefined): boolean => {
+                if (!hotel) return false;
+                if (hotel === '호텔 입력') return true;
+                // 호텔 타입 리스트에 포함되어 있으면 복사하지 않음
+                return hotelTypes.includes(hotel);
+              };
               
-              // 앞의 날짜에서 찾지 못했으면 cityInfoPerDay에서 사용되지 않은 항목 찾기
-              if (!hotelNameForDay) {
-                const matchedCityInfo = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }, idx: number) => 
-                  cityInfo.cityName === firstCityName && !usedCityIndices.has(idx)
+              // 일정표와 동일한 로직으로 호텔명 계산
+              let hotelNameForDay: string | undefined = undefined;
+              let hotelLevelForDay: string | undefined = undefined;
+              
+              // 마지막 day인지 확인
+              const isLastDay = dayIndex === scheduleList[selectedScheduleIndex]?.scheduleDetailData.length - 1;
+              
+              // hotelInfoPerDay를 최우선으로 사용 (dayIndex로 직접 매칭)
+              if (props.hotelInfoPerDay && !isLastDay) {
+                const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                  info.dayIndex === dayIndex
                 );
-                
-                if (matchedCityInfo) {
-                  const matchedHotel = props.hotelInfoPerDay.find((hotelInfo: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
-                    hotelInfo.dayIndex === matchedCityInfo.dayIndex
-                  );
-                  if (matchedHotel) {
-                    hotelNameForDay = matchedHotel.hotelName;
-                    hotelLevelForDay = matchedHotel.hotelLevel;
-                    // 사용된 인덱스 추가
-                    const matchedIndex = props.cityInfoPerDay.findIndex((cityInfo: { dayIndex: number; cityName: string }) => 
-                      cityInfo.dayIndex === matchedCityInfo.dayIndex && cityInfo.cityName === matchedCityInfo.cityName
+                if (hotelInfo) {
+                  hotelNameForDay = hotelInfo.hotelName;
+                  hotelLevelForDay = hotelInfo.hotelLevel;
+                } else {
+                  // hotelInfoPerDay에 해당 dayIndex가 없으면 이전 날짜의 호텔 정보 사용
+                  for (let prevDay = dayIndex - 1; prevDay >= 0; prevDay--) {
+                    const prevHotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                      info.dayIndex === prevDay
                     );
-                    if (matchedIndex !== -1) {
-                      usedCityIndices.add(matchedIndex);
+                    if (prevHotelInfo) {
+                      // 하이픈이 없는 경우에만 이전 호텔 정보 사용 (체크아웃/체크인 날이 아닌 경우)
+                      if (!prevHotelInfo.hotelName.includes(' - ')) {
+                        hotelNameForDay = prevHotelInfo.hotelName;
+                        hotelLevelForDay = prevHotelInfo.hotelLevel;
+                        break;
+                      }
                     }
                   }
                 }
               }
-            }
-            
-            // 현재 day의 정보를 저장 (다음 day에서 사용)
-            if (cityNameForDay) {
-              prevDayInfo.set(dayIndex, { 
-                cityName: cityNameForDay, 
-                hotelName: hotelNameForDay || '', 
-                hotelLevel: hotelLevelForDay || '' 
-              });
-            }
-          
-          // 호텔 정보 (유럽 경로가 아닌 경우 또는 호텔 정보가 없는 경우)
-          const displayHotelName = props.hotelInfoPerDay && props.cityInfoPerDay 
-            ? (hotelNameForDay || '') 
-            : (dayItem.hotel || '');
-          const displayHotelLevel = props.hotelInfoPerDay && props.cityInfoPerDay 
-            ? (hotelLevelForDay || dayItem.score || '') 
-            : (dayItem.score || '');
-
-          // day 데이터 수집
-          allDaysData.push({
-            dayIndex,
-            dayNumber: dayIndex + 1,
-            cityNameForDay,
-            hotelNameForDay,
-            hotelLevelForDay,
-            displayHotelName,
-            displayHotelLevel,
-            locations,
-            locationsCount: locations.length,
-            isExpanded: expandedLocationDays.has(dayIndex),
-            dayItemHotel: dayItem.hotel,
-            dayItemScore: dayItem.score,
-            scheduleDetail: dayItem.scheduleDetail?.map((detail: any) => ({
-              location: detail.location,
-              isViewLocation: detail.isViewLocation,
-              sort: detail.sort,
-              st: detail.st,
-              locationIcon: detail.locationIcon
-            })) || []
-          });
-
-          return (
-            <div key={dayIndex} className="schedule-floating-box-item">
-              {isFloatingBoxExpanded ? (
-                <>
-                  <div className="schedule-floating-box-row">
+              
+              // hotelInfoPerDay에서 찾지 못한 경우, flag 값이 있으면 selectedHotels에서 실제 호텔명 찾기
+              if (!hotelNameForDay && flagHotelType !== undefined) {
+                const actualHotel = getActualHotelNameFromSelectedHotels(flagHotelType, dayIndex);
+                if (actualHotel.hotelName) {
+                  hotelNameForDay = actualHotel.hotelName;
+                  hotelLevelForDay = actualHotel.hotelLevel;
+                } else {
+                  // selectedHotels에서 찾지 못한 경우, flagHotelType을 그대로 사용 (fallback)
+                  hotelNameForDay = flagHotelType;
+                }
+              }
+              
+              // hotelInfoPerDay만 있을 때 (휴양지 경로) - 마지막 day가 아닐 때만 실행
+              // flag 값이 없을 때만 hotelInfoPerDay에서 가져오기
+              // '호텔 입력' 또는 호텔 타입인 경우에는 호텔 정보를 복사하지 않음
+              if (!hotelNameForDay && !isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay && flagHotelType === undefined && !shouldSkipHotelInfo(dayItem.hotel)) {
+                const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                  info.dayIndex === dayIndex
+                );
+                if (hotelInfo) {
+                  hotelNameForDay = hotelInfo.hotelName;
+                  hotelLevelForDay = hotelInfo.hotelLevel;
+                } else {
+                  // hotelInfoPerDay에 해당 dayIndex가 없으면 이전 날짜의 호텔 정보 사용
+                  for (let prevDay = dayIndex - 1; prevDay >= 0; prevDay--) {
+                    const prevHotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                      info.dayIndex === prevDay
+                    );
+                    if (prevHotelInfo) {
+                      // 하이픈이 없는 경우에만 이전 호텔 정보 사용 (체크아웃/체크인 날이 아닌 경우)
+                      if (!prevHotelInfo.hotelName.includes(' - ')) {
+                        hotelNameForDay = prevHotelInfo.hotelName;
+                        hotelLevelForDay = prevHotelInfo.hotelLevel;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              
+              // dayItem.hotel이 호텔 타입인 경우에도 hotelInfoPerDay에서 실제 호텔명 찾기 (표시용)
+              if (!hotelNameForDay && !isLastDay && props.hotelInfoPerDay && !props.cityInfoPerDay && dayItem.hotel && hotelTypes.includes(dayItem.hotel)) {
+                const hotelInfo = props.hotelInfoPerDay.find((info: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                  info.dayIndex === dayIndex
+                );
+                if (hotelInfo) {
+                  hotelNameForDay = hotelInfo.hotelName;
+                  hotelLevelForDay = hotelInfo.hotelLevel;
+                }
+              }
+              
+              // 유럽 경로: cityInfoPerDay와 hotelInfoPerDay가 모두 있을 때 - 마지막 day가 아닐 때만 실행
+              // flag 값이 없을 때만 cityInfoPerDay/hotelInfoPerDay에서 가져오기
+              // '호텔 입력' 또는 호텔 타입인 경우에는 호텔 정보를 복사하지 않음
+              if (!isLastDay && props.hotelInfoPerDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail) && flagHotelType === undefined && !shouldSkipHotelInfo(dayItem.hotel)) {
+                // scheduleDetail 배열에서 location 값을 찾기
+                for (const detail of dayItem.scheduleDetail) {
+                  if (detail.location && typeof detail.location === 'string' && detail.location.trim()) {
+                    const location = detail.location.trim();
+                    // location에서 도시명만 추출 (예: "2일차 - 루체른" -> "루체른")
+                    const locationParts = location.split('-').map((part: string) => part.trim());
+                    const locationCityName = locationParts[locationParts.length - 1] || location;
                     
-                    <div className="schedule-floating-box-day">
-                      <span className="schedule-main__text">{dayIndex + 1} DAY</span>
-                    </div>
-
+                    // cityInfoPerDay에서 순차적으로 찾기
+                    const matchedCity = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }) => 
+                      locationCityName === cityInfo.cityName || 
+                      location.includes(cityInfo.cityName) || 
+                      cityInfo.cityName.includes(locationCityName)
+                    );
                     
-                    <div className="schedule-floating-box-hotel">
-                      <span className="schedule-floating-box-hotel-name">
-                        {isLastDay 
-                          ? '' 
-                          : (props.cityInfoPerDay
-                              ? (cityNameForDay || '')  // location이 없으면 공백
-                              : (dayItem.hotel || '-'))}
-                      </span>
-                    </div>
-
+                    if (matchedCity) {
+                      // 찾은 도시의 dayIndex를 사용하여 hotelInfoPerDay에서 호텔 정보 찾기
+                      const matchedHotel = props.hotelInfoPerDay.find((hotelInfo: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                        hotelInfo.dayIndex === matchedCity.dayIndex
+                      );
+                      if (matchedHotel) {
+                        hotelNameForDay = matchedHotel.hotelName;
+                        hotelLevelForDay = matchedHotel.hotelLevel;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              
+              // dayItem.hotel이 호텔 타입인 경우에도 hotelInfoPerDay에서 실제 호텔명 찾기 (표시용, 유럽 경로)
+              if (!hotelNameForDay && !isLastDay && props.hotelInfoPerDay && props.cityInfoPerDay && dayItem.scheduleDetail && Array.isArray(dayItem.scheduleDetail) && dayItem.hotel && hotelTypes.includes(dayItem.hotel)) {
+                // scheduleDetail 배열에서 location 값을 찾기
+                for (const detail of dayItem.scheduleDetail) {
+                  if (detail.location && typeof detail.location === 'string' && detail.location.trim()) {
+                    const location = detail.location.trim();
+                    const locationParts = location.split('-').map((part: string) => part.trim());
+                    const locationCityName = locationParts[locationParts.length - 1] || location;
                     
-                    <div className="schedule-floating-box-buttons">
-                      <button
-                        type="button"
-                        className="schedule-floating-box-btn"
-                        title="DAY 추가"
-                        onClick={() => addDay(dayIndex)}
-                      >+
-                      </button>
-                      <button
-                        type="button"
-                        className="schedule-floating-box-btn"
-                        title="DAY 삭제"
-                        onClick={() => deleteDay(dayIndex)}
-                      >–
-                      </button>
-                      <button
-                        type="button"
-                        className="schedule-floating-box-btn"
-                        title="DAY 위로"
-                        onClick={() => moveDayUp(dayIndex)}
-                      >▲
-                      </button>
-                      <button
-                        type="button"
-                        className="schedule-floating-box-btn"
-                        title="DAY 아래로"
-                        onClick={() => moveDayDown(dayIndex)}
-                      >▼
-                      </button>
-                      {locations.length > 0 && (
-                        <button
-                          type="button"
-                          className="schedule-floating-box-btn"
-                          title={expandedLocationDays.has(dayIndex) ? "상세정보 닫기" : "상세정보 열기"}
-                          onClick={() => {
-                            setExpandedLocationDays(prev => {
-                              const newSet = new Set(prev);
-                              if (newSet.has(dayIndex)) {
-                                newSet.delete(dayIndex);
-                              } else {
-                                newSet.add(dayIndex);
-                              }
-                              return newSet;
-                            });
-                          }}
-                        >
-                          {expandedLocationDays.has(dayIndex) ? <IoIosArrowUp /> : <IoIosArrowDown />}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {locations.length > 0 && expandedLocationDays.has(dayIndex) && (
-                    <div className="schedule-floating-box-locations">
-                      {locations.map((location, locIndex) => (
-                        <div key={locIndex} className="schedule-floating-box-location-item">
-                          {location}
-                        </div>
-                      ))}
-                      
-                      {!isLastDay && displayHotelName && (
-                        <div className="schedule-floating-box-hotel-info">
-                          <div className="schedule-floating-box-hotel-info-label">호텔</div>
-                          <div className="schedule-floating-box-hotel-info-name">{displayHotelName}</div>
-                          {displayHotelLevel && (
-                            <div className="schedule-floating-box-hotel-info-rating">
-                              <RatingBoard ratingSize={14} rating={parseInt(displayHotelLevel) || 0} />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="schedule-floating-box-row">
-                  <div className="schedule-floating-box-day">
+                    const matchedCity = props.cityInfoPerDay.find((cityInfo: { dayIndex: number; cityName: string }) => 
+                      locationCityName === cityInfo.cityName || 
+                      location.includes(cityInfo.cityName) || 
+                      cityInfo.cityName.includes(locationCityName)
+                    );
+                    
+                    if (matchedCity) {
+                      const matchedHotel = props.hotelInfoPerDay.find((hotelInfo: { dayIndex: number; hotelName: string; hotelLevel: string }) => 
+                        hotelInfo.dayIndex === matchedCity.dayIndex
+                      );
+                      if (matchedHotel) {
+                        hotelNameForDay = matchedHotel.hotelName;
+                        hotelLevelForDay = matchedHotel.hotelLevel;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              
+              // flag.fst가 'not'인 경우 호텔명 표시하지 않음
+              const isNotFlag = dayItem.flag?.fst === 'not';
+              
+              // dayItem.hotel이 호텔 타입인 경우 실제 호텔명을 찾아야 함
+              // hotelNameForDay가 있으면 사용, 없으면 호텔 타입이 아닌 경우에만 dayItem.hotel 사용
+              let displayHotelName: string;
+              if (isNotFlag) {
+                displayHotelName = '-';
+              } else if (hotelNameForDay) {
+                displayHotelName = hotelNameForDay;
+              } else if (dayItem.hotel && !hotelTypes.includes(dayItem.hotel)) {
+                // dayItem.hotel이 호텔 타입이 아닌 경우에만 사용 (실제 호텔명)
+                displayHotelName = dayItem.hotel;
+              } else {
+                // 호텔 타입이거나 호텔명이 없는 경우
+                displayHotelName = '-';
+              }
+              
+              return (
+                <div
+                  key={dayIndex}
+                  className="schedule-floating-box-item"
+                  onClick={() => {
+                    const targetElement = document.getElementById(`schedule-day-${dayIndex}`);
+                    if (targetElement) {
+                      targetElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                      });
+                    }
+                  }}
+                >
+                  <div 
+                    className="schedule-floating-box-item-content"
+                    style={{
+                      width: floatingBoxExpanded ? 'auto' : 'fit-content',
+                      minWidth: floatingBoxExpanded ? 'auto' : 'fit-content',
+                      transition: 'width 0.3s ease, min-width 0.3s ease'
+                    }}
+                  >
                     <span className="schedule-main__text">{dayIndex + 1} DAY</span>
+                    <span 
+                      className="schedule-floating-box-hotel-name"
+                      style={{
+                        opacity: floatingBoxExpanded ? 1 : 0,
+                        maxWidth: floatingBoxExpanded ? '100%' : '0',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        transition: 'opacity 0.3s ease, max-width 0.3s ease',
+                        display: floatingBoxExpanded ? 'inline' : 'none'
+                      }}
+                    >
+                      {displayHotelName}
+                    </span>
+                    {dayItem.flag && (
+                      <span className="schedule-floating-box-flag-info"
+                      style={{
+                        opacity: floatingBoxExpanded ? 1 : 0,
+                        maxWidth: floatingBoxExpanded ? '100%' : '0',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        transition: 'opacity 0.3s ease, max-width 0.3s ease',
+                        display: floatingBoxExpanded ? 'inline' : 'none'
+                      }}
+                      
+                      >
+                        (flag: {dayItem.flag.fst || '-'} {dayItem.flag.fn && Array.isArray(dayItem.flag.fn) ? `[${dayItem.flag.fn.join(', ')}]` : ''})
+                      </span>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          );
-        });
-        
-        // 모든 day 데이터를 하나로 묶어서 콘솔 출력
-        console.log('📋 플로팅 박스 - 모든 DAY 데이터:', {
-          productName: props.productInfo?.productName || '일정 정보',
-          selectedScheduleIndex,
-          totalDays: scheduleData.length,
-          cityInfoPerDay: props.cityInfoPerDay,
-          hotelInfoPerDay: props.hotelInfoPerDay,
-          expandedLocationDays: Array.from(expandedLocationDays),
-          daysData: allDaysData
-        });
-        
-        return dayElements;
-        })()}
-      </div>
+              );
+            })}
+          </div>
+        </div>
       )}
+
     
            
      

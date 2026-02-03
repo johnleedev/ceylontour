@@ -103,6 +103,51 @@
           display: none; /* Chrome, Safari, Opera */
         }
 
+        // Breadcrumb Navigation
+        .breadcrumb-nav-wrapper {
+
+          .breadcrumb-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 16px;
+            color: #666;
+
+            .breadcrumb-item {
+              cursor: pointer;
+              color: #333;
+              transition: color 0.2s ease;
+              height: 25px;
+              line-height: 25px;
+              font-weight: 400;
+              color: #666;
+              font-size: 14px;
+
+              &:hover {
+                color: #333;
+                text-decoration: underline;
+              }
+
+              &.breadcrumb-item-current {
+                cursor: default;
+                color: #333;
+                font-weight: 600;
+
+                &:hover {
+                  color: #333;
+                  text-decoration: none;
+                  font-weight: 600;
+                }
+              }
+            }
+
+            .breadcrumb-separator {
+              color: #999;
+              height: 25px;
+              line-height: 25px;
+            }
+          }
+        }
 
         // 왼쪽 패널 하단 버튼들
         .left-panel-bottom-buttons {
@@ -111,11 +156,15 @@
           margin-top: 40px;
           margin-bottom: 20px;
           width: 100%;
-          max-width: 1100px;
           margin-left: auto;
           margin-right: auto;
           align-items: center;
-          position: relative;
+          position: sticky;
+          bottom: 0;
+          background-color: #fff;
+          padding: 20px 40px;
+          z-index: 100;
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 
           .bottom-btn {
             flex: 1;
@@ -509,7 +558,7 @@
           &::after {
             content: '';
             position: absolute;
-            bottom: 0;
+            bottom: -2px;
             left: 0;
             right: 0;
             height: 2px;
@@ -603,7 +652,6 @@
   
       .photo-main {
         width: 100%;
-        border-radius: 12px;
         overflow: hidden;
   
         .photo-main-image {
@@ -633,7 +681,6 @@
         .photo-thumbnail {
           flex: 0 0 auto;
           width: 120px;
-          border-radius: 8px;
           overflow: hidden;
           cursor: pointer;
           transition: all 0.2s ease;
@@ -730,7 +777,6 @@
           max-width: 300px;
           max-height: 200px;
           object-fit: cover;
-          border-radius: 10px;
         }
       }
       .hotel-intro-entitle {
@@ -1258,7 +1304,7 @@
             &::after {
               content: '';
               position: absolute;
-              bottom: 0;
+              bottom: -2px;
               left: 0;
               right: 0;
               height: 2px;
@@ -1352,6 +1398,44 @@
                 content: '';
                 position: absolute;
                 bottom: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background-color: #333;
+              }
+            }
+          }
+        }
+
+        .hotel-detail-tabs {
+          display: flex;
+          gap: 8px;
+          border-bottom: 1px solid #e0e0e0;
+
+          .hotel-detail-tab {
+            width: 50%;
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 16px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+
+            &:hover {
+              font-weight: bold;
+            }
+
+            &.active {
+              color: #333;
+              font-weight: 600;
+
+              &::after {
+                content: '';
+                position: absolute;
+                bottom: -1px;
                 left: 0;
                 right: 0;
                 height: 2px;

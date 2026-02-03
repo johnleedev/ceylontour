@@ -165,6 +165,23 @@ export default function EuropeTripPage () {
     fetchDestinations();
   }, []);
 
+  // 선택된 국가가 변경될 때 해당 카드로 스크롤
+  useEffect(() => {
+    if (selectedNation) {
+      // 약간의 지연을 두어 DOM이 업데이트된 후 스크롤
+      setTimeout(() => {
+        const cardElement = document.querySelector(`[data-nation-name="${selectedNation}"]`);
+        if (cardElement) {
+          cardElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+    }
+  }, [selectedNation]);
+
   // schedule 데이터 파싱 및 그룹화
   const getGroupedSchedules = () => {
     if (!selectedNation) return {};
@@ -277,6 +294,7 @@ export default function EuropeTripPage () {
                   destinations.map((city) => (
                     <div 
                       key={city.id} 
+                      data-nation-name={city.name}
                       className={`nation-card ${selectedNation === city.name ? 'selected' : ''}`}
                       onClick={() => {
                         console.log(city.rawData);
